@@ -2,62 +2,262 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shop Mini App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>StealthWear Shop</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        /* 2. ИСПОЛЬЗУЕМ ЦВЕТА ТЕМЫ ТЕЛЕГРАМА */
-        body {
-            font-family: sans-serif;
-            background-color: var(--tg-theme-bg-color, #fff);
-            color: var(--tg-theme-text-color, #000);
+        /* --- ЦВЕТОВАЯ СХЕМА (Стиль VPN) --- */
+        :root {
+            --bg-color: #0b0f19; /* Глубокий темный фон */
+            --card-bg: #151b2b; /* Цвет карточек */
+            --accent-color: #00ffc2; /* Неоновый бирюзовый (как кнопка подключения) */
+            --accent-glow: rgba(0, 255, 194, 0.4);
+            --text-main: #ffffff;
+            --text-muted: #8b9eb7;
+            --border-color: rgba(255, 255, 255, 0.05);
+        }
+
+        /* --- БАЗОВЫЕ НАСТРОЙКИ --- */
+        * {
+            box-sizing: border-box;
             margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
             padding: 20px;
+            padding-bottom: 80px; /* Отступ для нижней кнопки ТГ */
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* --- ШАПКА И ОПИСАНИЕ --- */
+        header {
             text-align: center;
+            margin-bottom: 30px;
+            animation: fadeIn 1s ease-in-out;
         }
-        .container { display: flex; flex-direction: column; gap: 15px; }
+
+        .logo {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            background: linear-gradient(90deg, #ffffff, var(--accent-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(0, 255, 194, 0.1);
+            color: var(--accent-color);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            border: 1px solid rgba(0, 255, 194, 0.2);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--accent-color);
+            border-radius: 50%;
+            margin-right: 6px;
+            box-shadow: 0 0 8px var(--accent-color);
+        }
+
+        .description {
+            color: var(--text-muted);
+            font-size: 14px;
+            line-height: 1.5;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        /* --- СЕТКА ТОВАРОВ --- */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 15px;
+        }
+
         .card {
-            background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
             padding: 15px;
-            border-radius: 12px;
-            border: 1px solid #ccc;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+            overflow: hidden;
         }
-        button {
-            background-color: var(--tg-theme-button-color, #248bed);
-            color: var(--tg-theme-button-text-color, #fff);
-            border: none;
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .card:active {
+            transform: scale(0.97);
+        }
+
+        .product-icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .product-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .product-price {
+            color: var(--accent-color);
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .add-btn {
+            background-color: transparent;
+            color: var(--accent-color);
+            border: 1px solid var(--accent-color);
             padding: 10px;
-            border-radius: 8px;
             width: 100%;
+            border-radius: 10px;
+            font-size: 14px;
             font-weight: bold;
             cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .add-btn.added {
+            background-color: var(--accent-color);
+            color: #000;
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        /* Анимация появления */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Магазин в кармане</h2>
+
+    <header>
+        <div class="logo">StealthWear</div><br>
+        <div class="status-badge">
+            <div class="status-dot"></div>
+            Соединение защищено
+        </div>
+        <p class="description">Технологичная уличная одежда. Премиальные ткани, минималистичный дизайн и абсолютная свобода движений.</p>
+    </header>
+
+    <div class="grid">
         <div class="card">
-            <h3>Товар: Худи "AI Power"</h3>
-            <p>Цена: 3500 руб.</p>
-            <button onclick="sendData()">Добавить в заказ</button>
+            <span class="product-icon">🧥</span>
+            <div class="product-title">Худи "Cyber"</div>
+            <div class="product-price">4 500 ₽</div>
+            <button class="add-btn" onclick="toggleCart(this, 'Худи Cyber', 4500)">В корзину</button>
+        </div>
+
+        <div class="card">
+            <span class="product-icon">👟</span>
+            <div class="product-title">Сникеры "Void"</div>
+            <div class="product-price">6 200 ₽</div>
+            <button class="add-btn" onclick="toggleCart(this, 'Сникеры Void', 6200)">В корзину</button>
+        </div>
+
+        <div class="card">
+            <span class="product-icon">👕</span>
+            <div class="product-title">Футболка "0x"</div>
+            <div class="product-price">1 800 ₽</div>
+            <button class="add-btn" onclick="toggleCart(this, 'Футболка 0x', 1800)">В корзину</button>
+        </div>
+        
+        <div class="card">
+            <span class="product-icon">🎒</span>
+            <div class="product-title">Рюкзак "Node"</div>
+            <div class="product-price">3 900 ₽</div>
+            <button class="add-btn" onclick="toggleCart(this, 'Рюкзак Node', 3900)">В корзину</button>
         </div>
     </div>
 
     <script>
-        // Инициализация объекта WebApp
+        // Инициализация Telegram Web App
         const tg = window.Telegram.WebApp;
-        tg.expand(); // Развернуть на всё окно
+        tg.expand(); // Разворачиваем на весь экран
+        
+        // Красим шапку телеграма в наш темный VPN-цвет
+        tg.setHeaderColor('#0b0f19');
+        tg.setBackgroundColor('#0b0f19');
 
-        function sendData() {
-            const data = {
-                product: "Худи AI Power",
-                price: 3500
-            };
-            // Отправляем данные боту (работает только для KeyboardButton)
-            tg.sendData(JSON.stringify(data));
-            tg.close(); // Закрываем Mini App после действия
+        let cart = []; // Массив для корзины
+        let totalSum = 0; // Общая сумма
+
+        // Функция добавления/удаления из корзины
+        function toggleCart(btn, itemName, price) {
+            const itemIndex = cart.findIndex(i => i.name === itemName);
+
+            if (itemIndex > -1) {
+                // Если товар уже есть — удаляем
+                cart.splice(itemIndex, 1);
+                totalSum -= price;
+                btn.textContent = "В корзину";
+                btn.classList.remove("added");
+            } else {
+                // Если товара нет — добавляем
+                cart.push({ name: itemName, price: price });
+                totalSum += price;
+                btn.textContent = "Добавлено ✓";
+                btn.classList.add("added");
+                
+                // Легкая вибрация (Haptic Feedback), если поддерживается
+                tg.HapticFeedback.impactOccurred('light');
+            }
+
+            updateMainButton();
         }
+
+        // Обновление главной кнопки Telegram внизу экрана
+        function updateMainButton() {
+            if (cart.length > 0) {
+                tg.MainButton.text = `ОФОРМИТЬ ЗАКАЗ (${totalSum} ₽)`;
+                tg.MainButton.color = '#00ffc2'; // Наш VPN-акцент
+                tg.MainButton.textColor = '#000000'; // Черный текст на кнопке
+                tg.MainButton.show();
+            } else {
+                tg.MainButton.hide();
+            }
+        }
+
+        // Обработка нажатия на главную кнопку
+        tg.MainButton.onClick(() => {
+            // Формируем данные для отправки боту
+            const orderData = {
+                items: cart,
+                totalPrice: totalSum
+            };
+            
+            // Отправляем JSON боту и закрываем приложение
+            tg.sendData(JSON.stringify(orderData));
+        });
     </script>
 </body>
 </html>
