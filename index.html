@@ -1,203 +1,71 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>KODAMA</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        :root {
-            --bg-color: #0d110f; /* Глубокий хвойный черный */
-            --card-bg: #161d1a; /* Темно-зеленый антрацит */
-            --accent-color: #d4eadd; /* Мягкий мятный / цвет шалфея */
-            --text-main: #f5f5f5;
-            --text-muted: #83958d;
-            --shadow: 0 8px 24px rgba(0,0,0,0.4);
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            padding: 20px;
-            padding-bottom: 90px;
-            -webkit-font-smoothing: antialiased;
-        }
-
-        header {
-            text-align: center;
-            margin-bottom: 40px;
-            margin-top: 10px;
-        }
-
-        .logo {
-            font-size: 32px;
-            font-weight: 300;
-            letter-spacing: 6px;
-            text-transform: uppercase;
-            color: var(--text-main);
-            margin-bottom: 8px;
-        }
-
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            background: rgba(212, 234, 221, 0.05);
-            color: var(--text-muted);
-            padding: 5px 14px;
-            border-radius: 30px;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            border: 1px solid rgba(212, 234, 221, 0.1);
-        }
-
-        .description {
-            color: var(--text-muted);
-            font-size: 14px;
-            line-height: 1.6;
-            margin-top: 20px;
-            font-weight: 300;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-        }
-
-        .card {
-            background-color: var(--card-bg);
-            border-radius: 20px;
-            padding: 12px;
-            text-align: left;
-            transition: all 0.3s ease;
-            box-shadow: var(--shadow);
-            border: 1px solid rgba(255,255,255,0.02);
-        }
-
-        .product-img {
-            width: 100%;
-            aspect-ratio: 1/1;
-            background: #1c2521;
-            border-radius: 14px;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 32px;
-        }
-
-        .product-title {
-            font-size: 15px;
-            font-weight: 500;
-            margin-bottom: 4px;
-            padding-left: 4px;
-        }
-
-        .product-price {
-            color: var(--accent-color);
-            font-size: 14px;
-            margin-bottom: 12px;
-            padding-left: 4px;
-            opacity: 0.9;
-        }
-
-        .add-btn {
-            background-color: rgba(212, 234, 221, 0.08);
-            color: var(--accent-color);
-            border: none;
-            padding: 12px;
-            width: 100%;
-            border-radius: 12px;
-            font-size: 13px;
-            font-weight: 600;
-            transition: all 0.2s ease;
-        }
-
-        .add-btn.added {
-            background-color: var(--accent-color);
-            color: #0d110f;
-        }
-    </style>
-</head>
-<body>
-
-    <header>
-        <div class="logo">KODAMA</div>
-        <div class="status-badge">Spring '26 Collection</div>
-        <p class="description">Одежда как вторая кожа. Натуральные ткани и безупречный крой для тех, кто в гармонии с собой.</p>
-    </header>
-
-    <div class="grid">
-        <div class="card">
-            <div class="product-img">🌿</div>
-            <div class="product-title">Soft Shell Hoodie</div>
-            <div class="product-price">7 400 ₽</div>
-            <button class="add-btn" onclick="toggleCart(this, 'Soft Shell Hoodie', 7400)">В корзину</button>
-        </div>
-        <div class="card">
-            <div class="product-img">🌑</div>
-            <div class="product-title">Zen Pants</div>
-            <div class="product-price">5 900 ₽</div>
-            <button class="add-btn" onclick="toggleCart(this, 'Zen Pants', 5900)">В корзину</button>
-        </div>
-        <div class="card">
-            <div class="product-img">☁️</div>
-            <div class="product-title">Basic Tee</div>
-            <div class="product-price">2 800 ₽</div>
-            <button class="add-btn" onclick="toggleCart(this, 'Basic Tee', 2800)">В корзину</button>
-        </div>
-        <div class="card">
-            <div class="product-img">🌲</div>
-            <div class="product-title">Rain Coat</div>
-            <div class="product-price">12 500 ₽</div>
-            <button class="add-btn" onclick="toggleCart(this, 'Rain Coat', 12500)">В корзину</button>
-        </div>
+<div class="grid" id="product-grid">
     </div>
 
-    <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-        tg.setHeaderColor('#0d110f');
-        tg.setBackgroundColor('#0d110f');
+<script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
 
-        let cart = [];
-        let totalSum = 0;
+    // Замени на URL своего запущенного бота (например, через Ngrok)
+    const API_URL = "https://ngrok.com/docs/errors/err_ngrok_4018";
 
-        function toggleCart(btn, itemName, price) {
-            const index = cart.findIndex(i => i.name === itemName);
-            if (index > -1) {
-                cart.splice(index, 1);
-                totalSum -= price;
-                btn.textContent = "В корзину";
-                btn.classList.remove("added");
-            } else {
-                cart.push({name: itemName, price: price});
-                totalSum += price;
-                btn.textContent = "Добавлено";
-                btn.classList.add("added");
-                tg.HapticFeedback.impactOccurred('medium');
-            }
-            updateMainButton();
+    let cart = [];
+    let totalSum = 0;
+
+    // ФУНКЦИЯ ЗАГРУЗКИ ТОВАРОВ ИЗ БАЗЫ
+    async def loadProducts() {
+        const grid = document.getElementById('product-grid');
+        try {
+            const response = await fetch(API_URL);
+            const products = await response.json();
+
+            grid.innerHTML = ''; // Чистим сетку
+
+            products.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="product-img">🌿</div>
+                    <div class="product-title">${p.name}</div>
+                    <div class="product-price">${p.price} ₽</div>
+                    <button class="add-btn" onclick="toggleCart(this, '${p.name}', ${p.price})">В корзину</button>
+                `;
+                grid.appendChild(card);
+            });
+        } catch (e) {
+            grid.innerHTML = '<p style="color:red">Ошибка загрузки каталога</p>';
         }
+    }
 
-        function updateMainButton() {
-            if (cart.length > 0) {
-                tg.MainButton.text = `ПОДТВЕРДИТЬ ЗАКАЗ (${totalSum} ₽)`;
-                tg.MainButton.color = '#d4eadd';
-                tg.MainButton.textColor = '#0d110f';
-                tg.MainButton.show();
-            } else {
-                tg.MainButton.hide();
-            }
+    // Запускаем загрузку при открытии
+    loadProducts();
+
+    function toggleCart(btn, itemName, price) {
+        const index = cart.findIndex(i => i.name === itemName);
+        if (index > -1) {
+            cart.splice(index, 1);
+            totalSum -= price;
+            btn.textContent = "В корзину";
+            btn.classList.remove("added");
+        } else {
+            cart.push({name: itemName, price: price});
+            totalSum += price;
+            btn.textContent = "Добавлено";
+            btn.classList.add("added");
+            tg.HapticFeedback.impactOccurred('medium');
         }
+        updateMainButton();
+    }
 
-        tg.MainButton.onClick(() => {
-            tg.sendData(JSON.stringify({items: cart, totalPrice: totalSum}));
-        });
-    </script>
-</body>
-</html>
-</html>
+    function updateMainButton() {
+        if (cart.length > 0) {
+            tg.MainButton.text = `ПОДТВЕРДИТЬ ЗАКАЗ (${totalSum} ₽)`;
+            tg.MainButton.show();
+        } else {
+            tg.MainButton.hide();
+        }
+    }
+
+    tg.MainButton.onClick(() => {
+        tg.sendData(JSON.stringify({items: cart, totalPrice: totalSum}));
+    });
+</script>
