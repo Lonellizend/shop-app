@@ -1,71 +1,81 @@
-<div class="grid" id="product-grid">
-    </div>
-
-<script>
-    const tg = window.Telegram.WebApp;
-    tg.expand();
-
-    // Замени на URL своего запущенного бота (например, через Ngrok)
-    const API_URL = "https://ngrok.com/docs/errors/err_ngrok_4018";
-
-    let cart = [];
-    let totalSum = 0;
-
-    // ФУНКЦИЯ ЗАГРУЗКИ ТОВАРОВ ИЗ БАЗЫ
-    async def loadProducts() {
-        const grid = document.getElementById('product-grid');
-        try {
-            const response = await fetch(API_URL);
-            const products = await response.json();
-
-            grid.innerHTML = ''; // Чистим сетку
-
-            products.forEach(p => {
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.innerHTML = `
-                    <div class="product-img">🌿</div>
-                    <div class="product-title">${p.name}</div>
-                    <div class="product-price">${p.price} ₽</div>
-                    <button class="add-btn" onclick="toggleCart(this, '${p.name}', ${p.price})">В корзину</button>
-                `;
-                grid.appendChild(card);
-            });
-        } catch (e) {
-            grid.innerHTML = '<p style="color:red">Ошибка загрузки каталога</p>';
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KODAMA</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg-color: #0d110f;
+            --card-bg: #161d1a;
+            --accent-color: #d4eadd;
+            --text-main: #f5f5f5;
+            --text-muted: #83958d;
         }
-    }
+        body { background-color: var(--bg-color); color: var(--text-main); font-family: sans-serif; padding: 20px; text-align: center; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+        .card { background: var(--card-bg); padding: 15px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.05); }
+        .error-msg { color: #ff6b6b; background: rgba(255,0,0,0.1); padding: 10px; border-radius: 10px; display: none; margin-top: 20px; }
+        .loading { color: var(--accent-color); margin-top: 50px; }
+    </style>
+</head>
+<body>
 
-    // Запускаем загрузку при открытии
-    loadProducts();
+    <h2>KODAMA</h2>
+    <div id="loading-status" class="loading">Загрузка каталога...</div>
+    <div id="error-log" class="error-msg"></div>
+    
+    <div class="grid" id="product-grid"></div>
 
-    function toggleCart(btn, itemName, price) {
-        const index = cart.findIndex(i => i.name === itemName);
-        if (index > -1) {
-            cart.splice(index, 1);
-            totalSum -= price;
-            btn.textContent = "В корзину";
-            btn.classList.remove("added");
-        } else {
-            cart.push({name: itemName, price: price});
-            totalSum += price;
-            btn.textContent = "Добавлено";
-            btn.classList.add("added");
-            tg.HapticFeedback.impactOccurred('medium');
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        // ВАЖНО: Ссылка должна быть HTTPS (от Ngrok) и заканчиваться на /products
+        const API_URL = "https://ngrok.com/docs/errors/err_ngrok_4018";
+
+        async function loadProducts() {
+            const grid = document.getElementById('product-grid');
+            const status = document.getElementById('loading-status');
+            const errorLog = document.getElementById('error-log');
+
+            try {
+                // Добавляем заголовок, чтобы пропустить страницу-предупреждение Ngrok
+                const response = await fetch(API_URL, {
+                    headers: { 'ngrok-skip-browser-warning': 'true' }
+                });
+                
+                if (!response.ok) throw new Error(`Ошибка сервера: ${response.status}`);
+                
+                const products = await response.json();
+                status.style.display = 'none';
+
+                if (products.length === 0) {
+                    status.innerText = "В каталоге пока нет товаров.";
+                    status.style.display = 'block';
+                    return;
+                }
+
+                products.forEach(p => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `
+                        <div style="font-size:30px">🌿</div>
+                        <div style="font-weight:bold; margin: 10px 0;">${p.name}</div>
+                        <div style="color:var(--accent-color)">${p.price} ₽</div>
+                    `;
+                    grid.appendChild(card);
+                });
+            } catch (e) {
+                status.style.display = 'none';
+                errorLog.style.display = 'block';
+                errorLog.innerText = "Не удалось загрузить товары. Проверь, запущен ли бот и Ngrok. Ошибка: " + e.message;
+                console.error(e);
+            }
         }
-        updateMainButton();
-    }
 
-    function updateMainButton() {
-        if (cart.length > 0) {
-            tg.MainButton.text = `ПОДТВЕРДИТЬ ЗАКАЗ (${totalSum} ₽)`;
-            tg.MainButton.show();
-        } else {
-            tg.MainButton.hide();
-        }
-    }
-
-    tg.MainButton.onClick(() => {
-        tg.sendData(JSON.stringify({items: cart, totalPrice: totalSum}));
-    });
-</script>
+        loadProducts();
+    </script>
+</body>
+</html>
