@@ -6,133 +6,123 @@
     <title>KODAMA GOLD</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root {
-            --gold: #D4AF37;
-            --dark: #000000;
-        }
-        body {
-            background-color: var(--dark);
-            color: white;
-            font-family: 'Segoe UI', sans-serif;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-        }
-        #status-screen {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: black;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            text-align: center;
-            padding: 20px;
-        }
-        .loader {
-            border: 3px solid #1a1a1a;
-            border-top: 3px solid var(--gold);
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        :root { --gold: #D4AF37; --dark: #050505; --card-bg: #111111; }
+        * { box-sizing: border-box; font-family: 'Helvetica Neue', Arial, sans-serif; }
+        body { background-color: var(--dark); color: white; margin: 0; padding-bottom: 80px; }
         
-        #catalog {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            padding: 20px;
-            width: 100%;
-            box-sizing: border-box;
+        #loader-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--dark); display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 9999;
         }
+        .spinner {
+            border: 3px solid #222; border-top: 3px solid var(--gold);
+            border-radius: 50%; width: 40px; height: 40px;
+            animation: spin 1s linear infinite; margin-bottom: 15px;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .header { text-align: center; padding: 20px 10px; border-bottom: 1px solid #333; }
+        .header h1 { color: var(--gold); margin: 0; letter-spacing: 4px; font-size: 22px; }
+        
+        /* Сетка товаров */
+        #catalog { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 20px; }
         .product-card {
-            border: 1px solid var(--gold);
-            padding: 15px;
-            text-align: center;
-            background: #0a0a0a;
+            background: var(--card-bg); border: 1px solid #222;
+            border-radius: 12px; padding: 15px; text-align: center;
         }
-        .price { color: var(--gold); font-weight: bold; }
+        .product-card h3 { font-size: 14px; margin: 0 0 10px 0; color: #eee; font-weight: 400; }
+        .price { color: var(--gold); font-weight: 600; font-size: 16px; margin-bottom: 15px; }
+        
+        .buy-btn {
+            background: transparent; color: var(--gold);
+            border: 1px solid var(--gold); border-radius: 6px;
+            padding: 10px 0; width: 100%; font-size: 14px; cursor: pointer;
+        }
     </style>
 </head>
 <body>
 
-    <div id="status-screen">
-        <div class="loader"></div>
-        <div id="status-text">Инициализация KODAMA GOLD...</div>
+    <div id="loader-screen">
+        <div class="spinner"></div>
+        <div id="loader-text" style="color: #666; font-size: 12px;">KODAMA GOLD</div>
     </div>
 
-    <h1 style="color: var(--gold); margin-top: 20px;">KODAMA CATALOG</h1>
+    <div class="header"><h1>KODAMA</h1></div>
     <div id="catalog"></div>
 
     <script>
-        // 1. ВСТАВЬ СВОЮ ССЫЛКУ ТУТ (БЕЗ /products В КОНЦЕ)
-        const API_BASE_URL = "https://latinas-industry-theatre-selection.trycloudflare.com";
+        // ВСТАВЬ СВОЮ ССЫЛКУ CLOUDFLARE
+        const API_BASE_URL = "https://latinas-industry-theatre-selection.trycloudflare.com"; 
 
-        const statusScreen = document.getElementById('status-screen');
-        const statusText = document.getElementById('status-text');
-        const catalog = document.getElementById('catalog');
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.MainButton.color = '#D4AF37';
+        tg.MainButton.textColor = '#000000';
+
+        let cart = []; // Теперь элементы будут вида {id, name, price, qty}
+        let totalPrice = 0;
 
         async function loadProducts() {
             try {
-                console.log("Запрос к:", `${API_BASE_URL}/products`);
+                const response = await fetch(`${API_BASE_URL}/products`);
+                if (!response.ok) throw new Error('Ошибка сервера');
                 
-                // Делаем запрос к боту
-                const response = await fetch(`${API_BASE_URL}/products`, {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
+                const products = await response.json();
+                const catalog = document.getElementById('catalog');
+                
+                products.forEach(p => {
+                    const card = document.createElement('div');
+                    card.className = 'product-card';
+                    card.innerHTML = `
+                        <h3>${p.name}</h3>
+                        <div class="price">${p.price} ₽</div>
+                        <button class="buy-btn" id="btn-${p.id}" onclick="addToCart(${p.id}, '${p.name}', ${p.price})">ДОБАВИТЬ</button>
+                    `;
+                    catalog.appendChild(card);
                 });
 
-                if (!response.ok) throw new Error(`Ошибка сервера: ${response.status}`);
-
-                const products = await response.json();
-                console.log("Товары получены:", products);
-
-                if (products.length === 0) {
-                    catalog.innerHTML = "<p>Каталог пуст</p>";
-                } else {
-                    products.forEach(p => {
-                        const card = document.createElement('div');
-                        card.className = 'product-card';
-                        card.innerHTML = `
-                            <h3>${p.name}</h3>
-                            <p class="price">${p.price} ₽</p>
-                            <button style="background: var(--gold); border: none; padding: 5px 10px;">Купить</button>
-                        `;
-                        catalog.appendChild(card);
-                    });
-                }
-
-                // Скрываем экран загрузки
-                statusScreen.style.display = 'none';
-
-            } catch (error) {
-                console.error("Ошибка:", error);
-                // ВЫВОДИМ РЕАЛЬНУЮ ОШИБКУ
-                statusText.innerHTML = `
-                    <span style="color: #ff4444;">ОШИБКА СВЯЗИ</span><br>
-                    <small style="font-size: 12px; color: gray;">${error.message}</small><br><br>
-                    <button onclick="location.reload()" style="background: var(--gold); border: none; padding: 10px;">Повторить</button>
-                `;
-                document.querySelector('.loader').style.display = 'none';
+                document.getElementById('loader-screen').style.display = 'none';
+            } catch (err) {
+                document.getElementById('loader-text').innerHTML = `<span style="color:#ff4444">ОШИБКА СВЯЗИ</span><br>${err.message}`;
+                document.querySelector('.spinner').style.display = 'none';
             }
         }
 
-        // Запуск
-        window.onload = loadProducts;
-        
-        // Сообщаем Telegram, что приложение готово
-        if (window.Telegram && window.Telegram.WebApp) {
-            window.Telegram.WebApp.ready();
-            window.Telegram.WebApp.expand();
+        function addToCart(id, name, price) {
+            let item = cart.find(i => i.id === id);
+            if (item) {
+                item.qty += 1;
+            } else {
+                cart.push({ id, name, price, qty: 1 });
+            }
+            
+            totalPrice += price;
+            
+            const btn = document.getElementById(`btn-${id}`);
+            btn.style.background = 'var(--gold)';
+            btn.style.color = 'black';
+            btn.innerText = `В КОРЗИНЕ (${cart.find(i => i.id === id).qty})`;
+            
+            tg.HapticFeedback.impactOccurred('light');
+            updateMainButton();
         }
+
+        function updateMainButton() {
+            if (totalPrice > 0) {
+                tg.MainButton.setText(`ОФОРМИТЬ ЗАКАЗ (${totalPrice} ₽)`);
+                tg.MainButton.show();
+            } else {
+                tg.MainButton.hide();
+            }
+        }
+
+        Telegram.WebApp.onEvent('mainButtonClicked', function() {
+            const orderData = JSON.stringify({ items: cart, total: totalPrice });
+            tg.sendData(orderData); 
+        });
+
+        window.onload = loadProducts;
     </script>
 </body>
 </html>
