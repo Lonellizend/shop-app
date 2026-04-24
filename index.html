@@ -3,79 +3,427 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>KODAMA</title>
+    <title>KODAMA GOLD</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+        /* --- ЦВЕТОВАЯ ПАЛИТРА KODAMA GOLD --- */
         :root {
-            --bg-color: #0d110f;
-            --card-bg: #161d1a;
-            --accent-color: #d4eadd;
-            --text-main: #f5f5f5;
-            --text-muted: #83958d;
+            --bg-dark: #000000;        /* Чистый черный фон */
+            --bg-card: #111111;        /* Чуть светлее для карточек */
+            --gold-main: #D4AF37;      /* Классическое золото */
+            --gold-light: #F9E79F;     /* Светлое золото для акцентов */
+            --gold-dark: #996515;      /* Темное золото для теней */
+            --text-main: #FFFFFF;
+            --text-muted: #AAAAAA;
+            --border-gold: 1px solid rgba(212, 175, 55, 0.3);
+            --shadow-gold: 0 4px 15px rgba(212, 175, 55, 0.1);
         }
-        body { background-color: var(--bg-color); color: var(--text-main); font-family: sans-serif; padding: 20px; text-align: center; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
-        .card { background: var(--card-bg); padding: 15px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.05); }
-        .error-msg { color: #ff6b6b; background: rgba(255,0,0,0.1); padding: 10px; border-radius: 10px; display: none; margin-top: 20px; }
-        .loading { color: var(--accent-color); margin-top: 50px; }
+
+        /* --- БАЗОВЫЕ НАСТРОЙКИ --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; -webkit-tap-highlight-color: transparent; }
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            overflow-x: hidden;
+            padding-bottom: 70px; /* Отступ для навигации */
+        }
+
+        /* --- ОБЩИЕ ЭЛЕМЕНТЫ --- */
+        h1, h2 { font-weight: 700; letter-spacing: 1px; color: var(--gold-light); }
+        .gold-text { color: var(--gold-main); }
+        .gold-btn {
+            background: linear-gradient(135deg, var(--gold-dark), var(--gold-main));
+            color: #000; border: none; padding: 12px; border-radius: 8px;
+            font-weight: 700; cursor: pointer; transition: all 0.3s;
+            box-shadow: var(--shadow-gold); width: 100%;
+        }
+        .gold-btn:active { transform: scale(0.97); filter: brightness(1.1); }
+        
+        /* Экран загрузки и ошибок */
+        #status-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-dark); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .spinner { width: 40px; height: 40px; border: 4px solid var(--bg-card); border-top: 4px solid var(--gold-main); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* --- НИЖНЯЯ НАВИГАЦИЯ (WB СТИЛЬ) --- */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 65px;
+            background-color: rgba(17, 17, 17, 0.95);
+            border-top: var(--border-gold);
+            display: flex; justify-content: space-around; align-items: center;
+            z-index: 100; backdrop-filter: blur(10px);
+        }
+        .nav-item { text-align: center; color: var(--text-muted); text-decoration: none; font-size: 11px; flex: 1; transition: 0.3s; padding: 10px 0; }
+        .nav-item i { font-size: 22px; display: block; margin-bottom: 4px; }
+        .nav-item.active { color: var(--gold-main); font-weight: 600; }
+
+        /* --- СЕКЦИИ --- */
+        .page { display: none; padding: 15px; animation: fadeIn 0.4s; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Шапка разделов */
+        .page-header { margin-bottom: 20px; text-align: center; padding-top: 10px; }
+
+        /* --- ЭКРАН 1: ГЛАВНАЯ (Выбор Каталог/Образ) --- */
+        .hero-banner {
+            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.8)), url('https://w.forfun.com/fetch/51/51296ec519c9e8a719d38101a115e2f7.jpeg') center/cover;
+            height: 180px; border-radius: 15px; display: flex; align-items: center; justify-content: center;
+            border: var(--border-gold); margin-bottom: 20px; text-transform: uppercase; letter-spacing: 3px;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
+        }
+        .choice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .choice-card {
+            background: var(--bg-card); border: var(--border-gold); border-radius: 12px;
+            padding: 30px 15px; text-align: center; cursor: pointer; transition: 0.3s;
+        }
+        .choice-card i { font-size: 40px; color: var(--gold-main); margin-bottom: 15px; display: block; }
+        .choice-card:active { border-color: var(--gold-light); background: #1a1a1a; }
+
+        /* --- ЭКРАН 2: КАТАЛОГ (Сетка товаров WB СТИЛЬ) --- */
+        .prod-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .prod-card {
+            background: var(--bg-card); border-radius: 12px; border: 1px solid rgba(255,255,255,0.03);
+            overflow: hidden; display: flex; flex-direction: column; transition: 0.3s; position: relative;
+        }
+        .prod-card:active { transform: scale(0.98); }
+        .prod-img-placeholder {
+            width: 100%; aspect-ratio: 3/4; background: linear-gradient(135deg, #1a1a1a, #000);
+            display: flex; align-items: center; justify-content: center; color: var(--gold-dark); font-size: 40px;
+        }
+        .prod-info { padding: 10px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
+        .prod-price { font-size: 16px; font-weight: 700; color: var(--gold-light); margin-bottom: 4px; }
+        .prod-name { font-size: 13px; color: var(--text-main); margin-bottom: 8px; line-height: 1.3; height: 34px; overflow: hidden; }
+        
+        .prod-id-badge { position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.6); color: var(--gold-main); padding: 2px 6px; border-radius: 4px; font-size: 10px; border: var(--border-gold); }
+
+        /* --- ЭКРАН 3: КОРЗИНА --- */
+        .cart-item {
+            background: var(--bg-card); border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+            padding: 15px; display: flex; align-items: center; gap: 15px;
+        }
+        .cart-img-min { width: 50px; height: 50px; background: #1a1a1a; border-radius: 8px; display: flex; align-items: center; justify-content: center; border: var(--border-gold); }
+        .cart-info { flex-grow: 1; }
+        .cart-sum-bar {
+            position: fixed; bottom: 65px; left: 0; width: 100%; background: var(--bg-card);
+            border-top: var(--border-gold); padding: 15px; display: flex; justify-content: space-between; align-items: center;
+        }
+
+        /* --- ЭКРАН 4: ПРОФИЛЬ --- */
+        .prof-header {
+            background: linear-gradient(180deg, var(--bg-card), var(--bg-dark));
+            border-radius: 15px; padding: 20px; border: var(--border-gold); text-align: center; margin-bottom: 20px;
+        }
+        .prof-avatar { width: 80px; height: 80px; background: var(--gold-dark); border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 40px; color: #000; border: 3px solid var(--gold-main); }
+        .prof-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: var(--bg-card); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.03); text-align: center; }
+        .stat-val { font-size: 20px; font-weight: 700; color: var(--gold-main); margin-bottom: 5px; }
+        .stat-lbl { font-size: 12px; color: var(--text-muted); text-transform: uppercase; }
+
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
 
-    <h2>KODAMA</h2>
-    <div id="loading-status" class="loading">Загрузка каталога...</div>
-    <div id="error-log" class="error-msg"></div>
-    
-    <div class="grid" id="product-grid"></div>
+    <div id="status-screen">
+        <div class="spinner"></div>
+        <p style="margin-top:20px; color:var(--gold-main); letter-spacing:2px;">KODAMA GOLD</p>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="#" class="nav-item active" onclick="openPage('page-home', this)">
+            <i class="fas fa-home"></i>Главная
+        </a>
+        <a href="#" class="nav-item" onclick="openPage('page-catalog', this)">
+            <i class="fas fa-search"></i>Каталог
+        </a>
+        <a href="#" class="nav-item" onclick="openPage('page-cart', this)">
+            <i class="fas fa-shopping-bag"></i>Корзина <span id="cart-count-badge" style="color:var(--gold-main); font-weight:bold;"></span>
+        </a>
+        <a href="#" class="nav-item" onclick="openPage('page-profile', this)">
+            <i class="fas fa-user-crown"></i>Профиль
+        </a>
+    </nav>
+
+    <div id="page-home" class="page active">
+        <div class="page-header"><h2>ДОБРО ПОЖАЛОВАТЬ</h2></div>
+        <div class="hero-banner"><h1>KODAMA Club</h1></div>
+        <div class="choice-grid">
+            <div class="choice-card" onclick="loadCatalog('catalog')">
+                <i class="fas fa-tshirt"></i>
+                <h3>КАТАЛОГ</h3>
+                <p style="color:var(--text-muted); font-size:12px; margin-top:5px;">Базовая коллекция</p>
+            </div>
+            <div class="choice-card" onclick="loadCatalog('look')">
+                <i class="fas fa-user-tie"></i>
+                <h3>ОБРАЗЫ</h3>
+                <p style="color:var(--text-muted); font-size:12px; margin-top:5px;">Готовые решения</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="page-catalog" class="page">
+        <div class="page-header"><h2 id="catalog-title">КОЛЛЕКЦИЯ</h2></div>
+        <div class="prod-grid" id="product-grid">
+            </div>
+        <div id="catalog-empty" style="text-align:center; color:var(--text-muted); margin-top:50px; display:none;">
+            <i class="fas fa-box-open" style="font-size:40px; margin-bottom:15px;">
+
+            </i>
+            <p>В этой категории пока нет золотых артефактов.</p>
+        </div>
+    </div>
+
+    <div id="page-cart" class="page">
+        <div class="page-header"><h2>ВАШ ЗАКАЗ</h2></div>
+        <div id="cart-items-container">
+            </div>
+        <div id="cart-empty" style="text-align:center; color:var(--text-muted); margin-top:50px;">
+            <i class="fas fa-shopping-bag" style="font-size:40px; margin-bottom:15px;">
+
+            </i>
+            <p>Корзина пуста. Время добавить стиля.</p>
+        </div>
+        
+        <div class="cart-sum-bar" id="cart-sum-bar" style="display:none;">
+            <div>
+                <div style="font-size:12px; color:var(--text-muted);">Итого:</div>
+                <div style="font-size:20px; font-weight:700; color:var(--gold-light);" id="cart-total-price">0 ₽</div>
+            </div>
+            <button class="gold-btn" style="width: auto; padding: 12px 25px;" onclick="checkout()">ОФОРМИТЬ</button>
+        </div>
+    </div>
+
+    <div id="page-profile" class="page">
+        <div class="prof-header">
+            <div class="prof-avatar"><i class="fas fa-user-crown"></i></div>
+            <h3 id="prof-name">Загрузка...</h3>
+            <p style="color:var(--gold-main); font-size:12px; margin-top:5px;">Premium Member</p>
+        </div>
+        
+        <div class="prof-stats">
+            <div class="stat-card">
+                <div class="stat-val" id="prof-balance">0 ₽</div>
+                <div class="stat-lbl">Баланс</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-val" id="prof-id">...</div>
+                <div class="stat-lbl">Твой ID</div>
+            </div>
+        </div>
+        
+        <button class="gold-btn" onclick="tg.close()">ЗАКРЫТЬ ПРИЛОЖЕНИЕ</button>
+        <p style="text-align:center; color:var(--text-muted); font-size:11px; margin-top:30px;">KODAMA GOLD © 2024. All rights reserved.</p>
+    </div>
 
     <script>
+        // Инициализация Telegram
         const tg = window.Telegram.WebApp;
         tg.expand();
+        tg.setHeaderColor('#000000');
+        tg.setBackgroundColor('#000000');
 
-        // ВАЖНО: Ссылка должна быть HTTPS (от Ngrok) и заканчиваться на /products
-        const API_URL = "https://ngrok.com/docs/errors/err_ngrok_4018";
+        // --- КОНФИГУРАЦИЯ API (ЗАМЕНИ НА СВОЙ NGROK!) ---
+        const API_BASE_URL = "https://ngrok.com/docs/errors/err_ngrok_4018";
 
-        async function loadProducts() {
+        // Получаем ID пользователя ТГ
+        const user = tg.initDataUnsafe.user;
+        const USER_ID = user ? user.id : 12345; // 12345 для теста в браузере
+
+        // Состояние приложения
+        let cart = [];
+        let currentPage = 'page-home';
+
+        // --- ЛОГИКА НАВИГАЦИИ ---
+        function openPage(pageId, navEl) {
+            // Скрываем все страницы
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            // Деактивируем все пункты меню
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            
+            // Показываем нужную
+            document.getElementById(pageId).classList.add('active');
+            if(navEl) navEl.classList.add('active');
+            
+            currentPage = pageId;
+            tg.HapticFeedback.impactOccurred('light');
+
+            // Спец. логика для корзины (скрыть/показать бар суммы)
+            const sumBar = document.getElementById('cart-sum-bar');
+            if (pageId === 'page-cart' && cart.length > 0) {
+                sumBar.style.display = 'flex';
+                // Корзина WB стиль не использует MainButton, используем свой gold-btn
+                tg.MainButton.hide(); 
+            } else {
+                sumBar.style.display = 'none';
+            }
+        }
+
+        // --- ЛОГИКА ЗАГРУЗКИ ТОВАРОВ ИЗ БД ---
+        async function loadCatalog(category = null) {
+            // Переключаем на страницу каталога
+            openPage('page-catalog', document.querySelectorAll('.nav-item')[1]);
+            
             const grid = document.getElementById('product-grid');
-            const status = document.getElementById('loading-status');
-            const errorLog = document.getElementById('error-log');
+            const titleEl = document.getElementById('catalog-title');
+            const emptyEl = document.getElementById('catalog-empty');
+            
+            // Ставим заголовок
+            titleEl.innerText = category === 'look' ? 'ГОТОВЫЕ ОБРАЗЫ' : 'КАТАЛОГ';
+            grid.innerHTML = ''; // Чистим
+            emptyEl.style.display = 'none';
+
+            let url = `${API_BASE_URL}/products`;
+            if (category) url += `?category=${category}`;
 
             try {
-                // Добавляем заголовок, чтобы пропустить страницу-предупреждение Ngrok
-                const response = await fetch(API_URL, {
-                    headers: { 'ngrok-skip-browser-warning': 'true' }
-                });
-                
-                if (!response.ok) throw new Error(`Ошибка сервера: ${response.status}`);
-                
+                // Добавляем заголовок Ngrok для пропуска варнинга
+                const response = await fetch(url, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+                if (!response.ok) throw new Error('Ошибка сети');
                 const products = await response.json();
-                status.style.display = 'none';
 
                 if (products.length === 0) {
-                    status.innerText = "В каталоге пока нет товаров.";
-                    status.style.display = 'block';
+                    emptyEl.style.display = 'block';
                     return;
                 }
 
                 products.forEach(p => {
                     const card = document.createElement('div');
-                    card.className = 'card';
+                    card.className = 'prod-card';
                     card.innerHTML = `
-                        <div style="font-size:30px">🌿</div>
-                        <div style="font-weight:bold; margin: 10px 0;">${p.name}</div>
-                        <div style="color:var(--accent-color)">${p.price} ₽</div>
+                        <div class="prod-id-badge">ID: ${p.id}</div>
+                        <div class="prod-img-placeholder"><i class="fas fa-crown"></i></div>
+                        <div class="prod-info">
+                            <div>
+                                <div class="prod-price">${p.price.toLocaleString()} ₽</div>
+                                <div class="prod-name">${p.name}</div>
+                            </div>
+                            <button class="gold-btn" style="font-size:12px; padding:8px;" onclick="addToCart(${p.id}, '${p.name}', ${p.price})">В КОРЗИНУ</button>
+                        </div>
                     `;
                     grid.appendChild(card);
                 });
             } catch (e) {
-                status.style.display = 'none';
-                errorLog.style.display = 'block';
-                errorLog.innerText = "Не удалось загрузить товары. Проверь, запущен ли бот и Ngrok. Ошибка: " + e.message;
+                grid.innerHTML = `<p style="color:red; text-align:center; grid-column: 1/3;">Ошибка загрузки.<br>Проверь Ngrok.</p>`;
                 console.error(e);
             }
         }
 
-        loadProducts();
+        // --- ЛОГИКА КОРЗИНЫ ---
+        function addToCart(id, name, price) {
+            cart.push({id, name, price});
+            updateCartUI();
+            tg.HapticFeedback.notificationOccurred('success');
+            // Telegram 'added' toast
+            tg.showScanQrPopup({text: "Добавлено в корзину KODAMA"}); 
+            setTimeout(()=>tg.closeScanQrPopup(), 1000);
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            updateCartUI();
+            renderCart(); // Перерисовать список
+            tg.HapticFeedback.impactOccurred('medium');
+        }
+
+        function updateCartUI() {
+            // Обновляем бадж на иконке корзины
+            const badge = document.getElementById('cart-count-badge');
+            badge.innerText = cart.length > 0 ? `(${cart.length})` : '';
+            
+            // Считаем сумму
+            const total = cart.reduce((sum, item) => sum + item.price, 0);
+            document.getElementById('cart-total-price').innerText = `${total.toLocaleString()} ₽`;
+
+            // Управляем баром суммы
+            const sumBar = document.getElementById('cart-sum-bar');
+            if (currentPage === 'page-cart' && cart.length > 0) {
+                sumBar.style.display = 'flex';
+            } else {
+                sumBar.style.display = 'none';
+            }
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cart-items-container');
+            const emptyEl = document.getElementById('cart-empty');
+            container.innerHTML = '';
+
+            if (cart.length === 0) {
+                emptyEl.style.display = 'block';
+                return;
+            }
+
+            emptyEl.style.display = 'none';
+            cart.forEach((item, index) => {
+                const el = document.createElement('div');
+                el.className = 'cart-item';
+                el.innerHTML = `
+                    <div class="cart-img-min"><i class="fas fa-crown" style="color:var(--gold-dark)"></i></div>
+                    <div class="cart-info">
+                        <div style="font-weight:600;">${item.name}</div>
+                        <div style="color:var(--gold-main); font-size:14px;">${item.price.toLocaleString()} ₽</div>
+                    </div>
+                    <i class="fas fa-trash-alt" style="color:#ff6b6b; cursor:pointer;" onclick="removeFromCart(${index})"></i>
+                `;
+                container.appendChild(el);
+            });
+        }
+
+        // Оформление заказа (пересылает боту)
+        function checkout() {
+            if (cart.length === 0) return;
+            const total = cart.reduce((sum, item) => sum + item.price, 0);
+            
+            const dataToBot = {
+                items: cart,
+                totalPrice: total
+            };
+            
+            tg.sendData(JSON.stringify(dataToBot)); // Отправляем и закрываем TMA
+        }
+
+        // --- ЛОГИКА ПРОФИЛЯ (ЗАГРУЗКА ИЗ БД) ---
+        async function loadProfile() {
+            const url = `${API_BASE_URL}/user?user_id=${USER_ID}`;
+            try {
+                const response = await fetch(url, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+                if (!response.ok) throw new Error('Ошибка');
+                const userData = await response.json();
+
+                document.getElementById('prof-name').innerText = userData.username ? `@${userData.username}` : `КЛИЕНТ ${USER_ID}`;
+                document.getElementById('prof-balance').innerText = `${userData.balance.toLocaleString()} ₽`;
+                document.getElementById('prof-id').innerText = userData.id;
+                
+            } catch (e) {
+                document.getElementById('prof-name').innerText = `Ошибка`;
+                console.error(e);
+            }
+        }
+
+        // --- СТАРТ ПРИЛОЖЕНИЯ ---
+        async function initApp() {
+            // Проверяем соединение с API
+            try {
+                await fetch(`${API_BASE_URL}/products`, { method: 'HEAD', headers: { 'ngrok-skip-browser-warning': 'true' } });
+                
+                // Загружаем профиль
+                await loadProfile();
+                // Рендерим пустую корзину
+                renderCart();
+                
+                // Скрываем экран загрузки
+                document.getElementById('status-screen').style.display = 'none';
+            } catch (e) {
+                document.getElementById('status-screen').innerHTML = `<p style="color:red; text-align:center; padding:20px;">ОШИБКА ПОДКЛЮЧЕНИЯ.<br>Проверь Ngrok сервера бота!</p>`;
+            }
+        }
+
+        initApp();
+
+        // Вешаем событие на открытие страницы корзины для рендера
+        document.querySelectorAll('.nav-item')[2].addEventListener('click', renderCart);
+
     </script>
 </body>
 </html>
