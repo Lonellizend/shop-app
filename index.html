@@ -25,11 +25,11 @@
         .header { text-align: center; padding: 20px 10px; border-bottom: 1px solid #333; }
         .header h1 { color: var(--gold); margin: 0; letter-spacing: 4px; font-size: 22px; }
         
-        /* Сетка товаров */
         #catalog { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 20px; }
         .product-card {
             background: var(--card-bg); border: 1px solid #222;
             border-radius: 12px; padding: 15px; text-align: center;
+            display: flex; flex-direction: column; justify-content: space-between;
         }
         .product-card h3 { font-size: 14px; margin: 0 0 10px 0; color: #eee; font-weight: 400; }
         .price { color: var(--gold); font-weight: 600; font-size: 16px; margin-bottom: 15px; }
@@ -38,6 +38,7 @@
             background: transparent; color: var(--gold);
             border: 1px solid var(--gold); border-radius: 6px;
             padding: 10px 0; width: 100%; font-size: 14px; cursor: pointer;
+            transition: 0.2s;
         }
     </style>
 </head>
@@ -48,30 +49,45 @@
         <div id="loader-text" style="color: #666; font-size: 12px;">KODAMA GOLD</div>
     </div>
 
-    <div class="header"><h1>KODAMA</h1></div>
+    <div class="header"><h1 id="page-title">KODAMA</h1></div>
     <div id="catalog"></div>
 
     <script>
-        // ВСТАВЬ СВОЮ ССЫЛКУ CLOUDFLARE
-        const API_BASE_URL = 'https://exclusive-can-geological-pool.trycloudflare.com/products'; 
+        // ИСПРАВЛЕНО: Убрали /products из конца базовой ссылки
+        const API_BASE_URL = 'https://exclusive-can-geological-pool.trycloudflare.com'; 
 
         const tg = window.Telegram.WebApp;
         tg.expand();
         tg.MainButton.color = '#D4AF37';
         tg.MainButton.textColor = '#000000';
 
-        let cart = []; // Теперь элементы будут вида {id, name, price, qty}
+        // Определяем категорию из URL (?cat=catalog или ?cat=look)
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentCat = urlParams.get('cat') || 'catalog';
+
+        // Меняем заголовок в зависимости от категории
+        document.getElementById('page-title').innerText = currentCat === 'look' ? 'ОБРАЗЫ' : 'КАТАЛОГ';
+
+        let cart = [];
         let totalPrice = 0;
 
         async function loadProducts() {
             try {
+                // ИСПРАВЛЕНО: Теперь запрос идет по правильному адресу
                 const response = await fetch(`${API_BASE_URL}/products`);
                 if (!response.ok) throw new Error('Ошибка сервера');
                 
-                const products = await response.json();
+                const allProducts = await response.json();
                 const catalog = document.getElementById('catalog');
                 
-                products.forEach(p => {
+                // Фильтруем товары по категории
+                const filteredProducts = allProducts.filter(p => p.category === currentCat);
+
+                if (filteredProducts.length === 0) {
+                    catalog.innerHTML = '<div style="grid-column: 1/3; text-align:center; color:#666; margin-top:20px;">В этом разделе пока нет товаров</div>';
+                }
+
+                filteredProducts.forEach(p => {
                     const card = document.createElement('div');
                     card.className = 'product-card';
                     card.innerHTML = `
@@ -86,6 +102,7 @@
             } catch (err) {
                 document.getElementById('loader-text').innerHTML = `<span style="color:#ff4444">ОШИБКА СВЯЗИ</span><br>${err.message}`;
                 document.querySelector('.spinner').style.display = 'none';
+                console.error(err);
             }
         }
 
@@ -117,9 +134,9 @@
             }
         }
 
-        Telegram.WebApp.onEvent('mainButtonClicked', function() {
+        tg.onEvent('mainButtonClicked', function() {
             const orderData = JSON.stringify({ items: cart, total: totalPrice });
-            tg.sendData(orderData); 
+            tg.sendData(orderData); // Данные улетят в бота
         });
 
         window.onload = loadProducts;
