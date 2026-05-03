@@ -6,92 +6,61 @@
     <title>KODAMA GOLD PREMIUM</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root {
-            --gold: #D4AF37;
-            --bg: #0f0f0f;
-            --card-bg: #1a1a1a;
-            --text-main: #ffffff;
-            --text-gray: #888888;
-            --tab-bg: rgba(20, 20, 20, 0.95);
-        }
-
+        :root { --gold: #D4AF37; --bg: #0f0f0f; --card-bg: #1a1a1a; --text-main: #ffffff; --text-gray: #888888; --tab-bg: rgba(20, 20, 20, 0.95); }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { 
-            background: var(--bg); color: var(--text-main); 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            margin: 0; padding: 0; overflow-x: hidden;
-        }
+        body { background: var(--bg); color: var(--text-main); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; overflow-x: hidden; padding-bottom: 80px; }
 
-        /* Навигация сверху (Категории) */
-        .top-nav {
-            position: sticky; top: 0; background: var(--bg); z-index: 100;
-            padding: 15px; display: flex; gap: 10px; border-bottom: 1px solid #222;
-        }
-        .nav-chip {
-            padding: 8px 16px; border-radius: 20px; background: #222;
-            color: var(--text-gray); font-size: 14px; border: none; transition: 0.3s;
-        }
+        /* Навигация */
+        .top-nav { position: sticky; top: 0; background: var(--bg); z-index: 100; padding: 15px; display: flex; gap: 10px; border-bottom: 1px solid #222; overflow-x: auto;}
+        .nav-chip { padding: 8px 16px; border-radius: 20px; background: #222; color: var(--text-gray); font-size: 14px; border: none; white-space: nowrap; }
         .nav-chip.active { background: var(--gold); color: black; font-weight: 600; }
 
-        /* Контентные секции */
         .page { display: none; padding: 15px; animation: fadeIn 0.3s ease; }
         .page.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Сетка товаров */
+        /* Карточки */
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-
-        /* Карточка товара (стиль маркетплейса) */
-        .product-card {
-            background: var(--card-bg); border-radius: 12px; overflow: hidden;
-            display: flex; flex-direction: column; position: relative;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-        .product-img {
-            width: 100%; aspect-ratio: 3/4; object-fit: cover;
-            background: #252525; /* Заглушка, пока нет фото */
-        }
+        .product-card { background: var(--card-bg); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; position: relative; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .product-img { width: 100%; aspect-ratio: 3/4; object-fit: cover; background: #252525; }
         .product-info { padding: 10px; flex-grow: 1; display: flex; flex-direction: column; }
         .product-price { font-size: 18px; font-weight: 800; color: var(--gold); margin-bottom: 4px; }
         .product-name { font-size: 13px; color: #ccc; margin-bottom: 10px; line-height: 1.2; height: 32px; overflow: hidden; }
         
-        .add-to-cart {
-            background: var(--gold); color: black; border: none; padding: 10px;
-            border-radius: 8px; font-weight: bold; font-size: 12px; width: 100%;
-        }
+        button { cursor: pointer; transition: 0.2s; }
+        button:active { transform: scale(0.95); opacity: 0.8; }
+        .add-to-cart { background: var(--gold); color: black; border: none; padding: 10px; border-radius: 8px; font-weight: bold; font-size: 12px; width: 100%; }
+        
+        /* Избранное (Сердечко) */
+        .fav-btn { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); border: none; border-radius: 50%; color: white; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        .fav-btn.active { color: #ff4444; }
 
-        /* Таб-бар (нижние кнопки) */
-        .tab-bar {
-            position: fixed; bottom: 0; width: 100%; height: 70px;
-            background: var(--tab-bg); backdrop-filter: blur(15px);
-            display: flex; justify-content: space-around; align-items: center;
-            border-top: 1px solid #333; padding-bottom: env(safe-area-inset-bottom);
-        }
-        .tab-item {
-            display: flex; flex-direction: column; align-items: center;
-            color: var(--text-gray); text-decoration: none; font-size: 10px; gap: 4px;
-        }
+        /* Таб-бар */
+        .tab-bar { position: fixed; bottom: 0; width: 100%; height: 70px; background: var(--tab-bg); backdrop-filter: blur(15px); display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #333; padding-bottom: env(safe-area-inset-bottom); z-index: 1000;}
+        .tab-item { display: flex; flex-direction: column; align-items: center; color: var(--text-gray); font-size: 10px; gap: 4px; }
         .tab-item.active { color: var(--gold); }
         .tab-icon { font-size: 20px; }
 
-        /* Корзина */
-        .cart-item {
-            background: var(--card-bg); margin-bottom: 10px; padding: 10px;
-            border-radius: 12px; display: flex; align-items: center; gap: 15px;
-        }
-        .cart-item img { width: 60px; height: 60px; border-radius: 8px; }
+        /* Корзина & Настройки */
+        .cart-item { background: var(--card-bg); margin-bottom: 10px; padding: 10px; border-radius: 12px; display: flex; align-items: center; gap: 15px; }
+        .checkout-box { background: var(--card-bg); padding: 15px; border-radius: 12px; margin-top: 20px; }
+        select, input { width: 100%; padding: 12px; margin-top: 5px; margin-bottom: 15px; background: #111; color: white; border: 1px solid #333; border-radius: 8px; }
 
         /* Профиль */
-        .profile-header { text-align: center; padding: 30px 0; }
+        .profile-header { text-align: center; padding: 20px 0; }
         .avatar { width: 80px; height: 80px; border-radius: 50%; background: var(--gold); margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 30px; color: black; }
+        .profile-block { background: var(--card-bg); border-radius: 12px; padding: 15px; margin-bottom: 15px; }
+        .btn-outline { border: 1px solid var(--gold); background: transparent; color: var(--gold); padding: 8px 15px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
 <body>
 
-    <!-- Шапка каталога -->
+    <!-- Шапка (Категории) -->
     <div id="header-nav" class="top-nav">
-        <button class="nav-chip active" onclick="switchCategory('catalog', this)">Основные вещи</button>
-        <button class="nav-chip" onclick="switchCategory('look', this)">Готовые образы</button>
+        <button class="nav-chip active" onclick="switchCategory('catalog', this)">Одежда</button>
+        <button class="nav-chip" onclick="switchCategory('look', this)">Образы</button>
+        <button class="nav-chip" onclick="switchCategory('favorites', this)">Избранное ❤</button>
     </div>
 
     <!-- Страница: КАТАЛОГ -->
@@ -101,10 +70,22 @@
 
     <!-- Страница: КОРЗИНА -->
     <div id="page-cart" class="page">
-        <h2 style="color: var(--gold)">Корзина</h2>
+        <h2 style="color: var(--gold); margin-top:0;">Корзина</h2>
         <div id="cart-content"></div>
-        <div id="cart-empty" style="text-align: center; margin-top: 50px; color: #555;">
-            Ваша корзина пуста
+        <div id="cart-empty" style="text-align: center; margin-top: 50px; color: #555;">Пусто</div>
+        
+        <div id="checkout-options" class="checkout-box" style="display:none;">
+            <label style="color: var(--gold); font-weight:bold;">Способ получения:</label>
+            <select id="delivery-method">
+                <option value="delivery">🚚 Доставка (СДЭК/Почта)</option>
+                <option value="pickup">📦 Самовывоз (Шоурум)</option>
+            </select>
+            
+            <label style="color: var(--gold); font-weight:bold;">Способ оплаты:</label>
+            <select id="payment-method">
+                <option value="now">💳 Оплатить сразу (Карта/Баланс)</option>
+                <option value="later">🤝 При получении</option>
+            </select>
         </div>
     </div>
 
@@ -112,46 +93,51 @@
     <div id="page-profile" class="page">
         <div class="profile-header">
             <div class="avatar" id="user-icon">👤</div>
-            <h3 id="user-name">Клиент KODAMA</h3>
-            <p style="color: var(--text-gray); font-size: 14px;">Статус: Gold Member</p>
+            <h3 id="user-name">Клиент</h3>
         </div>
-        <div style="background: var(--card-bg); border-radius: 15px; padding: 20px;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px;">
-                <span>Заказов:</span> <span id="stats-orders">0</span>
+        
+        <!-- Баланс -->
+        <div class="profile-block">
+            <div class="flex-between">
+                <span>Ваш баланс:</span>
+                <span id="user-balance" style="color: var(--gold); font-size: 18px; font-weight: bold;">0 ₽</span>
             </div>
-            <div style="display: flex; justify-content: space-between;">
-                <span>Потрачено:</span> <span id="stats-spent" style="color: var(--gold)">0 ₽</span>
-            </div>
+            <button class="btn-outline" onclick="topUpBalance()">Пополнить (ЮKassa)</button>
         </div>
+
+        <!-- Промокод -->
+        <div class="profile-block">
+            <label style="color: var(--text-gray); font-size: 14px;">Активировать промокод:</label>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <input type="text" id="promo-input" placeholder="Введите код" style="margin: 0;">
+                <button onclick="applyPromo()" style="background: var(--gold); color: black; border: none; border-radius: 8px; padding: 0 15px; font-weight: bold;">Применить</button>
+            </div>
+            <div id="promo-msg" style="margin-top: 8px; font-size: 12px;"></div>
+        </div>
+
+        <!-- Поддержка -->
+        <button onclick="openSupport()" style="background: #222; color: white; border: none; padding: 15px; border-radius: 12px; width: 100%; font-size: 16px; font-weight: bold; margin-top: 10px;">💬 Написать в Поддержку</button>
     </div>
 
     <!-- Нижний Таб-бар -->
     <nav class="tab-bar">
-        <div class="tab-item active" onclick="showPage('catalog', this)">
-            <span class="tab-icon">🛍</span>
-            <span>Каталог</span>
-        </div>
-        <div class="tab-item" onclick="showPage('cart', this)">
-            <span class="tab-icon">🛒</span>
-            <span>Корзина</span>
-        </div>
-        <div class="tab-item" onclick="showPage('profile', this)">
-            <span class="tab-icon">👤</span>
-            <span>Профиль</span>
-        </div>
+        <div class="tab-item active" onclick="showPage('catalog', this)"><span class="tab-icon">🛍</span><span>Магазин</span></div>
+        <div class="tab-item" onclick="showPage('cart', this)"><span class="tab-icon">🛒</span><span>Корзина</span></div>
+        <div class="tab-item" onclick="showPage('profile', this)"><span class="tab-icon">👤</span><span>Профиль</span></div>
     </nav>
 
     <script>
-        const API_URL = 'https://increased-beaver-voices-cam.trycloudflare.com'; // ВАША ССЫЛКА
+        const API_URL = 'https://increased-beaver-voices-cam.trycloudflare.com'; // ВАША ССЫЛКА ИЗ ТЕРМИНАЛА!
         const tg = window.Telegram.WebApp;
         tg.expand();
-        tg.enableClosingConfirmation();
+        tg.MainButton.color = '#D4AF37'; tg.MainButton.textColor = '#000000';
 
         let allProducts = [];
         let cart = [];
         let currentCat = 'catalog';
+        let favs = JSON.parse(localStorage.getItem('kodama_favs')) || [];
+        let activePromo = { code: null, discount: 0 };
 
-        // Инициализация пользователя
         if (tg.initDataUnsafe?.user) {
             document.getElementById('user-name').innerText = tg.initDataUnsafe.user.first_name;
             if (tg.initDataUnsafe.user.photo_url) {
@@ -159,23 +145,17 @@
             }
         }
 
-        // Переключение вкладок (Каталог/Корзина/Профиль)
         function showPage(pageId, el) {
             tg.HapticFeedback.impactOccurred('light');
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
-            
             document.getElementById(`page-${pageId}`).classList.add('active');
             el.classList.add('active');
-
-            // Скрываем/показываем верхние категории только в каталоге
             document.getElementById('header-nav').style.display = (pageId === 'catalog') ? 'flex' : 'none';
-            
             if (pageId === 'cart') renderCart();
-            updateMainButton();
+            updateMainButton(pageId);
         }
 
-        // Переключение категорий внутри каталога
         function switchCategory(cat, el) {
             tg.HapticFeedback.impactOccurred('medium');
             document.querySelectorAll('.nav-chip').forEach(c => c.classList.remove('active'));
@@ -184,30 +164,50 @@
             renderProducts();
         }
 
-        async function loadProducts() {
+        async function initApp() {
             try {
                 const res = await fetch(`${API_URL}/products`);
                 allProducts = await res.json();
                 renderProducts();
-            } catch (e) {
-                console.error("Ошибка сети");
-            }
+                
+                if (tg.initDataUnsafe?.user) {
+                    const balRes = await fetch(`${API_URL}/get_balance?user_id=${tg.initDataUnsafe.user.id}`);
+                    const balData = await balRes.json();
+                    document.getElementById('user-balance').innerText = `${balData.balance} ₽`;
+                }
+            } catch (e) { console.error("Ошибка загрузки"); }
+        }
+
+        function toggleFav(id, event) {
+            event.stopPropagation();
+            tg.HapticFeedback.impactOccurred('light');
+            if (favs.includes(id)) favs = favs.filter(x => x !== id);
+            else favs.push(id);
+            localStorage.setItem('kodama_favs', JSON.stringify(favs));
+            renderProducts();
         }
 
         function renderProducts() {
             const container = document.getElementById('product-grid');
             container.innerHTML = '';
             
-            const filtered = allProducts.filter(p => p.category === currentCat);
+            // Фильтрация (Категории или Избранное)
+            let filtered = allProducts;
+            if (currentCat === 'favorites') {
+                filtered = allProducts.filter(p => favs.includes(p.id));
+                if (filtered.length === 0) container.innerHTML = "<p style='grid-column: span 2; text-align:center; color:#555;'>Нет избранных товаров</p>";
+            } else {
+                filtered = allProducts.filter(p => p.category === currentCat);
+            }
             
             filtered.forEach(p => {
+                const isFav = favs.includes(p.id);
                 const div = document.createElement('div');
                 div.className = 'product-card';
-                // Здесь мы используем p.photo_id если бы был URL, но пока ставим заглушку
                 div.innerHTML = `
                     <div style="position:relative">
                         <img src="https://via.placeholder.com/300x400/222/D4AF37?text=KODAMA" class="product-img">
-                        <div style="position:absolute; top:10px; left:10px; background:red; color:white; font-size:10px; padding:2px 6px; border-radius:4px; font-weight:bold">-15%</div>
+                        <button onclick="toggleFav(${p.id}, event)" class="fav-btn ${isFav ? 'active' : ''}">❤</button>
                     </div>
                     <div class="product-info">
                         <div class="product-price">${p.price.toLocaleString()} ₽</div>
@@ -221,61 +221,92 @@
 
         function addToCart(id) {
             tg.HapticFeedback.notificationOccurred('success');
-            const product = allProducts.find(p => p.id === id);
-            cart.push(product);
-            updateMainButton();
+            cart.push(allProducts.find(p => p.id === id));
+            showPage('cart', document.querySelectorAll('.tab-item')[1]);
         }
 
         function renderCart() {
             const container = document.getElementById('cart-content');
-            const emptyMsg = document.getElementById('cart-empty');
             container.innerHTML = '';
             
             if (cart.length === 0) {
-                emptyMsg.style.display = 'block';
+                document.getElementById('cart-empty').style.display = 'block';
+                document.getElementById('checkout-options').style.display = 'none';
                 return;
             }
-            emptyMsg.style.display = 'none';
+            document.getElementById('cart-empty').style.display = 'none';
+            document.getElementById('checkout-options').style.display = 'block';
 
             cart.forEach((item, index) => {
                 const div = document.createElement('div');
                 div.className = 'cart-item';
                 div.innerHTML = `
-                    <img src="https://via.placeholder.com/60x60/222/D4AF37?text=K">
+                    <img src="https://via.placeholder.com/60x60/222/D4AF37?text=K" style="width:60px; border-radius:8px;">
                     <div style="flex-grow:1">
                         <div style="font-weight:bold; font-size:14px">${item.name}</div>
                         <div style="color:var(--gold); font-weight:bold">${item.price} ₽</div>
                     </div>
-                    <button onclick="removeFromCart(${index})" style="background:none; border:none; color:#ff4444; font-size:20px">×</button>
+                    <button onclick="removeFromCart(${index})" style="background:none; border:none; color:#ff4444; font-size:24px">×</button>
                 `;
                 container.appendChild(div);
             });
         }
 
-        function removeFromCart(index) {
-            cart.splice(index, 1);
-            renderCart();
-            updateMainButton();
+        function removeFromCart(index) { cart.splice(index, 1); renderCart(); updateMainButton('cart'); }
+
+        async function applyPromo() {
+            const code = document.getElementById('promo-input').value;
+            const msg = document.getElementById('promo-msg');
+            if(!code) return;
+            try {
+                const res = await fetch(`${API_URL}/check_promo?code=${code}`);
+                const data = await res.json();
+                if (data.valid) {
+                    activePromo = { code: code, discount: data.discount };
+                    msg.innerText = `Скидка ${data.discount}% активирована!`; msg.style.color = 'var(--gold)';
+                    updateMainButton('cart'); // Пересчет корзины если мы там
+                } else {
+                    msg.innerText = 'Промокод не найден или исчерпан'; msg.style.color = '#ff4444';
+                }
+            } catch (e) { msg.innerText = 'Ошибка соединения'; }
         }
 
-        function updateMainButton() {
-            if (cart.length > 0) {
-                const total = cart.reduce((sum, item) => sum + item.price, 0);
-                tg.MainButton.setText(`ОФОРМИТЬ ЗАКАЗ • ${total.toLocaleString()} ₽`);
+        function updateMainButton(currentPage) {
+            if (currentPage === 'cart' && cart.length > 0) {
+                let total = cart.reduce((sum, item) => sum + item.price, 0);
+                if (activePromo.discount > 0) total = total - (total * (activePromo.discount / 100));
+                tg.MainButton.setText(`ОФОРМИТЬ • ${Math.round(total).toLocaleString()} ₽`);
                 tg.MainButton.show();
             } else {
                 tg.MainButton.hide();
             }
         }
 
+        function topUpBalance() {
+            tg.sendData(JSON.stringify({ action: 'topup' }));
+        }
+
+        function openSupport() {
+            tg.openTelegramLink('https://t.me/+TVcFeudRH184NzEy');
+        }
+
         tg.onEvent('mainButtonClicked', () => {
-            tg.sendData(JSON.stringify({
+            const payload = {
+                action: 'checkout',
                 order: cart,
-                total: cart.reduce((sum, item) => sum + item.price, 0)
-            }));
+                total: cart.reduce((sum, item) => sum + item.price, 0),
+                promo: activePromo.code,
+                delivery: document.getElementById('delivery-method').value,
+                payment: document.getElementById('payment-method').value
+            };
+            tg.sendData(JSON.stringify(payload));
         });
 
-        loadProducts();
+        document.getElementById('delivery-method').addEventListener('change', () => updateMainButton('cart'));
+        document.getElementById('payment-method').addEventListener('change', () => updateMainButton('cart'));
+
+        window.onload = initApp;
     </script>
 </body>
+</html>
 </html>
