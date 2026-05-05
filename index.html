@@ -6,195 +6,449 @@
     <title>KODAMA GOLD</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --gold: #D4AF37; --bg: #0f0f0f; --card: #1a1a1a; }
-        body { background: var(--bg); color: white; font-family: sans-serif; margin: 0; padding-bottom: 80px; }
-        
-        /* Анимация сердечка */
-        @keyframes heartBeat {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.3); }
-            100% { transform: scale(1); }
-        }
-        .fav-btn.active { color: #ff4444; animation: heartBeat 0.3s ease-in-out; }
+        :root { --gold: #D4AF37; --bg: #0f0f0f; --card: #1c1c1e; --text: #fff; --gray: #8e8e93; }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding-bottom: 90px; }
+        * { box-sizing: border-box; }
 
-        .tabs { position: fixed; bottom: 0; width: 100%; height: 70px; background: #111; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #333; z-index: 100; }
-        .tab { display: flex; flex-direction: column; align-items: center; color: #888; font-size: 10px; cursor: pointer; }
-        .tab.active { color: var(--gold); }
+        /* Навигация */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 65px; background: rgba(28,28,30,0.95); backdrop-filter: blur(10px); display: flex; border-top: 1px solid #333; z-index: 100; }
+        .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--gray); font-size: 11px; cursor: pointer; transition: 0.2s; }
+        .nav-item.active { color: var(--gold); }
+        .nav-icon { font-size: 22px; margin-bottom: 3px; }
 
-        .page { display: none; padding: 15px; }
+        .page { display: none; padding: 15px; animation: fadeIn 0.3s ease; }
         .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Карточка товара */
-        .card { background: var(--card); border-radius: 12px; overflow: hidden; position: relative; margin-bottom: 15px; }
-        .card img { width: 100%; aspect-ratio: 1/1; object-fit: cover; }
-        .card-content { padding: 10px; }
-        .price { color: var(--gold); font-weight: bold; font-size: 18px; }
+        /* Сетка товаров */
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .product-card { background: var(--card); border-radius: 16px; overflow: hidden; position: relative; display: flex; flex-direction: column; }
+        .product-card img { width: 100%; aspect-ratio: 1/1; object-fit: cover; }
+        .fav-btn { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.5); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; }
+        .fav-btn.active { color: #ff3b30; }
+        .remove-btn { position: absolute; top: 10px; left: 10px; background: rgba(255,59,48,0.8); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; color: white; }
+        .card-body { padding: 12px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
+        .price { color: var(--gold); font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+        .title { font-size: 13px; color: #ccc; margin-bottom: 10px; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        
+        .btn { background: var(--gold); color: #000; border: none; border-radius: 10px; padding: 12px; font-weight: 600; width: 100%; cursor: pointer; text-align: center; }
+        .btn-outline { background: transparent; border: 1px solid var(--gold); color: var(--gold); }
+        .btn-danger { background: #ff3b30; color: white; }
+        
+        /* Профиль */
+        .profile-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; background: var(--card); padding: 20px; border-radius: 16px; }
+        .avatar { width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(45deg, var(--gold), #8B6508); display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; }
+        .stat-box { display: flex; flex-direction: column; gap: 5px; }
+        .stat-val { font-size: 18px; font-weight: bold; color: var(--gold); }
+        .stat-lbl { font-size: 12px; color: var(--gray); }
 
-        /* CMS Форма */
-        .admin-input { width: 100%; padding: 12px; background: #222; border: 1px solid #444; color: white; border-radius: 8px; margin-bottom: 10px; box-sizing: border-box; }
-        .btn-gold { background: var(--gold); color: black; border: none; padding: 15px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .input-group { display: flex; gap: 10px; margin-bottom: 15px; }
+        .input-group input { flex: 1; background: #2c2c2e; border: none; padding: 12px; border-radius: 10px; color: white; outline: none; }
 
-        /* Корзина */
-        .cart-item { display: flex; align-items: center; background: #222; padding: 10px; border-radius: 10px; margin-bottom: 10px; }
-        .cart-item input[type="checkbox"] { width: 22px; height: 22px; accent-color: var(--gold); margin-right: 15px; }
+        /* Плавающая кнопка заказа */
+        .floating-checkout { position: fixed; bottom: 80px; left: 15px; right: 15px; background: var(--gold); color: #000; padding: 15px; border-radius: 14px; font-weight: bold; font-size: 16px; display: none; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3); z-index: 99; cursor: pointer; }
+
+        /* Оформление заказа (Legal & Selects) */
+        .order-settings { background: var(--card); padding: 15px; border-radius: 16px; margin-top: 15px; }
+        select { width: 100%; padding: 12px; background: #2c2c2e; border: none; color: white; border-radius: 8px; margin-bottom: 10px; }
+        .legal-check { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--gray); margin-top: 10px; }
+        .legal-check input { width: 18px; height: 18px; accent-color: var(--gold); }
+        .legal-check a { color: var(--gold); text-decoration: underline; }
+
+        /* Модалки */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 200; padding: 20px; }
+        .modal-content { background: var(--card); border-radius: 20px; padding: 25px; width: 100%; max-height: 80vh; overflow-y: auto; position: relative; }
+        .close-modal { position: absolute; top: 15px; right: 15px; background: none; border: none; color: var(--gray); font-size: 24px; cursor: pointer; }
+
+        /* Админка CMS */
+        .admin-tabs { display: flex; gap: 10px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; }
+        .adm-tab { padding: 8px 15px; background: #2c2c2e; border-radius: 20px; white-space: nowrap; font-size: 13px; cursor: pointer; }
+        .adm-tab.active { background: var(--gold); color: black; font-weight: bold; }
+        .cms-item { background: #2c2c2e; padding: 10px; border-radius: 10px; margin-bottom: 10px; font-size: 13px; }
     </style>
 </head>
 <body>
 
     <!-- МАГАЗИН -->
     <div id="page-shop" class="page active">
-        <div id="grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"></div>
+        <div class="grid" id="shop-grid"></div>
     </div>
 
     <!-- КОРЗИНА -->
     <div id="page-cart" class="page">
-        <h2 style="color:var(--gold)">Ваш выбор</h2>
-        <div id="cart-list"></div>
-        <div id="order-settings" style="display:none; margin-top: 20px;">
-            <select class="admin-input" id="delivery">
-                <option value="yandex">🚕 Яндекс Доставка</option>
-                <option value="cdek">📦 СДЭК</option>
-                <option value="pickup">🏠 Самовывоз</option>
+        <h2 style="margin-top:0">Корзина</h2>
+        <div class="grid" id="cart-grid"></div>
+        
+        <div class="order-settings" id="order-block" style="display:none;">
+            <select id="delivery">
+                <option value="Доставка">🚕 Доставка</option>
+                <option value="СДЭК">📦 СДЭК</option>
+                <option value="Самовывоз">🏠 Самовывоз</option>
             </select>
-            <select class="admin-input" id="payment">
-                <option value="sbp">💳 СБП</option>
-                <option value="qr">📱 QR-код</option>
-                <option value="cash">💵 Наличные/Перевод</option>
+            <select id="payment">
+                <option value="СБП">💳 СБП</option>
+                <option value="Наличные">💵 Наличные</option>
             </select>
+            <div class="legal-check">
+                <input type="checkbox" id="legal-cb" checked>
+                <label>Я согласен с <a href="#" onclick="showModal('legal')">публичной офертой</a> и правилами.</label>
+            </div>
         </div>
+    </div>
+
+    <!-- ИЗБРАННОЕ (Скрытая страница, открывается из профиля) -->
+    <div id="page-fav" class="page">
+        <h2 style="margin-top:0; color:var(--gold);">Избранное</h2>
+        <div class="grid" id="fav-grid"></div>
     </div>
 
     <!-- ПРОФИЛЬ -->
     <div id="page-profile" class="page">
-        <div style="background:var(--card); padding:20px; border-radius:15px; border:1px solid #333;">
-            <div style="font-size:20px;">Баланс: <b id="bal" style="color:var(--gold)">0</b> ₽</div>
-            <div style="color:#888; font-size:12px; margin-top:5px;">Друзей приглашено: <span id="refs">0</span></div>
-            <div style="margin-top:15px; font-size:12px; background:#000; padding:10px; border-radius:8px;" id="ref-link"></div>
+        <div class="profile-header">
+            <div class="avatar" id="u-avatar">?</div>
+            <div style="flex-grow: 1;">
+                <h3 style="margin:0 0 5px 0;" id="u-name">Пользователь</h3>
+                <div style="display: flex; justify-content: space-between;">
+                    <div class="stat-box"><span class="stat-lbl">Баланс</span><span class="stat-val" id="u-bal">0 ₽</span></div>
+                    <div class="stat-box"><span class="stat-lbl">Выкуплено</span><span class="stat-val" id="u-spent" style="color:white;">0 ₽</span></div>
+                </div>
+            </div>
         </div>
-        <button class="btn-gold" style="margin-top:15px; background:#222; color:white;" onclick="tg.openTelegramLink('https://t.me/+TVcFeudRH184NzEy')">💬 Чат поддержки</button>
+
+        <div class="input-group">
+            <input type="text" id="promo-input" placeholder="Введите промокод">
+            <button class="btn" style="width: auto; padding: 0 20px;" onclick="applyPromo()">OK</button>
+        </div>
+
+        <button class="btn btn-outline" style="margin-bottom: 10px;" onclick="nav('fav')">💛 Мое Избранное</button>
+        <button class="btn" style="margin-bottom: 10px; background: #2c2c2e; color: white; border: 1px solid #444;" onclick="showModal('referral')">🔗 Реферальная система</button>
+        <button class="btn" style="background: transparent; border: 1px solid #333; color: var(--gray);" onclick="tg.openTelegramLink('https://t.me/+TVcFeudRH184NzEy')">💬 Поддержка</button>
     </div>
 
-    <!-- CMS (ДЛЯ АДМИНА) -->
+    <!-- CMS (АДМИНКА) -->
     <div id="page-admin" class="page">
-        <h2 style="color:var(--gold)">Добавить товар</h2>
-        <input type="text" id="adm-name" class="admin-input" placeholder="Название">
-        <input type="number" id="adm-price" class="admin-input" placeholder="Цена">
-        <input type="text" id="adm-img" class="admin-input" placeholder="URL картинки">
-        <textarea id="adm-desc" class="admin-input" placeholder="Описание"></textarea>
-        <select id="adm-cat" class="admin-input">
-            <option value="catalog">Одежда</option>
-            <option value="look">Образ</option>
-        </select>
-        <button class="btn-gold" onclick="apiAddProduct()">ОПУБЛИКОВАТЬ В МАГАЗИН</button>
+        <h2 style="color:var(--gold); margin-top:0;">Управление</h2>
+        <div class="admin-tabs">
+            <div class="adm-tab active" onclick="switchAdm('prods', this)">Товары</div>
+            <div class="adm-tab" onclick="switchAdm('promos', this)">Промокоды</div>
+            <div class="adm-tab" onclick="switchAdm('users', this)">Пользователи</div>
+        </div>
+        
+        <div id="adm-prods">
+            <button class="btn" style="margin-bottom:15px;" onclick="editProduct()">+ Добавить товар</button>
+            <div id="cms-prods-list"></div>
+        </div>
+        <div id="adm-promos" style="display:none;">
+            <div class="input-group">
+                <input type="text" id="new-p-code" placeholder="Код">
+                <input type="number" id="new-p-disc" placeholder="% скидки" style="width:70px; flex:none;">
+                <input type="number" id="new-p-uses" placeholder="Кол-во" style="width:70px; flex:none;">
+                <button class="btn" style="width:auto; padding:0 15px;" onclick="savePromo()">+</button>
+            </div>
+            <div id="cms-promos-list"></div>
+        </div>
+        <div id="adm-users" style="display:none;">
+            <div id="cms-users-list"></div>
+        </div>
     </div>
 
-    <nav class="tabs">
-        <div class="tab active" onclick="showP('shop', this)">🛍 Магазин</div>
-        <div class="tab" onclick="showP('cart', this)">🛒 Корзина</div>
-        <div class="tab" onclick="showP('profile', this)">👤 Профиль</div>
-        <div id="adm-btn" class="tab" style="display:none" onclick="showP('admin', this)">🛠 CMS</div>
+    <!-- НАВИГАЦИЯ НИЖНЯЯ -->
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="nav('shop', this)"><div class="nav-icon">🛍</div>Каталог</div>
+        <div class="nav-item" onclick="nav('cart', this)"><div class="nav-icon" style="position:relative;">🛒<span id="cart-badge" style="position:absolute;top:-5px;right:-10px;background:#ff3b30;color:white;border-radius:50%;padding:2px 6px;font-size:10px;display:none;">0</span></div>Корзина</div>
+        <div class="nav-item" onclick="nav('profile', this)"><div class="nav-icon">👤</div>Профиль</div>
+        <div class="nav-item" id="nav-admin" style="display:none;" onclick="nav('admin', this)"><div class="nav-icon">⚙️</div>CMS</div>
     </nav>
+
+    <!-- ПЛАВАЮЩАЯ КНОПКА ЗАКАЗА -->
+    <div class="floating-checkout" id="checkout-btn" onclick="checkout()">
+        <span>Оформить заказ</span>
+        <span id="checkout-total">0 ₽</span>
+    </div>
+
+    <!-- МОДАЛКИ -->
+    <div class="modal-overlay" id="modal-base">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeModal()">×</button>
+            <div id="modal-body"></div>
+        </div>
+    </div>
 
     <script>
         const tg = window.Telegram.WebApp;
-        const API = 'https://cultures-current-news-scott.trycloudflare.com'; // Сюда ссылку на сервер
+        tg.expand();
+        const API = 'https://cultures-current-news-scott.trycloudflare.com'; // ЗАМЕНИ НА СВОЙ URL
         const ADMINS = [1733464126];
-        let products = [], cart = [];
+        let state = { products: [], cart: [], favs: [], user: {}, discount: 0 };
 
-        if(ADMINS.includes(tg.initDataUnsafe.user?.id)) document.getElementById('adm-btn').style.display='flex';
+        async function req(path, method='GET', body=null) {
+            const opts = { method, headers: {'Content-Type': 'application/json'} };
+            if(body) opts.body = JSON.stringify(body);
+            try { const res = await fetch(`${API}${path}`, opts); return await res.json(); }
+            catch(e) { console.error(e); return null; }
+        }
 
-        async function load() {
-            const res = await fetch(`${API}/products`);
-            products = await res.json();
-            renderShop();
-            
-            if(tg.initDataUnsafe.user) {
-                const s = await fetch(`${API}/user_stats?user_id=${tg.initDataUnsafe.user.id}`);
-                const stats = await s.json();
-                document.getElementById('bal').innerText = stats.balance;
-                document.getElementById('refs').innerText = stats.invited_count;
-                document.getElementById('ref-link').innerText = `https://t.me/ВАШ_БОТ?start=${tg.initDataUnsafe.user.id}`;
+        async function init() {
+            const uid = tg.initDataUnsafe.user?.id || 0;
+            if(ADMINS.includes(uid)) {
+                document.getElementById('nav-admin').style.display = 'flex';
+                loadAdminData();
             }
+            
+            const data = await req(`/init?user_id=${uid}`);
+            if(data) {
+                state.products = data.products;
+                state.user = data.user;
+                state.favs = data.favorites;
+                
+                // Профиль
+                document.getElementById('u-name').innerText = state.user.username || 'Гость';
+                document.getElementById('u-avatar').innerText = (state.user.username || 'Г')[0].toUpperCase();
+                document.getElementById('u-bal').innerText = `${state.user.balance || 0} ₽`;
+                document.getElementById('u-spent').innerText = `${state.user.total_spent || 0} ₽`;
+            }
+            renderShop();
+        }
+
+        // Рендер карточек
+        function renderCard(p, mode='shop') {
+            const isFav = state.favs.includes(p.id);
+            let overlayBtn = mode==='cart' 
+                ? `<div class="remove-btn" onclick="removeFromCart(${p.id})">🗑</div>`
+                : `<div class="fav-btn ${isFav?'active':''}" onclick="toggleFav(${p.id}, this)">${isFav?'❤️':'🤍'}</div>`;
+            
+            let actionBtn = mode==='cart' ? '' : `<button class="btn" style="padding:8px" onclick="addToCart(${p.id})">В корзину</button>`;
+
+            return `
+            <div class="product-card">
+                ${overlayBtn}
+                <img src="${p.image_url || 'https://via.placeholder.com/300'}" alt="${p.name}">
+                <div class="card-body">
+                    <div>
+                        <div class="price">${p.price} ₽</div>
+                        <div class="title">${p.name}</div>
+                    </div>
+                    ${actionBtn}
+                </div>
+            </div>`;
         }
 
         function renderShop() {
-            const g = document.getElementById('grid'); g.innerHTML = '';
-            products.forEach(p => {
-                g.innerHTML += `
-                <div class="card">
-                    <img src="${p.image_url || 'https://via.placeholder.com/300'}">
-                    <div class="card-content">
-                        <div class="price">${p.price} ₽</div>
-                        <div style="font-size:12px; margin-bottom:10px;">${p.name}</div>
-                        <button class="btn-gold" style="padding:8px" onclick="addToCart(${p.id})">В КОРЗИНУ</button>
-                    </div>
-                </div>`;
-            });
+            document.getElementById('shop-grid').innerHTML = state.products.map(p => renderCard(p, 'shop')).join('');
         }
 
-        function addToCart(id) {
-            const p = products.find(i => i.id === id);
-            cart.push({...p, selected: true});
-            tg.showScanQrPopup({text: "Товар добавлен в корзину!"});
-            setTimeout(() => tg.closeScanQrPopup(), 1000);
+        function renderFav() {
+            const favProds = state.products.filter(p => state.favs.includes(p.id));
+            document.getElementById('fav-grid').innerHTML = favProds.length ? favProds.map(p => renderCard(p, 'shop')).join('') : '<p>Нет избранных товаров.</p>';
         }
 
         function renderCart() {
-            const l = document.getElementById('cart-list'); l.innerHTML = '';
-            if(!cart.length) { l.innerText = 'Пусто'; return; }
-            document.getElementById('order-settings').style.display = 'block';
-            cart.forEach((i, idx) => {
-                l.innerHTML += `
-                <div class="cart-item">
-                    <input type="checkbox" ${i.selected?'checked':''} onchange="cart[${idx}].selected = this.checked; updBtn();">
-                    <div style="flex-grow:1"><b>${i.name}</b><br><small>${i.price} ₽</small></div>
-                </div>`;
-            });
-            updBtn();
+            const cg = document.getElementById('cart-grid');
+            const ob = document.getElementById('order-block');
+            const btn = document.getElementById('checkout-btn');
+            
+            if(!state.cart.length) {
+                cg.innerHTML = '<p style="color:var(--gray)">Корзина пуста</p>';
+                ob.style.display = 'none'; btn.style.display = 'none';
+                return;
+            }
+            
+            cg.innerHTML = state.cart.map(p => renderCard(p, 'cart')).join('');
+            ob.style.display = 'block';
+            
+            // Расчет
+            let total = state.cart.reduce((s, p) => s + p.price, 0);
+            if(state.discount) total = Math.round(total * (1 - state.discount/100));
+            // Использование баланса
+            if(state.user.balance > 0) {
+                const useBal = Math.min(total * 0.3, state.user.balance); // Списываем макс 30%
+                total -= useBal;
+            }
+            
+            document.getElementById('checkout-total').innerText = `${total} ₽`;
+            btn.style.display = 'flex';
         }
 
-        function updBtn() {
-            const sel = cart.filter(i => i.selected);
-            if(!sel.length) { tg.MainButton.hide(); return; }
-            const total = sel.reduce((s,i) => s + i.price, 0);
-            tg.MainButton.setText(`ОФОРМИТЬ ЗАКАЗ (${total} ₽)`);
-            tg.MainButton.show();
+        // Действия пользователя
+        async function toggleFav(id, el) {
+            const uid = tg.initDataUnsafe.user?.id; if(!uid) return;
+            const idx = state.favs.indexOf(id);
+            if(idx > -1) { state.favs.splice(idx, 1); el.innerText = '🤍'; el.classList.remove('active'); }
+            else { state.favs.push(id); el.innerText = '❤️'; el.classList.add('active'); }
+            await req('/toggle_fav', 'POST', {user_id: uid, product_id: id});
+            if(document.getElementById('page-fav').classList.contains('active')) renderFav();
         }
 
-        async function apiAddProduct() {
-            const data = {
-                admin_id: tg.initDataUnsafe.user.id,
-                name: document.getElementById('adm-name').value,
-                price: document.getElementById('adm-price').value,
-                image_url: document.getElementById('adm-img').value,
-                description: document.getElementById('adm-desc').value,
-                category: document.getElementById('adm-cat').value
-            };
-            await fetch(`${API}/add_product`, { method: 'POST', body: JSON.stringify(data) });
-            alert("Товар добавлен!");
-            location.reload();
+        function addToCart(id) {
+            const p = state.products.find(i => i.id === id);
+            state.cart.push(p);
+            tg.HapticFeedback.impactOccurred('light');
+            
+            const b = document.getElementById('cart-badge');
+            b.innerText = state.cart.length; b.style.display = 'block';
         }
 
-        function showP(id, el) {
+        function removeFromCart(id) {
+            const idx = state.cart.findIndex(i => i.id === id);
+            if(idx > -1) state.cart.splice(idx, 1);
+            
+            const b = document.getElementById('cart-badge');
+            b.innerText = state.cart.length; 
+            if(state.cart.length===0) b.style.display = 'none';
+            renderCart();
+        }
+
+        async function applyPromo() {
+            const code = document.getElementById('promo-input').value;
+            if(!code) return;
+            const res = await req('/check_promo', 'POST', {code});
+            if(res && res.success) {
+                state.discount = res.discount;
+                tg.showAlert(`Промокод применен! Скидка: ${res.discount}%`);
+                if(state.cart.length) renderCart();
+            } else tg.showAlert("Неверный промокод или закончились активации");
+        }
+
+        function checkout() {
+            if(!document.getElementById('legal-cb').checked) {
+                return tg.showAlert("Необходимо согласиться с офертой!");
+            }
+            const delivery = document.getElementById('delivery').value;
+            const payment = document.getElementById('payment').value;
+            let total = parseInt(document.getElementById('checkout-total').innerText);
+            
+            tg.sendData(JSON.stringify({ action: 'checkout', order: state.cart, total, delivery, payment }));
+        }
+
+        // Навигация
+        function nav(id, el=null) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            if(el) {
+                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                el.classList.add('active');
+            }
             document.getElementById('page-'+id).classList.add('active');
-            el.classList.add('active');
-            if(id === 'cart') renderCart(); else tg.MainButton.hide();
+            
+            document.getElementById('checkout-btn').style.display = 'none';
+            if(id === 'cart') renderCart();
+            if(id === 'fav') renderFav();
         }
 
-        tg.onEvent('mainButtonClicked', () => {
-            const sel = cart.filter(i => i.selected);
-            tg.sendData(JSON.stringify({
-                action: 'checkout',
-                order: sel,
-                total: sel.reduce((s,i) => s + i.price, 0),
-                delivery: document.getElementById('delivery').value,
-                payment: document.getElementById('payment').value
-            }));
-        });
+        // Модалки
+        function showModal(type) {
+            const m = document.getElementById('modal-base');
+            const b = document.getElementById('modal-body');
+            m.style.display = 'flex';
+            
+            if(type === 'referral') {
+                const link = `https://t.me/ТУТ_ЮЗЕРНЕЙМ_БОТА?start=${tg.initDataUnsafe.user?.id}`;
+                b.innerHTML = `
+                    <h2 style="color:var(--gold); margin-top:0;">Партнерская программа</h2>
+                    <p style="font-size:14px; color:#ccc;">Делись ссылкой с друзьями. Как только друг перейдет в бота, <b>он получит доступ, а ты — 500 ₽ на бонусный счет!</b><br><br>Этими деньгами можно оплатить до 30% стоимости любого заказа.</p>
+                    <div style="background:#000; padding:15px; border-radius:10px; font-family:monospace; margin: 15px 0; word-break:break-all; color:var(--gold); border: 1px dashed var(--gold);">${link}</div>
+                    <button class="btn" onclick="navigator.clipboard.writeText('${link}'); tg.showAlert('Скопировано!');">Скопировать ссылку</button>
+                `;
+            } else if(type === 'legal') {
+                b.innerHTML = `
+                    <h2 style="color:var(--gold); margin-top:0;">Оферта и Возврат</h2>
+                    <div style="font-size:13px; color:#ccc; line-height:1.5;">
+                        <b>1. Общие положения</b><br>Настоящая оферта является официальным предложением KODAMA GOLD...<br><br>
+                        <b>2. Возврат товара</b><br>Покупатель вправе отказаться от товара в любое время до его передачи, а после передачи товара - в течение 7 дней (согласно ЗоЗПП РФ).<br><br>
+                        <b>3. Конфиденциальность</b><br>Ваши данные надежно защищены и используются только для доставки.
+                    </div>
+                `;
+            }
+        }
+        function closeModal() { document.getElementById('modal-base').style.display = 'none'; }
 
-        window.onload = load;
+        // --- CMS ЛОГИКА ---
+        function switchAdm(tab, el) {
+            document.querySelectorAll('.adm-tab').forEach(t=>t.classList.remove('active'));
+            el.classList.add('active');
+            ['prods','promos','users'].forEach(t => document.getElementById(`adm-${t}`).style.display = t===tab?'block':'none');
+        }
+
+        async function loadAdminData() {
+            const data = await req(`/admin_data?admin_id=${ADMINS[0]}`);
+            if(!data) return;
+            
+            // Товары
+            document.getElementById('cms-prods-list').innerHTML = state.products.map(p => `
+                <div class="cms-item">
+                    <b>${p.name}</b> (${p.price} ₽)<br>
+                    <button class="btn btn-outline" style="padding:5px; margin-top:5px; width:auto;" onclick='editProduct(${JSON.stringify(p)})'>Изменить</button>
+                    <button class="btn btn-danger" style="padding:5px; margin-top:5px; width:auto;" onclick="admAction('delete_product', {id:${p.id}})">Удалить</button>
+                </div>
+            `).join('');
+
+            // Промокоды
+            document.getElementById('cms-promos-list').innerHTML = data.promos.map(p => `
+                <div class="cms-item" style="display:flex; justify-content:space-between; align-items:center;">
+                    <div><b>${p.code}</b><br><small>-${p.discount}% (Ост: ${p.uses_left})</small></div>
+                    <button class="btn btn-danger" style="padding:5px; width:auto;" onclick="admAction('delete_promo', {code:'${p.code}'})">✖</button>
+                </div>
+            `).join('');
+
+            // Пользователи
+            document.getElementById('cms-users-list').innerHTML = data.users.map(u => `
+                <div class="cms-item">
+                    <b>@${u.username}</b> (ID: ${u.user_id})<br>
+                    Баланс: <input type="number" id="bal-${u.user_id}" value="${u.balance}" style="width:70px; background:#000; color:white; border:1px solid #444; border-radius:5px; padding:3px;"> ₽<br>
+                    Покупки: <input type="number" id="sp-${u.user_id}" value="${u.total_spent}" style="width:70px; background:#000; color:white; border:1px solid #444; border-radius:5px; padding:3px;"> ₽
+                    <button class="btn" style="padding:5px; margin-top:5px;" onclick="admAction('update_user', {target_id:${u.user_id}, balance: document.getElementById('bal-${u.user_id}').value, total_spent: document.getElementById('sp-${u.user_id}').value})">Сохранить</button>
+                </div>
+            `).join('');
+        }
+
+        function editProduct(p = null) {
+            const m = document.getElementById('modal-base');
+            const b = document.getElementById('modal-body');
+            b.innerHTML = `
+                <h2 style="color:var(--gold); margin-top:0;">${p?'Редактировать':'Новый товар'}</h2>
+                <input type="hidden" id="ep-id" value="${p?p.id:''}">
+                <input type="text" id="ep-name" class="input-group" style="width:100%; padding:10px; margin-bottom:10px; background:#2c2c2e; border:none; color:white; border-radius:8px;" placeholder="Название" value="${p?p.name:''}">
+                <input type="number" id="ep-price" class="input-group" style="width:100%; padding:10px; margin-bottom:10px; background:#2c2c2e; border:none; color:white; border-radius:8px;" placeholder="Цена" value="${p?p.price:''}">
+                <input type="text" id="ep-img" class="input-group" style="width:100%; padding:10px; margin-bottom:10px; background:#2c2c2e; border:none; color:white; border-radius:8px;" placeholder="URL картинки" value="${p?p.image_url:''}">
+                <textarea id="ep-desc" style="width:100%; padding:10px; margin-bottom:10px; background:#2c2c2e; border:none; color:white; border-radius:8px; height:80px;" placeholder="Описание">${p?p.description:''}</textarea>
+                <select id="ep-cat" style="width:100%;"><option value="Одежда">Одежда</option></select>
+                <button class="btn" onclick="saveProduct()">Сохранить</button>
+            `;
+            m.style.display = 'flex';
+        }
+
+        async function saveProduct() {
+            const payload = {
+                id: document.getElementById('ep-id').value,
+                name: document.getElementById('ep-name').value,
+                price: document.getElementById('ep-price').value,
+                image_url: document.getElementById('ep-img').value,
+                description: document.getElementById('ep-desc').value,
+                category: document.getElementById('ep-cat').value
+            };
+            await admAction('save_product', payload);
+        }
+
+        async function savePromo() {
+            const code = document.getElementById('new-p-code').value;
+            const discount = document.getElementById('new-p-disc').value;
+            const uses = document.getElementById('new-p-uses').value;
+            if(!code || !discount) return;
+            await admAction('save_promo', {code, discount, uses});
+        }
+
+        async function admAction(action, payload) {
+            payload.admin_id = ADMINS[0];
+            payload.action = action;
+            await req('/admin_action', 'POST', payload);
+            tg.showAlert("Успешно!");
+            closeModal();
+            const uid = tg.initDataUnsafe.user?.id;
+            const data = await req(`/init?user_id=${uid}`);
+            state.products = data.products;
+            loadAdminData();
+        }
+
+        window.onload = init;
     </script>
 </body>
 </html>
