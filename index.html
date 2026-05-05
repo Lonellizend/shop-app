@@ -6,289 +6,195 @@
     <title>KODAMA GOLD</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --gold: #D4AF37; --bg: #0f0f0f; --card: #1a1a1a; --gray: #888; }
+        :root { --gold: #D4AF37; --bg: #0f0f0f; --card: #1a1a1a; }
         body { background: var(--bg); color: white; font-family: sans-serif; margin: 0; padding-bottom: 80px; }
         
-        /* Навигация */
-        .tabs { position: fixed; bottom: 0; width: 100%; height: 70px; background: rgba(20,20,20,0.9); display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #333; z-index: 100; }
-        .tab { display: flex; flex-direction: column; align-items: center; color: var(--gray); font-size: 10px; cursor: pointer; }
-        .tab.active { color: var(--gold); }
-        .tab-icon { font-size: 24px; }
+        /* Анимация сердечка */
+        @keyframes heartBeat {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+        .fav-btn.active { color: #ff4444; animation: heartBeat 0.3s ease-in-out; }
 
-        .top-nav { position: sticky; top: 0; background: var(--bg); padding: 15px; display: flex; gap: 10px; border-bottom: 1px solid #222; overflow-x: auto; z-index: 90;}
-        .chip { padding: 8px 15px; border-radius: 20px; background: #222; border: none; color: white; white-space: nowrap; cursor: pointer;}
-        .chip.active { background: var(--gold); color: black; }
+        .tabs { position: fixed; bottom: 0; width: 100%; height: 70px; background: #111; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #333; z-index: 100; }
+        .tab { display: flex; flex-direction: column; align-items: center; color: #888; font-size: 10px; cursor: pointer; }
+        .tab.active { color: var(--gold); }
 
         .page { display: none; padding: 15px; }
         .page.active { display: block; }
 
-        /* Карточки */
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .card { background: var(--card); border-radius: 12px; overflow: hidden; position: relative; }
-        .card img { width: 100%; aspect-ratio: 3/4; object-fit: cover; }
-        .card-body { padding: 10px; }
+        /* Карточка товара */
+        .card { background: var(--card); border-radius: 12px; overflow: hidden; position: relative; margin-bottom: 15px; }
+        .card img { width: 100%; aspect-ratio: 1/1; object-fit: cover; }
+        .card-content { padding: 10px; }
         .price { color: var(--gold); font-weight: bold; font-size: 18px; }
-        
-        /* Анимация избранного */
-        .fav-btn { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.5); border: none; border-radius: 50%; color: white; padding: 8px; font-size: 16px; cursor: pointer; transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .fav-btn:active { transform: scale(1.5); }
-        .fav-btn.active { color: #ff4444; }
 
-        .btn-buy { background: var(--gold); color: black; border: none; width: 100%; padding: 10px; border-radius: 8px; font-weight: bold; margin-top: 10px; cursor: pointer; }
-        
-        /* Профиль */
-        .profile-box { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 15px; word-break: break-all; }
-        input { width: 100%; padding: 12px; background: #111; border: 1px solid #333; color: white; border-radius: 8px; margin-top: 10px; box-sizing: border-box; }
-        .support-btn { background: #222; color: white; width: 100%; padding: 15px; border-radius: 12px; border: none; font-weight: bold; margin-top: 10px; cursor: pointer;}
+        /* CMS Форма */
+        .admin-input { width: 100%; padding: 12px; background: #222; border: 1px solid #444; color: white; border-radius: 8px; margin-bottom: 10px; box-sizing: border-box; }
+        .btn-gold { background: var(--gold); color: black; border: none; padding: 15px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; }
 
         /* Корзина */
-        .cart-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; background: #222; margin-bottom: 8px; border-radius: 8px; }
-        .cart-item input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--gold); margin: 0 10px 0 0; cursor: pointer; }
-        .cart-info { flex-grow: 1; display: flex; justify-content: space-between; align-items: center; padding-right: 10px;}
-        .del-btn { color: #ff4444; font-weight: bold; font-size: 18px; cursor: pointer; }
-        
-        .order-select { width: 100%; padding: 12px; background: #111; color: white; border-radius: 8px; margin-bottom: 15px; border: 1px solid #333; box-sizing: border-box; }
-        .checkout-step { display: none; background: #222; padding: 15px; border-radius: 12px; margin-top: 15px; }
-        .checkout-step.active { display: block; }
+        .cart-item { display: flex; align-items: center; background: #222; padding: 10px; border-radius: 10px; margin-bottom: 10px; }
+        .cart-item input[type="checkbox"] { width: 22px; height: 22px; accent-color: var(--gold); margin-right: 15px; }
     </style>
 </head>
 <body>
 
-    <div id="nav-header" class="top-nav">
-        <button class="chip active" onclick="setCat('catalog', this)">Одежда</button>
-        <button class="chip" onclick="setCat('look', this)">Образы</button>
-        <button class="chip" onclick="setCat('fav', this)">❤ Избранное</button>
-    </div>
-
     <!-- МАГАЗИН -->
-    <div id="page-shop" class="page active"><div class="grid" id="grid"></div></div>
+    <div id="page-shop" class="page active">
+        <div id="grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"></div>
+    </div>
 
     <!-- КОРЗИНА -->
     <div id="page-cart" class="page">
-        <h2 style="color:var(--gold)">Корзина</h2>
-        <div id="cart-items"></div>
-
-        <!-- Форма оформления заказа (скрыта до нажатия Оформить) -->
-        <div id="checkout-form" class="checkout-step">
-            <h3 style="margin-top:0">Оформление заказа</h3>
-            <label>Способ получения:</label>
-            <select class="order-select" id="delivery">
-                <option value="yandex">🚕 Яндекс доставка</option>
+        <h2 style="color:var(--gold)">Ваш выбор</h2>
+        <div id="cart-list"></div>
+        <div id="order-settings" style="display:none; margin-top: 20px;">
+            <select class="admin-input" id="delivery">
+                <option value="yandex">🚕 Яндекс Доставка</option>
                 <option value="cdek">📦 СДЭК</option>
                 <option value="pickup">🏠 Самовывоз</option>
             </select>
-            <label>Способ оплаты:</label>
-            <select class="order-select" id="payment">
-                <option value="sbp">💳 СПБ</option>
-                <option value="qr">📱 QR код</option>
-                <option value="cash">💵 Наличными или переводом</option>
+            <select class="admin-input" id="payment">
+                <option value="sbp">💳 СБП</option>
+                <option value="qr">📱 QR-код</option>
+                <option value="cash">💵 Наличные/Перевод</option>
             </select>
-            <button class="btn-buy" onclick="submitOrder()">ПОДТВЕРДИТЬ ЗАКАЗ</button>
-            <button class="btn-buy" style="background:transparent; border:1px solid #555; color:#aaa;" onclick="cancelCheckout()">Отмена</button>
         </div>
     </div>
 
     <!-- ПРОФИЛЬ -->
     <div id="page-profile" class="page">
-        <h2 style="color:var(--gold)">Личный кабинет</h2>
-        <div class="profile-box">
-            <span style="color:var(--gold); font-weight:bold;">💎 Реферальная система</span><br>
-            <span style="font-size:12px; color:var(--gray)">Приглашайте друзей и получайте бонусы! Ваша ссылка:</span>
-            <div id="ref-link" style="margin-top:5px; font-size:14px; background:#111; padding:10px; border-radius:8px;"></div>
+        <div style="background:var(--card); padding:20px; border-radius:15px; border:1px solid #333;">
+            <div style="font-size:20px;">Баланс: <b id="bal" style="color:var(--gold)">0</b> ₽</div>
+            <div style="color:#888; font-size:12px; margin-top:5px;">Друзей приглашено: <span id="refs">0</span></div>
+            <div style="margin-top:15px; font-size:12px; background:#000; padding:10px; border-radius:8px;" id="ref-link"></div>
         </div>
-        <div class="profile-box">
-            <span>Промокод на скидку:</span>
-            <input type="text" id="promo-in" placeholder="Введите код">
-            <button class="btn-buy" onclick="applyPromo()">Применить</button>
-            <div id="promo-status" style="margin-top:10px; color:var(--gold); font-size:14px;"></div>
-        </div>
-        <button class="support-btn" onclick="tg.openTelegramLink('https://t.me/+TVcFeudRH184NzEy')">💬 Служба поддержки</button>
+        <button class="btn-gold" style="margin-top:15px; background:#222; color:white;" onclick="tg.openTelegramLink('https://t.me/+TVcFeudRH184NzEy')">💬 Чат поддержки</button>
+    </div>
+
+    <!-- CMS (ДЛЯ АДМИНА) -->
+    <div id="page-admin" class="page">
+        <h2 style="color:var(--gold)">Добавить товар</h2>
+        <input type="text" id="adm-name" class="admin-input" placeholder="Название">
+        <input type="number" id="adm-price" class="admin-input" placeholder="Цена">
+        <input type="text" id="adm-img" class="admin-input" placeholder="URL картинки">
+        <textarea id="adm-desc" class="admin-input" placeholder="Описание"></textarea>
+        <select id="adm-cat" class="admin-input">
+            <option value="catalog">Одежда</option>
+            <option value="look">Образ</option>
+        </select>
+        <button class="btn-gold" onclick="apiAddProduct()">ОПУБЛИКОВАТЬ В МАГАЗИН</button>
     </div>
 
     <nav class="tabs">
-        <div class="tab active" onclick="showP('shop', this)"><span class="tab-icon">🛍</span>Магазин</div>
-        <div class="tab" onclick="showP('cart', this)"><span class="tab-icon">🛒</span>Корзина</div>
-        <div class="tab" onclick="showP('profile', this)"><span class="tab-icon">👤</span>Профиль</div>
+        <div class="tab active" onclick="showP('shop', this)">🛍 Магазин</div>
+        <div class="tab" onclick="showP('cart', this)">🛒 Корзина</div>
+        <div class="tab" onclick="showP('profile', this)">👤 Профиль</div>
+        <div id="adm-btn" class="tab" style="display:none" onclick="showP('admin', this)">🛠 CMS</div>
     </nav>
 
     <script>
-        const API = 'https://increased-beaver-voices-cam.trycloudflare.com'; // ЗАМЕНИ НА СВОЙ NGROK/CLOUDFLARE
         const tg = window.Telegram.WebApp;
-        tg.expand();
+        const API = 'https://cultures-current-news-scott.trycloudflare.com'; // Сюда ссылку на сервер
+        const ADMINS = [1733464126];
+        let products = [], cart = [];
 
-        let products = [], cart = [], currentCat = 'catalog', activePromo = {code:null, discount:0};
-        let favs = JSON.parse(localStorage.getItem('favs')) || [];
-        let isCheckoutMode = false;
+        if(ADMINS.includes(tg.initDataUnsafe.user?.id)) document.getElementById('adm-btn').style.display='flex';
 
         async function load() {
-            try {
-                const res = await fetch(`${API}/products`);
-                products = await res.json();
-                render();
-            } catch (e) {
-                console.error("Ошибка загрузки товаров", e);
-            }
+            const res = await fetch(`${API}/products`);
+            products = await res.json();
+            renderShop();
             
-            // Генерируем реф ссылку, если открыто в ТГ
             if(tg.initDataUnsafe.user) {
-                const botName = "ВАШ_ЮЗЕРНЕЙМ_БОТА"; // Замени на юзернейм своего бота (без @)
-                document.getElementById('ref-link').innerText = `https://t.me/${botName}?start=${tg.initDataUnsafe.user.id}`;
+                const s = await fetch(`${API}/user_stats?user_id=${tg.initDataUnsafe.user.id}`);
+                const stats = await s.json();
+                document.getElementById('bal').innerText = stats.balance;
+                document.getElementById('refs').innerText = stats.invited_count;
+                document.getElementById('ref-link').innerText = `https://t.me/ВАШ_БОТ?start=${tg.initDataUnsafe.user.id}`;
             }
         }
 
-        function render() {
+        function renderShop() {
             const g = document.getElementById('grid'); g.innerHTML = '';
-            let f = currentCat === 'fav' ? products.filter(p => favs.includes(p.id)) : products.filter(p => p.category === currentCat);
-            if(f.length === 0) {
-                g.innerHTML = `<div style="grid-column: span 2; text-align:center; color:var(--gray); padding: 20px;">Здесь пока пусто...</div>`;
-                return;
-            }
-            f.forEach(p => {
-                const d = document.createElement('div'); d.className = 'card';
-                d.innerHTML = `
-                <img src="https://via.placeholder.com/300x400/222/gold?text=KODAMA+GOLD">
-                <button class="fav-btn ${favs.includes(p.id)?'active':''}" onclick="toggleFav(${p.id}, event)">❤</button>
-                <div class="card-body">
-                    <div class="price">${p.price} ₽</div>
-                    <div style="font-size:14px; margin:5px 0;">${p.name}</div>
-                    <button class="btn-buy" onclick="add(${p.id})">В КОРЗИНУ</button>
+            products.forEach(p => {
+                g.innerHTML += `
+                <div class="card">
+                    <img src="${p.image_url || 'https://via.placeholder.com/300'}">
+                    <div class="card-content">
+                        <div class="price">${p.price} ₽</div>
+                        <div style="font-size:12px; margin-bottom:10px;">${p.name}</div>
+                        <button class="btn-gold" style="padding:8px" onclick="addToCart(${p.id})">В КОРЗИНУ</button>
+                    </div>
                 </div>`;
-                g.appendChild(d);
             });
         }
 
-        function toggleFav(id, e) {
-            e.stopPropagation();
-            favs = favs.includes(id) ? favs.filter(i=>i!==id) : [...favs, id];
-            localStorage.setItem('favs', JSON.stringify(favs));
-            // Анимация добавляется через CSS active стейт, но мы сразу перерисовываем
-            render();
-        }
-
-        function add(id) { 
-            const prod = products.find(p=>p.id===id);
-            // Добавляем в корзину с флагом selected: true по умолчанию
-            cart.push({...prod, selected: true, cart_id: Math.random()}); 
-            showP('cart', document.querySelectorAll('.tab')[1]); 
+        function addToCart(id) {
+            const p = products.find(i => i.id === id);
+            cart.push({...p, selected: true});
+            tg.showScanQrPopup({text: "Товар добавлен в корзину!"});
+            setTimeout(() => tg.closeScanQrPopup(), 1000);
         }
 
         function renderCart() {
-            const c = document.getElementById('cart-items'); c.innerHTML = '';
-            if(!cart.length) { 
-                c.innerText = 'Корзина пуста. Выберите что-нибудь в магазине!'; 
-                document.getElementById('checkout-form').classList.remove('active');
-                updBtn();
-                return; 
-            }
-            
-            cart.forEach((i) => {
-                const d = document.createElement('div'); 
-                d.className = 'cart-item';
-                d.innerHTML = `
-                    <input type="checkbox" ${i.selected ? 'checked' : ''} onchange="toggleSelect(${i.cart_id}, this.checked)">
-                    <div class="cart-info">
-                        <span>${i.name}</span>
-                        <b>${i.price} ₽</b>
-                    </div>
-                    <span class="del-btn" onclick="removeFromCart(${i.cart_id})">✕</span>
-                `;
-                c.appendChild(d);
+            const l = document.getElementById('cart-list'); l.innerHTML = '';
+            if(!cart.length) { l.innerText = 'Пусто'; return; }
+            document.getElementById('order-settings').style.display = 'block';
+            cart.forEach((i, idx) => {
+                l.innerHTML += `
+                <div class="cart-item">
+                    <input type="checkbox" ${i.selected?'checked':''} onchange="cart[${idx}].selected = this.checked; updBtn();">
+                    <div style="flex-grow:1"><b>${i.name}</b><br><small>${i.price} ₽</small></div>
+                </div>`;
             });
             updBtn();
         }
 
-        function toggleSelect(cart_id, isChecked) {
-            const item = cart.find(i => i.cart_id === cart_id);
-            if(item) item.selected = isChecked;
-            updBtn();
-        }
-
-        function removeFromCart(cart_id) {
-            cart = cart.filter(i => i.cart_id !== cart_id);
-            renderCart();
-        }
-
         function updBtn() {
-            const selectedItems = cart.filter(i => i.selected);
-            if(!selectedItems.length || isCheckoutMode) { 
-                tg.MainButton.hide(); 
-                return; 
-            }
-            
-            let t = selectedItems.reduce((s,i)=>s+i.price, 0);
-            if(activePromo.discount) t -= (t * activePromo.discount / 100);
-            
-            tg.MainButton.setText(`ОФОРМИТЬ (${Math.round(t)} ₽)` );
+            const sel = cart.filter(i => i.selected);
+            if(!sel.length) { tg.MainButton.hide(); return; }
+            const total = sel.reduce((s,i) => s + i.price, 0);
+            tg.MainButton.setText(`ОФОРМИТЬ ЗАКАЗ (${total} ₽)`);
             tg.MainButton.show();
         }
 
-        async function applyPromo() {
-            const code = document.getElementById('promo-in').value;
-            if(!code) return;
-            const res = await fetch(`${API}/check_promo?code=${code}`);
-            const d = await res.json();
-            if(d.valid) { 
-                activePromo = {code, discount:d.discount}; 
-                document.getElementById('promo-status').innerText = `✅ Промокод применен: скидка ${d.discount}%!`;
-            } else {
-                document.getElementById('promo-status').innerText = `❌ Промокод не найден или истек.`;
-                document.getElementById('promo-status').style.color = '#ff4444';
-            }
+        async function apiAddProduct() {
+            const data = {
+                admin_id: tg.initDataUnsafe.user.id,
+                name: document.getElementById('adm-name').value,
+                price: document.getElementById('adm-price').value,
+                image_url: document.getElementById('adm-img').value,
+                description: document.getElementById('adm-desc').value,
+                category: document.getElementById('adm-cat').value
+            };
+            await fetch(`${API}/add_product`, { method: 'POST', body: JSON.stringify(data) });
+            alert("Товар добавлен!");
+            location.reload();
         }
 
         function showP(id, el) {
-            document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-            document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.getElementById('page-'+id).classList.add('active');
             el.classList.add('active');
-            document.getElementById('nav-header').style.display = id === 'shop' ? 'flex' : 'none';
-            
-            if(id === 'cart') {
-                isCheckoutMode = false;
-                document.getElementById('checkout-form').classList.remove('active');
-                renderCart(); 
-            } else {
-                tg.MainButton.hide();
-            }
+            if(id === 'cart') renderCart(); else tg.MainButton.hide();
         }
 
-        function setCat(c, el) {
-            document.querySelectorAll('.chip').forEach(i=>i.classList.remove('active'));
-            el.classList.add('active'); currentCat = c; render();
-        }
-
-        // Нажатие на главную кнопку Telegram "ОФОРМИТЬ"
         tg.onEvent('mainButtonClicked', () => {
-            // Переключаем интерфейс на выбор доставки/оплаты
-            isCheckoutMode = true;
-            document.getElementById('cart-items').style.display = 'none';
-            document.getElementById('checkout-form').classList.add('active');
-            tg.MainButton.hide(); // Прячем ТГ кнопку, используем HTML кнопку
-        });
-
-        function cancelCheckout() {
-            isCheckoutMode = false;
-            document.getElementById('cart-items').style.display = 'block';
-            document.getElementById('checkout-form').classList.remove('active');
-            updBtn();
-        }
-
-        function submitOrder() {
-            const selectedItems = cart.filter(i => i.selected);
-            let total = selectedItems.reduce((s,i)=>s+i.price, 0);
-            
+            const sel = cart.filter(i => i.selected);
             tg.sendData(JSON.stringify({
-                action: 'checkout', 
-                order: selectedItems, 
-                total: total,
-                promo: activePromo.code,
+                action: 'checkout',
+                order: sel,
+                total: sel.reduce((s,i) => s + i.price, 0),
                 delivery: document.getElementById('delivery').value,
                 payment: document.getElementById('payment').value
             }));
-        }
+        });
 
         window.onload = load;
     </script>
 </body>
-</html>
 </html>
