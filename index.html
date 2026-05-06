@@ -3,235 +3,215 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>KODAMA GOLD | Premium</title>
+    <title>KODAMA GOLD</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --gold: #D4AF37; --bg: #050505; --card: rgba(25, 25, 27, 0.7); --text: #fff; --gray: #a1a1a1; }
-        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 0; }
-        .page { display: none; padding: 20px; padding-bottom: 100px; animation: slideUp 0.3s ease; }
+        :root { --gold: #D4AF37; --bg: #050505; --card: #121212; --text: #fff; }
+        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding-bottom: 100px; }
+        
+        .page { display: none; padding: 20px; animation: fadeIn 0.3s ease; }
         .page.active { display: block; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .product-card { background: var(--card); border-radius: 20px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); }
-        .product-card img { width: 100%; aspect-ratio: 1/1; object-fit: cover; }
-        
-        .nav { position: fixed; bottom: 15px; left: 15px; right: 15px; background: rgba(20,20,20,0.9); backdrop-filter: blur(20px); border-radius: 20px; height: 65px; display: flex; border: 1px solid rgba(255,255,255,0.1); z-index: 100; }
-        .nav-item { flex: 1; text-align: center; color: var(--gray); font-size: 10px; display: flex; flex-direction: column; justify-content: center; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Дизайн профиля с градиентом */
+        .profile-header {
+            text-align: center; padding: 40px 20px;
+            background: radial-gradient(circle at center, rgba(212,175,55,0.15) 0%, rgba(5,5,5,0) 70%);
+            margin-bottom: 20px;
+        }
+        .avatar {
+            width: 90px; height: 90px; border-radius: 50%;
+            border: 2px solid var(--gold);
+            box-shadow: 0 0 30px rgba(212,175,55,0.3);
+            margin-bottom: 15px;
+        }
+
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .stat-card { background: var(--card); padding: 15px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.05); }
+        .stat-val { color: var(--gold); font-size: 18px; font-weight: 800; }
+
+        .btn { background: var(--gold); color: #000; border: none; padding: 15px; border-radius: 12px; font-weight: 700; width: 100%; margin-top: 10px; }
+        .input-group { background: #1a1a1a; border: 1px solid #333; padding: 12px; border-radius: 10px; color: #fff; width: 100%; margin-bottom: 10px; box-sizing: border-box; }
+
+        .nav { position: fixed; bottom: 0; left: 0; right: 0; background: #000; display: flex; border-top: 1px solid #222; height: 70px; }
+        .nav-item { flex: 1; text-align: center; color: #666; font-size: 10px; display: flex; flex-direction: column; justify-content: center; }
         .nav-item.active { color: var(--gold); }
         
-        .btn { background: var(--gold); color: #000; border: none; border-radius: 12px; padding: 15px; font-weight: 700; width: 100%; margin-top: 10px; }
-        .input-group { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 10px; color: #fff; width: 100%; margin-bottom: 10px; box-sizing: border-box; }
-        
-        .cart-item { display: flex; justify-content: space-between; align-items: center; background: var(--card); padding: 10px; border-radius: 12px; margin-bottom: 8px; }
-        .badge { background: var(--gold); color: #000; padding: 2px 6px; border-radius: 6px; font-size: 10px; font-weight: bold; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .p-card { background: var(--card); border-radius: 15px; overflow: hidden; }
+        .p-card img { width: 100%; aspect-ratio: 1/1; object-fit: cover; }
     </style>
 </head>
 <body>
 
-    <div id="page-shop" class="page active">
-        <h1>KODAMA <span>GOLD</span></h1>
-        <div class="grid" id="shop-grid"></div>
+    <div id="shop" class="page active">
+        <h1 style="font-weight: 800;">KODAMA <span style="color:var(--gold)">GOLD</span></h1>
+        <div class="grid" id="products-list"></div>
     </div>
 
-    <div id="page-cart" class="page">
+    <div id="cart" class="page">
         <h1>КОРЗИНА</h1>
-        <div id="cart-list"></div>
-        <div id="cart-empty" style="text-align: center; color: var(--gray); margin-top: 50px;">Ваша корзина пуста</div>
-        
-        <div id="cart-controls" style="display:none; margin-top: 20px;">
-            <input id="promo-input" class="input-group" placeholder="Промокод">
-            <button class="btn" style="background: transparent; border: 1px solid var(--gold); color: var(--gold);" onclick="applyPromo()">ПРИМЕНИТЬ</button>
-            <div style="margin: 20px 0; font-size: 20px; display: flex; justify-content: space-between;">
-                <span>Итого:</span> <b id="cart-total">0 ₽</b>
-            </div>
-            <button class="btn" onclick="checkout()">ОФОРМИТЬ ЗАКАЗ</button>
+        <div id="cart-items"></div>
+        <input id="promo" class="input-group" placeholder="Промокод">
+        <div id="total" style="font-size: 20px; margin: 20px 0;">Итого: 0 ₽</div>
+        <button class="btn" onclick="checkout()">ОФОРМИТЬ</button>
+    </div>
+
+    <div id="profile" class="page">
+        <div class="profile-header">
+            <img id="user-photo" src="https://via.placeholder.com/100" class="avatar">
+            <h2 id="user-name" style="margin: 0;">User</h2>
+            <div id="user-tag" style="color: var(--gold); font-size: 14px;">@username</div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card"><div class="stat-val" id="u-bal">0 ₽</div><div>Баланс</div></div>
+            <div class="stat-card"><div class="stat-val" id="u-refs">0</div><div>Рефералы</div></div>
+        </div>
+
+        <div class="stat-card" style="margin-bottom: 20px;">
+            <div style="font-size: 12px; color: #666;">Ваша реферальная ссылка:</div>
+            <div id="ref-link" style="font-size: 11px; color: var(--gold); margin-top: 5px; word-break: break-all;">-</div>
+            <button class="btn" style="padding: 8px; font-size: 12px;" onclick="copyRef()">Копировать</button>
         </div>
     </div>
 
-    <div id="page-profile" class="page">
-        <h1>ПРОФИЛЬ</h1>
-        <div style="background: var(--card); padding: 20px; border-radius: 20px;">
-            <div style="color: var(--gray);">Баланс: <b id="u-bal" style="color: var(--gold); font-size: 24px;">0 ₽</b></div>
-            <div style="margin-top: 15px; font-size: 14px;">
-                👥 Приглашено: <span id="u-ref-count">0</span><br>
-                💎 Покупки друзей: <span id="u-ref-bought">0</span><br>
-                📦 Всего потрачено: <span id="u-spent">0 ₽</span>
-            </div>
-        </div>
-    </div>
-
-    <div id="page-admin" class="page">
-        <h1>CMS <span>PANEL</span></h1>
-        <div class="input-group" style="background: var(--gold); color: #000; text-align: center; font-weight: bold;">УПРАВЛЕНИЕ ТОВАРАМИ</div>
+    <div id="admin" class="page">
+        <h1>АДМИН-ПАНЕЛЬ</h1>
+        <div style="border-bottom: 1px solid #333; margin-bottom: 15px;">УПРАВЛЕНИЕ ТОВАРАМИ</div>
         <input id="p-name" class="input-group" placeholder="Название">
         <input id="p-price" class="input-group" placeholder="Цена">
         <textarea id="p-desc" class="input-group" placeholder="Описание"></textarea>
-        <input type="file" id="p-files" class="input-group" multiple onchange="handleFiles(this.files)">
-        <button class="btn" onclick="saveProduct()">ДОБАВИТЬ ТОВАР</button>
-
-        <div class="input-group" style="background: var(--gold); color: #000; text-align: center; font-weight: bold; margin-top: 20px;">ПРОМОКОДЫ</div>
-        <input id="pr-code" class="input-group" placeholder="КОД">
+        <input type="file" id="p-img" class="input-group" multiple onchange="handleFiles(this.files)">
+        <button class="btn" onclick="saveProduct()">СОХРАНИТЬ ТОВАР</button>
+        
+        <div style="border-bottom: 1px solid #333; margin: 20px 0 15px;">ПРОМОКОДЫ</div>
+        <input id="pr-code" class="input-group" placeholder="Код">
         <input id="pr-disc" class="input-group" placeholder="Скидка (%)">
-        <input id="pr-uses" class="input-group" placeholder="Кол-во использований">
         <button class="btn" onclick="savePromo()">СОЗДАТЬ ПРОМО</button>
     </div>
 
     <div class="nav">
-        <div class="nav-item active" onclick="nav('shop', this)"><div>🛍️</div>ШОП</div>
-        <div class="nav-item" onclick="nav('cart', this)"><div>🛒</div>КОРЗИНА <span id="cart-count-badge" class="badge" style="display:none;">0</span></div>
-        <div class="nav-item" onclick="nav('profile', this)"><div>👤</div>АККАУНТ</div>
-        <div id="adm-btn" class="nav-item" style="display:none;" onclick="nav('admin', this)"><div>⚙️</div>CMS</div>
+        <div class="nav-item active" onclick="nav('shop', this)">🏠 Шоп</div>
+        <div class="nav-item" onclick="nav('cart', this)">🛒 Корзина</div>
+        <div class="nav-item" onclick="nav('profile', this)">👤 Профиль</div>
+        <div id="adm-nav" class="nav-item" style="display:none;" onclick="nav('admin', this)">⚙️ Админ</div>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         const BASE_URL = 'https://cultures-current-news-scott.trycloudflare.com';
-        const ADMINS = [1733464126];
-        
-        let state = { products: [], cart: [], user: {}, currentImages: [], discount: 0 };
+        let state = { products: [], cart: [], user: {}, imgs: [] };
 
         async function init() {
             const uid = tg.initDataUnsafe.user?.id || 0;
             const res = await fetch(`${BASE_URL}/init?user_id=${uid}`);
             const data = await res.json();
+            
             state.products = data.products;
             state.user = data.user;
-            
-            document.getElementById('u-bal').innerText = `${data.user.balance || 0} ₽`;
-            document.getElementById('u-ref-count').innerText = data.user.invited_count || 0;
-            document.getElementById('u-ref-bought').innerText = data.user.invited_bought_count || 0;
-            document.getElementById('u-spent').innerText = `${data.user.total_spent || 0} ₽`;
 
+            // Заполнение профиля
+            document.getElementById('user-name').innerText = tg.initDataUnsafe.user?.first_name || 'Пользователь';
+            document.getElementById('user-tag').innerText = '@' + (tg.initDataUnsafe.user?.username || 'user');
+            document.getElementById('u-bal').innerText = (data.user.balance || 0) + ' ₽';
+            document.getElementById('u-refs').innerText = data.user.invited_count || 0;
+            document.getElementById('ref-link').innerText = `https://t.me/your_bot?start=${uid}`;
+            if(tg.initDataUnsafe.user?.photo_url) document.getElementById('user-photo').src = tg.initDataUnsafe.user.photo_url;
+
+            if([1733464126].includes(uid)) document.getElementById('adm-nav').style.display = 'flex';
+            
             renderShop();
-            if(ADMINS.includes(uid)) document.getElementById('adm-btn').style.display = 'block';
         }
 
         function renderShop() {
-            const grid = document.getElementById('shop-grid');
-            grid.innerHTML = state.products.map(p => {
+            const list = document.getElementById('products-list');
+            list.innerHTML = state.products.map(p => {
                 let imgs = JSON.parse(p.image_url || "[]");
                 return `
-                <div class="product-card" onclick="addToCart(${p.id})">
+                <div class="p-card" onclick="addToCart(${p.id})">
                     <img src="${imgs[0] || ''}">
-                    <div style="padding: 10px;">
-                        <div style="color: var(--gold); font-weight: bold;">${p.price} ₽</div>
-                        <div style="font-size: 12px; color: var(--gray);">${p.name}</div>
+                    <div style="padding:10px">
+                        <div style="font-weight:800">${p.price} ₽</div>
+                        <div style="font-size:12px; color:#aaa">${p.name}</div>
                     </div>
                 </div>`;
             }).join('');
         }
 
         function addToCart(id) {
-            const p = state.products.find(x => x.id === id);
-            state.cart.push(p);
+            state.cart.push(state.products.find(p => p.id === id));
+            tg.HapticFeedback.impactOccurred('medium');
             updateCart();
-            tg.HapticFeedback.notificationOccurred('success');
         }
 
         function updateCart() {
-            const list = document.getElementById('cart-list');
-            const badge = document.getElementById('cart-count-badge');
-            badge.style.display = state.cart.length ? 'inline' : 'none';
-            badge.innerText = state.cart.length;
-
-            if(!state.cart.length) {
-                document.getElementById('cart-empty').style.display = 'block';
-                document.getElementById('cart-controls').style.display = 'none';
-                list.innerHTML = '';
-                return;
-            }
-
-            document.getElementById('cart-empty').style.display = 'none';
-            document.getElementById('cart-controls').style.display = 'block';
-            
             let total = 0;
-            list.innerHTML = state.cart.map((item, index) => {
+            document.getElementById('cart-items').innerHTML = state.cart.map((item, idx) => {
                 total += item.price;
-                return `<div class="cart-item">
-                    <span>${item.name}</span>
-                    <b>${item.price} ₽</b>
-                    <span onclick="state.cart.splice(${index},1);updateCart()" style="color:red;">✕</span>
+                return `<div style="display:flex; justify-content:space-between; margin-bottom:10px">
+                    <span>${item.name}</span><b>${item.price} ₽</b>
                 </div>`;
             }).join('');
-
-            const finalTotal = total * (1 - state.discount / 100);
-            document.getElementById('cart-total').innerText = `${finalTotal.toLocaleString()} ₽`;
-        }
-
-        async function applyPromo() {
-            const code = document.getElementById('promo-input').value;
-            const res = await fetch(`${BASE_URL}/check_promo`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({code})
-            });
-            const data = await res.json();
-            if(data.status === 'ok') {
-                state.discount = data.discount;
-                updateCart();
-                tg.showAlert(`Промокод применен! Скидка ${data.discount}%`);
-            } else {
-                tg.showAlert("Неверный промокод");
-            }
+            document.getElementById('total').innerText = `Итого: ${total} ₽`;
         }
 
         function handleFiles(files) {
-            state.currentImages = [];
+            state.imgs = [];
             Array.from(files).forEach(f => {
-                const r = new FileReader();
-                r.onload = e => state.currentImages.push(e.target.result);
-                r.readAsDataURL(f);
+                const reader = new FileReader();
+                reader.onload = e => state.imgs.push(e.target.result);
+                reader.readAsDataURL(f);
             });
         }
 
         async function saveProduct() {
-            const payload = {
-                admin_id: tg.initDataUnsafe.user?.id,
-                action: 'save_product',
-                name: document.getElementById('p-name').value,
-                price: document.getElementById('p-price').value,
-                description: document.getElementById('p-desc').value,
-                images: state.currentImages,
-                category: 'Premium'
-            };
             await fetch(`${BASE_URL}/admin_action`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(payload)
+                body: JSON.stringify({
+                    action: 'save_product',
+                    name: document.getElementById('p-name').value,
+                    price: document.getElementById('p-price').value,
+                    description: document.getElementById('p-desc').value,
+                    category: 'Premium',
+                    images: state.imgs
+                })
             });
-            tg.showAlert("Товар добавлен!");
+            tg.showAlert("Товар сохранен!");
             location.reload();
         }
 
         async function savePromo() {
-            const payload = {
-                admin_id: tg.initDataUnsafe.user?.id,
-                action: 'save_promo',
-                code: document.getElementById('pr-code').value,
-                discount: document.getElementById('pr-disc').value,
-                uses: document.getElementById('pr-uses').value
-            };
             await fetch(`${BASE_URL}/admin_action`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(payload)
+                body: JSON.stringify({
+                    action: 'save_promo',
+                    code: document.getElementById('pr-code').value,
+                    discount: document.getElementById('pr-disc').value,
+                    uses: 100
+                })
             });
             tg.showAlert("Промокод создан!");
+        }
+
+        function copyRef() {
+            const link = document.getElementById('ref-link').innerText;
+            navigator.clipboard.writeText(link);
+            tg.showAlert("Ссылка скопирована!");
         }
 
         function nav(id, el) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            document.getElementById('page-' + id).classList.add('active');
+            document.getElementById(id).classList.add('active');
             el.classList.add('active');
         }
 
         function checkout() {
-            const total = document.getElementById('cart-total').innerText;
-            const orderData = { action: 'checkout', order: state.cart, total: total, delivery: 'SDEK', payment: 'Crypto' };
-            tg.sendData(JSON.stringify(orderData));
+            tg.sendData(JSON.stringify({action: 'checkout', total: document.getElementById('total').innerText}));
         }
 
         window.onload = init;
