@@ -5,765 +5,546 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>KODAMA GOLD</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --gold: #D4AF37;
-            --gold-dark: #B8960F;
-            --bg: #0a0a0a;
-            --card: #1a1a1a;
-            --card-hover: #222;
-            --text: #fff;
-            --text-secondary: #999;
-            --border: #2a2a2a;
-            --danger: #ff4444;
-            --success: #4CAF50;
+            --gold: #D4AF37; --gold2: #FFD700;
+            --bg: #0a0a0a; --card: #1a1a1a; --card2: #222;
+            --text: #fff; --text2: #999; --border: #2a2a2a;
+            --danger: #ff4444; --success: #4CAF50; --blue: #3498db;
         }
-        
+        .light-theme {
+            --bg: #f5f5f5; --card: #fff; --card2: #f0f0f0;
+            --text: #1a1a1a; --text2: #666; --border: #e0e0e0;
+        }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        
         body {
-            background: var(--bg);
-            color: var(--text);
-            font-family: 'Inter', sans-serif;
-            font-size: 15px;
-            line-height: 1.5;
-            padding-bottom: 80px;
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
+            background: var(--bg); color: var(--text);
+            font-family: 'Inter', system-ui, sans-serif;
+            font-size: 15px; padding-bottom: 75px;
+            transition: background 0.3s, color 0.3s;
+            overflow-x: hidden;
         }
-        
-        .page { display: none; padding: 16px; animation: fadeIn 0.3s ease; }
+        .page { display: none; padding: 16px; animation: fadeIn 0.3s; }
         .page.active { display: block; }
-        
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Тёмная/светлая тема */
-        body.light-theme {
-            --bg: #f5f5f5;
-            --card: #fff;
-            --card-hover: #f0f0f0;
-            --text: #1a1a1a;
-            --text-secondary: #666;
-            --border: #e0e0e0;
-        }
+        @keyframes slideUp { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
         
-        h1 { font-size: 28px; font-weight: 800; margin-bottom: 20px; }
-        h2 { font-size: 20px; font-weight: 700; margin-bottom: 15px; }
-        h3 { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
-        
+        h1 { font-size: 26px; font-weight: 800; margin-bottom: 16px; }
+        h2 { font-size: 20px; font-weight: 700; margin: 16px 0 12px; }
+        h3 { font-size: 17px; font-weight: 600; margin-bottom: 10px; }
         .gold-text { color: var(--gold); }
+        .gold-gradient { background: linear-gradient(135deg, var(--gold), var(--gold2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
-        /* Шапка профиля */
-        .profile-header {
-            text-align: center;
-            padding: 30px 20px;
-            background: linear-gradient(180deg, rgba(212,175,55,0.1) 0%, transparent 100%);
-            border-radius: 20px;
-            margin-bottom: 20px;
-        }
-        
-        .avatar {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            border: 3px solid var(--gold);
-            box-shadow: 0 0 30px rgba(212,175,55,0.3);
-            margin-bottom: 15px;
-            object-fit: cover;
-            transition: transform 0.3s;
-        }
-        .avatar:active { transform: scale(1.1); }
-        
-        .username { font-size: 22px; font-weight: 700; margin-bottom: 5px; }
-        .user-tag { color: var(--gold); font-size: 14px; }
-        
-        /* Статистика */
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-        
-        .stat-card {
-            background: var(--card);
-            padding: 18px;
-            border-radius: 16px;
-            border: 1px solid var(--border);
-            text-align: center;
-            transition: all 0.2s;
-        }
-        .stat-card:active { transform: scale(0.97); }
-        .stat-value { color: var(--gold); font-size: 24px; font-weight: 800; }
-        .stat-label { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
-        
-        /* Кнопки */
-        .btn {
-            background: var(--gold);
-            color: #000;
-            border: none;
-            padding: 16px;
-            border-radius: 14px;
-            font-weight: 700;
-            font-size: 16px;
-            width: 100%;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-family: 'Inter', sans-serif;
-        }
-        .btn:active { transform: scale(0.97); opacity: 0.9; }
-        .btn-secondary { background: var(--card); color: var(--text); border: 1px solid var(--border); }
-        .btn-danger { background: var(--danger); color: #fff; }
-        .btn-small { padding: 10px 16px; font-size: 13px; width: auto; }
-        
-        /* Поля ввода */
-        .input-group {
-            background: #1a1a1a;
-            border: 1px solid #333;
-            padding: 14px 16px;
+        /* Скелетон-загрузчики */
+        .skeleton {
+            background: linear-gradient(90deg, var(--card) 25%, var(--card2) 50%, var(--card) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
             border-radius: 12px;
-            color: #fff;
-            width: 100%;
-            margin-bottom: 12px;
-            font-size: 15px;
-            font-family: 'Inter', sans-serif;
-            transition: border 0.2s;
         }
-        .input-group:focus { outline: none; border-color: var(--gold); }
-        textarea.input-group { min-height: 80px; resize: vertical; }
+        .skeleton-img { width: 100%; aspect-ratio: 1/1; }
+        .skeleton-text { height: 16px; margin: 8px 0; width: 80%; }
+        .skeleton-price { height: 22px; width: 40%; }
         
         /* Навигация */
         .nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(10,10,10,0.95);
-            backdrop-filter: blur(20px);
-            display: flex;
-            border-top: 1px solid var(--border);
-            height: 70px;
-            z-index: 100;
-            padding-bottom: env(safe-area-inset-bottom);
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: var(--bg); backdrop-filter: blur(20px);
+            display: flex; justify-content: space-around;
+            border-top: 1px solid var(--border); height: 68px; z-index: 100;
         }
-        
         .nav-item {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: #666;
-            font-size: 11px;
-            cursor: pointer;
-            transition: all 0.2s;
-            gap: 4px;
-            position: relative;
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; color: var(--text2);
+            font-size: 10px; cursor: pointer; padding: 4px 8px;
+            transition: 0.2s; position: relative;
         }
         .nav-item.active { color: var(--gold); }
         .nav-item .nav-icon { font-size: 22px; }
-        .nav-item .badge {
-            position: absolute;
-            top: 4px;
-            right: calc(50% - 20px);
-            background: var(--danger);
-            color: #fff;
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 10px;
-            min-width: 18px;
-            text-align: center;
+        .nav-badge {
+            position: absolute; top: 2px; right: 2px;
+            background: var(--danger); color: #fff;
+            font-size: 9px; min-width: 16px; height: 16px;
+            border-radius: 8px; display: flex; align-items: center;
+            justify-content: center; font-weight: 700;
+            animation: bounce 0.5s;
         }
         
-        /* Сетка товаров */
-        .products-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        /* Карточки */
+        .card {
+            background: var(--card); border-radius: 16px;
+            padding: 18px; border: 1px solid var(--border);
+            margin-bottom: 12px; transition: 0.2s;
+        }
+        .card:active { transform: scale(0.99); }
         
-        .product-card {
-            background: var(--card);
-            border-radius: 16px;
+        /* Кнопки */
+        .btn {
+            background: var(--gold); color: #000;
+            border: none; padding: 16px; border-radius: 14px;
+            font-weight: 700; font-size: 16px; width: 100%;
+            cursor: pointer; transition: 0.2s; position: relative;
             overflow: hidden;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: 1px solid var(--border);
-            position: relative;
         }
-        .product-card:active { transform: scale(0.97); }
-        .product-card .wishlist-btn {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            background: rgba(0,0,0,0.5);
-            border: none;
-            color: #fff;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            font-size: 16px;
-            cursor: pointer;
-            z-index: 5;
-            backdrop-filter: blur(4px);
+        .btn:active { transform: scale(0.97); }
+        .btn-outline { background: transparent; color: var(--gold); border: 2px solid var(--gold); }
+        .btn-small { padding: 10px 16px; font-size: 13px; width: auto; }
+        .btn-icon { width: 44px; height: 44px; border-radius: 50%; padding: 0; font-size: 20px; }
+        .btn-pulse { animation: pulse 2s infinite; }
+        .btn .ripple {
+            position: absolute; border-radius: 50%;
+            background: rgba(255,255,255,0.5); transform: scale(0);
+            animation: ripple 0.6s linear; pointer-events: none;
         }
-        .product-card img, .product-card video {
-            width: 100%;
-            aspect-ratio: 1/1;
-            object-fit: cover;
-        }
-        .product-info { padding: 12px; }
-        .product-price { font-size: 18px; font-weight: 800; color: var(--gold); }
-        .product-discount {
-            text-decoration: line-through;
-            color: var(--text-secondary);
-            font-size: 13px;
-            margin-left: 6px;
-        }
-        .product-name {
-            font-size: 13px;
-            color: var(--text-secondary);
-            margin-top: 4px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .product-rating { font-size: 12px; color: var(--gold); margin-top: 4px; }
+        @keyframes ripple { to { transform: scale(4); opacity: 0; } }
         
-        /* Категории */
-        .categories-scroll {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            padding-bottom: 4px;
+        /* Поля */
+        .input {
+            background: var(--card2); border: 1px solid var(--border);
+            padding: 14px 16px; border-radius: 14px; color: var(--text);
+            width: 100%; margin-bottom: 10px; font-size: 15px;
+            transition: 0.2s;
         }
-        .categories-scroll::-webkit-scrollbar { display: none; }
-        
-        .category-chip {
-            padding: 8px 16px;
-            border-radius: 20px;
-            background: var(--card);
-            border: 1px solid var(--border);
-            color: var(--text-secondary);
-            font-size: 13px;
-            white-space: nowrap;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .category-chip.active {
-            background: var(--gold);
-            color: #000;
-            border-color: var(--gold);
-            font-weight: 600;
-        }
+        .input:focus { outline: none; border-color: var(--gold); }
         
         /* Поиск */
-        .search-box {
-            display: flex;
-            gap: 8px;
+        .search-container {
+            position: relative; margin-bottom: 16px;
+        }
+        .search-suggestions {
+            position: absolute; top: 100%; left: 0; right: 0;
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 0 0 14px 14px; z-index: 50; display: none;
+            max-height: 200px; overflow-y: auto;
+        }
+        .search-suggestions.active { display: block; }
+        .search-item {
+            padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border);
+        }
+        .search-item:hover { background: var(--card2); }
+        
+        /* Товары */
+        .products-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .product-card {
+            background: var(--card); border-radius: 16px;
+            overflow: hidden; cursor: pointer; border: 1px solid var(--border);
+            transition: 0.2s; position: relative;
+        }
+        .product-card:active { transform: scale(0.97); }
+        .product-card img, .product-card video {
+            width: 100%; aspect-ratio: 1/1; object-fit: cover;
+        }
+        .product-badge {
+            position: absolute; top: 8px; left: 8px;
+            padding: 4px 10px; border-radius: 12px;
+            font-size: 10px; font-weight: 700; z-index: 2;
+        }
+        .badge-new { background: var(--blue); color: #fff; }
+        .badge-hit { background: var(--danger); color: #fff; animation: pulse 2s infinite; }
+        .badge-sale { background: var(--success); color: #fff; }
+        .badge-exclusive { background: var(--gold); color: #000; }
+        .product-info { padding: 10px; }
+        .product-price { font-size: 18px; font-weight: 800; color: var(--gold); }
+        .product-old-price { text-decoration: line-through; color: var(--text2); font-size: 12px; }
+        .product-name { font-size: 13px; color: var(--text2); margin-top: 4px; }
+        .product-rating { font-size: 12px; color: var(--gold); margin-top: 4px; }
+        
+        .wishlist-btn {
+            position: absolute; top: 8px; right: 8px;
+            background: rgba(0,0,0,0.5); border: none; color: #fff;
+            width: 32px; height: 32px; border-radius: 50%;
+            font-size: 16px; cursor: pointer; z-index: 2;
+            backdrop-filter: blur(4px); transition: 0.2s;
+        }
+        .wishlist-btn.active { background: var(--danger); }
+        
+        /* Профиль */
+        .profile-header {
+            text-align: center; padding: 30px 20px;
+            background: linear-gradient(135deg, rgba(212,175,55,0.2) 0%, transparent 100%);
+            border-radius: 20px; margin-bottom: 16px;
+        }
+        .avatar {
+            width: 100px; height: 100px; border-radius: 50%;
+            border: 3px solid var(--gold); margin-bottom: 12px;
+            object-fit: cover; box-shadow: 0 0 30px rgba(212,175,55,0.3);
+        }
+        .username { font-size: 22px; font-weight: 700; }
+        .user-tag { color: var(--gold); font-size: 14px; }
+        
+        /* Уровень */
+        .level-bar {
+            margin: 12px 0; background: var(--card2);
+            border-radius: 10px; height: 12px; overflow: hidden;
+        }
+        .level-fill {
+            height: 100%; border-radius: 10px;
+            background: linear-gradient(90deg, var(--gold), #ff6b6b);
+            transition: width 0.5s;
+        }
+        .level-text { display: flex; justify-content: space-between; font-size: 12px; margin-top: 4px; }
+        
+        /* Бейджи достижений */
+        .badges-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+        .badge-item {
+            font-size: 24px; padding: 8px; background: var(--card);
+            border-radius: 12px; border: 1px solid var(--border);
+            position: relative; cursor: pointer;
+        }
+        .badge-item.locked { opacity: 0.3; filter: grayscale(1); }
+        
+        /* Статистика */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+        .stat-card {
+            background: var(--card); padding: 16px; border-radius: 16px;
+            border: 1px solid var(--border); text-align: center;
+        }
+        .stat-value { color: var(--gold); font-size: 24px; font-weight: 800; }
+        .stat-label { font-size: 11px; color: var(--text2); }
+        
+        /* Меню профиля */
+        .menu-list { display: flex; flex-direction: column; gap: 6px; }
+        .menu-item {
+            display: flex; align-items: center; gap: 14px;
+            padding: 16px; background: var(--card);
+            border-radius: 16px; border: 1px solid var(--border);
+            cursor: pointer; transition: 0.2s;
+        }
+        .menu-item:active { transform: scale(0.98); }
+        .menu-icon { font-size: 24px; }
+        .menu-text { flex: 1; font-weight: 600; font-size: 16px; }
+        .menu-arrow { color: var(--text2); font-size: 18px; }
+        .menu-badge { background: var(--danger); color: #fff; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+        
+        /* Секции профиля */
+        .section-back {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px; cursor: pointer; color: var(--gold);
+            font-weight: 600; margin-bottom: 12px;
+        }
+        
+        /* Тема */
+        .theme-toggle {
+            display: flex; align-items: center; gap: 12px; padding: 16px;
+            background: var(--card); border-radius: 16px; border: 1px solid var(--border);
             margin-bottom: 12px;
         }
-        .search-box .input-group { flex: 1; margin-bottom: 0; }
+        .theme-switch {
+            width: 52px; height: 28px; background: var(--border);
+            border-radius: 14px; cursor: pointer; position: relative;
+            transition: 0.3s;
+        }
+        .theme-switch::after {
+            content: ''; position: absolute; top: 2px; left: 2px;
+            width: 24px; height: 24px; background: #fff;
+            border-radius: 50%; transition: 0.3s;
+        }
+        .theme-switch.dark { background: var(--gold); }
+        .theme-switch.dark::after { left: 26px; }
         
         /* Модальные окна */
         .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.9);
-            z-index: 200;
-            overflow-y: auto;
-            padding: 20px;
-            animation: fadeIn 0.2s ease;
+            display: none; position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.9); z-index: 200;
+            padding: 20px; overflow-y: auto;
         }
         .modal-overlay.active { display: flex; align-items: flex-start; justify-content: center; }
-        
         .modal {
-            background: var(--card);
-            border-radius: 20px;
-            padding: 24px;
-            width: 100%;
-            max-width: 500px;
-            margin: 20px 0;
-            border: 1px solid var(--border);
+            background: var(--card); border-radius: 20px;
+            padding: 24px; width: 100%; max-width: 500px;
+            margin: 20px 0; border: 1px solid var(--border);
+            animation: slideUp 0.3s;
         }
-        .modal-close {
-            float: right;
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            font-size: 24px;
-            cursor: pointer;
-            padding: 4px 8px;
-        }
+        .modal-close { float: right; background: none; border: none; color: var(--text2); font-size: 24px; cursor: pointer; }
         
-        /* Слайдер медиа */
+        /* Слайдер */
         .media-slider {
-            display: flex;
-            overflow-x: auto;
-            gap: 8px;
-            margin-bottom: 16px;
-            scroll-snap-type: x mandatory;
-            -webkit-overflow-scrolling: touch;
+            display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
+            gap: 8px; margin-bottom: 12px; border-radius: 12px;
         }
         .media-slider::-webkit-scrollbar { display: none; }
+        .media-slide { flex: 0 0 100%; scroll-snap-align: center; border-radius: 12px; overflow: hidden; }
+        .media-slide img, .media-slide video { width: 100%; aspect-ratio: 1/1; object-fit: cover; }
         
-        .media-slide {
-            flex: 0 0 100%;
-            scroll-snap-align: center;
-            border-radius: 12px;
-            overflow: hidden;
+        /* Чат */
+        .chat-container { height: 400px; overflow-y: auto; margin-bottom: 12px; }
+        .chat-message { margin-bottom: 12px; display: flex; }
+        .chat-message.user { justify-content: flex-end; }
+        .chat-bubble {
+            max-width: 80%; padding: 12px 16px; border-radius: 16px;
+            font-size: 14px; line-height: 1.4;
         }
-        .media-slide img, .media-slide video {
-            width: 100%;
-            aspect-ratio: 1/1;
-            object-fit: cover;
-        }
+        .chat-message.user .chat-bubble { background: var(--gold); color: #000; border-radius: 16px 16px 4px 16px; }
+        .chat-message.support .chat-bubble { background: var(--card2); border-radius: 16px 16px 16px 4px; }
         
-        .media-dots {
-            display: flex;
-            justify-content: center;
-            gap: 6px;
-            margin-bottom: 16px;
+        /* Акции */
+        .flash-sale {
+            background: linear-gradient(135deg, #ff6b6b, #ff4444);
+            color: #fff; padding: 16px; border-radius: 16px;
+            margin-bottom: 16px; text-align: center;
         }
-        .media-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: #444;
-            transition: all 0.2s;
-        }
-        .media-dot.active { background: var(--gold); width: 20px; border-radius: 10px; }
+        .flash-sale .timer { font-size: 24px; font-weight: 800; margin: 8px 0; }
         
-        /* Вкладки профиля */
-        .profile-tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
+        /* Воронка */
+        .funnel-visual { margin: 16px 0; }
+        .funnel-step {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px; margin-bottom: 4px;
         }
-        .profile-tabs::-webkit-scrollbar { display: none; }
-        
-        .profile-tab {
-            padding: 10px 20px;
-            border-radius: 25px;
-            background: var(--card);
-            border: 1px solid var(--border);
-            color: var(--text-secondary);
-            font-size: 13px;
-            white-space: nowrap;
-            cursor: pointer;
-            transition: all 0.2s;
+        .funnel-bar {
+            height: 40px; border-radius: 8px;
+            background: linear-gradient(90deg, var(--gold), var(--gold2));
+            display: flex; align-items: center; padding: 0 12px;
+            font-weight: 700; font-size: 13px; color: #000;
+            transition: width 1s;
         }
-        .profile-tab.active {
-            background: var(--gold);
-            color: #000;
-            border-color: var(--gold);
-            font-weight: 600;
-        }
-        
-        /* FAQ */
-        .faq-item {
-            background: var(--card);
-            border-radius: 14px;
-            margin-bottom: 8px;
-            border: 1px solid var(--border);
-            overflow: hidden;
-        }
-        .faq-question {
-            padding: 16px;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: 600;
-            font-size: 15px;
-        }
-        .faq-answer {
-            padding: 0 16px 16px;
-            color: var(--text-secondary);
-            font-size: 14px;
-            display: none;
-            line-height: 1.6;
-        }
-        .faq-item.open .faq-answer { display: block; }
-        .faq-item.open .faq-arrow { transform: rotate(180deg); }
-        .faq-arrow { transition: transform 0.2s; color: var(--gold); font-size: 12px; }
-        
-        /* Промокод */
-        .promo-row { display: flex; gap: 8px; margin: 16px 0; }
-        .promo-row .input-group { flex: 1; margin-bottom: 0; }
-        .promo-msg { font-size: 13px; margin-bottom: 8px; min-height: 20px; }
-        
-        /* Корзина */
-        .cart-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid var(--border);
-        }
-        .cart-item-name { flex: 1; font-size: 14px; }
-        .cart-item-price { font-weight: 700; margin: 0 12px; }
-        .cart-item-remove {
-            color: var(--danger);
-            cursor: pointer;
-            font-size: 18px;
-            padding: 4px 8px;
-        }
-        
-        .total-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 16px 0;
-            font-size: 20px;
-            font-weight: 700;
-        }
-        .discount-badge {
-            background: var(--gold);
-            color: #000;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        
-        /* Заказы */
-        .order-card {
-            background: var(--card);
-            border-radius: 14px;
-            padding: 16px;
-            margin-bottom: 12px;
-            border: 1px solid var(--border);
-        }
-        .order-status {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        .status-pending { background: #ffa500; color: #000; }
-        .status-paid { background: var(--success); color: #fff; }
-        .status-shipped { background: #3498db; color: #fff; }
-        .status-delivered { background: var(--gold); color: #000; }
-        .status-cancelled { background: var(--danger); color: #fff; }
-        
-        /* Уведомления */
-        .notification-item {
-            background: var(--card);
-            border-radius: 12px;
-            padding: 14px;
-            margin-bottom: 8px;
-            border: 1px solid var(--border);
-            border-left: 3px solid var(--gold);
-        }
-        .notification-item.unread { border-left-color: #3498db; }
-        
-        /* Подписка */
-        .plan-card {
-            background: var(--card);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 12px;
-            border: 2px solid var(--border);
-            text-align: center;
-            transition: all 0.3s;
-        }
-        .plan-card.recommended { border-color: var(--gold); }
-        .plan-card.recommended::before {
-            content: '🔥 РЕКОМЕНДУЕМ';
-            position: relative;
-            top: -32px;
-            background: var(--gold);
-            color: #000;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 700;
-        }
-        .plan-price { font-size: 32px; font-weight: 800; color: var(--gold); margin: 12px 0; }
-        .plan-perks { text-align: left; margin: 16px 0; }
-        .plan-perks li { margin: 8px 0; color: var(--text-secondary); font-size: 14px; }
         
         /* Toast */
         .toast {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--card);
-            color: var(--text);
-            padding: 14px 24px;
-            border-radius: 14px;
-            z-index: 300;
-            font-weight: 600;
-            border: 1px solid var(--border);
-            animation: slideDown 0.3s ease;
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: var(--card); color: var(--text);
+            padding: 14px 24px; border-radius: 14px;
+            z-index: 300; font-weight: 600; border: 1px solid var(--border);
+            animation: slideDown 0.3s;
         }
         @keyframes slideDown {
             from { transform: translateX(-50%) translateY(-100px); opacity: 0; }
             to { transform: translateX(-50%) translateY(0); opacity: 1; }
         }
         
-        /* Анимация добавления в корзину */
-        @keyframes addToCartAnim {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.2); }
-            100% { transform: scale(1); }
+        /* Таймер обратного отсчёта */
+        .countdown { display: flex; gap: 8px; justify-content: center; }
+        .countdown-item {
+            background: rgba(0,0,0,0.3); padding: 8px 10px;
+            border-radius: 8px; text-align: center; min-width: 45px;
         }
-        .cart-badge-anim { animation: addToCartAnim 0.3s ease; }
+        .countdown-value { font-size: 20px; font-weight: 800; }
+        .countdown-label { font-size: 9px; opacity: 0.7; }
         
-        /* Админ-панель */
-        .admin-section {
-            background: var(--card);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 16px;
-            border: 1px solid var(--border);
-        }
-        .admin-list-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px;
-            background: #111;
-            border-radius: 10px;
-            margin-bottom: 8px;
-        }
-        .admin-actions { display: flex; gap: 6px; }
-        .admin-actions button {
-            padding: 6px 12px;
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: 600;
-        }
+        .admin-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
         
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--text-secondary);
-        }
+        .empty-state { text-align: center; padding: 40px; color: var(--text2); }
         .empty-icon { font-size: 48px; margin-bottom: 12px; }
         
-        /* Аналитика */
-        .analytics-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-        .analytics-card {
-            background: var(--card);
-            padding: 16px;
-            border-radius: 14px;
-            border: 1px solid var(--border);
-            text-align: center;
-        }
-        .analytics-value { font-size: 28px; font-weight: 800; color: var(--gold); }
-        .analytics-label { font-size: 12px; color: var(--text-secondary); }
+        .tag { display: inline-block; padding: 4px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+        .tag-gold { background: var(--gold); color: #000; }
+        .tag-green { background: var(--success); color: #fff; }
     </style>
 </head>
 <body>
 
-    <!-- ============ МАГАЗИН ============ -->
+    <!-- МАГАЗИН -->
     <div id="shop" class="page active">
-        <h1>KODAMA <span class="gold-text">GOLD</span></h1>
+        <h1>KODAMA <span class="gold-gradient">GOLD</span></h1>
+        
+        <!-- Flash Sale -->
+        <div class="flash-sale" id="flash-sale" style="display:none;">
+            <div>🔥 <b>FLASH SALE!</b> Скидка 30%</div>
+            <div class="timer" id="flash-timer"></div>
+            <div class="countdown" id="flash-countdown"></div>
+        </div>
         
         <!-- Поиск -->
-        <div class="search-box">
-            <input class="input-group" placeholder="🔍 Поиск товаров..." id="search-input" oninput="searchProducts()">
+        <div class="search-container">
+            <input class="input" placeholder="🔍 Поиск товаров..." id="search-input" 
+                   oninput="handleSearch(this.value)" autocomplete="off">
+            <div class="search-suggestions" id="search-suggestions"></div>
         </div>
         
         <!-- Категории -->
-        <div class="categories-scroll" id="categories-list"></div>
+        <div style="display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;" id="categories-list"></div>
         
-        <!-- Сортировка -->
-        <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
-            <span style="color:var(--text-secondary);font-size:13px;">Сортировка:</span>
-            <select class="input-group" style="width:auto;margin-bottom:0;padding:8px 12px;" onchange="sortProducts(this.value)">
-                <option value="newest">Новые</option>
-                <option value="price_asc">Цена ↑</option>
-                <option value="price_desc">Цена ↓</option>
-                <option value="popular">Популярные</option>
-                <option value="rating">По рейтингу</option>
-            </select>
+        <!-- Товары -->
+        <div class="products-grid" id="products-list">
+            <!-- Скелетоны -->
+            <div class="skeleton skeleton-img"></div>
+            <div class="skeleton skeleton-img"></div>
         </div>
         
-        <div class="products-grid" id="products-list"></div>
-        
-        <div style="text-align:center;margin:20px 0;">
-            <button class="btn btn-secondary" id="load-more-btn" style="display:none;" onclick="loadMore()">
-                Загрузить ещё
-            </button>
-        </div>
-    </div>
-
-    <!-- ============ КОРЗИНА ============ -->
-    <div id="cart" class="page">
-        <h1>🛒 КОРЗИНА</h1>
-        <div id="cart-items"></div>
-        
-        <div class="promo-row">
-            <input id="promo" class="input-group" placeholder="Промокод">
-            <button class="btn btn-small" onclick="applyPromo()">Применить</button>
-        </div>
-        <div class="promo-msg" id="promo-msg"></div>
-        
-        <div class="total-row">
-            <span>Итого:</span>
-            <span id="total">0 ₽</span>
-        </div>
-        
-        <!-- Выбор доставки -->
-        <h3 style="margin-top:16px;">🚚 Доставка</h3>
-        <div id="delivery-options" style="margin-bottom:12px;">
-            <label style="display:flex;align-items:center;gap:8px;padding:12px;background:var(--card);border-radius:12px;margin-bottom:8px;cursor:pointer;">
-                <input type="radio" name="delivery" value="courier" checked onchange="updateDelivery()">
-                🚚 Курьерская доставка (300 ₽)
-            </label>
-            <label style="display:flex;align-items:center;gap:8px;padding:12px;background:var(--card);border-radius:12px;margin-bottom:8px;cursor:pointer;">
-                <input type="radio" name="delivery" value="pickup" onchange="updateDelivery()">
-                📦 Самовывоз (бесплатно)
-            </label>
-            <label style="display:flex;align-items:center;gap:8px;padding:12px;background:var(--card);border-radius:12px;cursor:pointer;">
-                <input type="radio" name="delivery" value="post" onchange="updateDelivery()">
-                📮 Почта России (200 ₽)
-            </label>
-        </div>
-        
-        <!-- Выбор оплаты -->
-        <h3>💳 Способ оплаты</h3>
-        <div id="payment-options" style="margin-bottom:12px;">
-            <label style="display:flex;align-items:center;gap:8px;padding:12px;background:var(--card);border-radius:12px;margin-bottom:8px;cursor:pointer;">
-                <input type="radio" name="payment" value="card" checked onchange="updatePayment()">
-                💳 Банковская карта
-            </label>
-            <label style="display:flex;align-items:center;gap:8px;padding:12px;background:var(--card);border-radius:12px;margin-bottom:8px;cursor:pointer;">
-                <input type="radio" name="payment" value="sbp" onchange="updatePayment()">
-                🔵 СБП
-            </label>
-            <label style="display:flex;align-items:center;gap:8px;padding:12px;background:var(--card);border-radius:12px;margin-bottom:8px;cursor:pointer;">
-                <input type="radio" name="payment" value="crypto" onchange="updatePayment()">
-                ₿ Криптовалюта
-            </label>
-            <label style="display:flex;align-items:center;gap:8px;padding:12px;background:var(--card);border-radius:12px;cursor:pointer;">
-                <input type="radio" name="payment" value="balance" onchange="updatePayment()">
-                💰 Внутренний баланс
-            </label>
-        </div>
-        
-        <button class="btn" onclick="checkout()" id="checkout-btn">
-            💳 ОФОРМИТЬ ЗАКАЗ
+        <button class="btn btn-outline" id="load-more" style="margin-top:16px;display:none;" onclick="loadMore()">
+            Загрузить ещё
         </button>
     </div>
 
-    <!-- ============ ПРОФИЛЬ ============ -->
+    <!-- КОРЗИНА -->
+    <div id="cart" class="page">
+        <h1>🛒 КОРЗИНА</h1>
+        <div id="cart-items"></div>
+        <div style="display:flex;gap:8px;margin:12px 0;">
+            <input class="input" placeholder="Промокод" id="promo" style="flex:1;margin:0;">
+            <button class="btn btn-small" onclick="applyPromo()">Применить</button>
+        </div>
+        <div id="promo-msg" style="font-size:13px;margin:8px 0;"></div>
+        
+        <h3>🚚 Доставка</h3>
+        <div id="delivery-options"></div>
+        
+        <h3>💳 Оплата</h3>
+        <div id="payment-options"></div>
+        
+        <div style="display:flex;justify-content:space-between;margin:16px 0;font-size:20px;font-weight:700;">
+            <span>Итого:</span>
+            <span id="total">0 ₽</span>
+        </div>
+        <div id="cashback-info" style="font-size:12px;color:var(--success);margin-bottom:8px;"></div>
+        
+        <button class="btn btn-pulse" onclick="checkout()">💳 ОФОРМИТЬ ЗАКАЗ</button>
+    </div>
+
+    <!-- ПРОФИЛЬ -->
     <div id="profile" class="page">
-        <div class="profile-header">
-            <img id="user-photo" src="https://via.placeholder.com/100" class="avatar">
-            <div class="username" id="user-name">Пользователь</div>
-            <div class="user-tag" id="user-tag">@username</div>
-            <div id="user-level" style="margin-top:8px;font-size:14px;"></div>
-        </div>
+        <div id="profile-main">
+            <div class="profile-header">
+                <img id="user-photo" src="https://via.placeholder.com/100" class="avatar">
+                <div class="username" id="user-name">Пользователь</div>
+                <div class="user-tag" id="user-tag">@username</div>
+                <div id="user-level-tag" style="margin-top:6px;"></div>
+                
+                <!-- Прогресс-бар уровня -->
+                <div class="level-bar" style="margin-top:12px;">
+                    <div class="level-fill" id="level-fill" style="width:0%;"></div>
+                </div>
+                <div class="level-text">
+                    <span id="current-level">🌱 Новичок</span>
+                    <span id="next-level">→ 🥉 Бронза</span>
+                </div>
+                
+                <!-- Бейджи -->
+                <div class="badges-row" id="badges-row"></div>
+            </div>
 
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-value" id="u-bal">0 ₽</div>
-                <div class="stat-label">Баланс</div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="u-bal">0 ₽</div>
+                    <div class="stat-label">Баланс</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="u-cashback">0 ₽</div>
+                    <div class="stat-label">Кэшбэк</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="u-spent">0 ₽</div>
+                    <div class="stat-label">Потрачено</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="u-xp">0 XP</div>
+                    <div class="stat-label">Опыт</div>
+                </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-value" id="u-refs">0</div>
-                <div class="stat-label">Рефералы</div>
-            </div>
-        </div>
 
-        <div class="profile-tabs">
-            <div class="profile-tab active" onclick="switchProfileTab('favorites')">❤️ Избранное</div>
-            <div class="profile-tab" onclick="switchProfileTab('orders')">📋 Заказы</div>
-            <div class="profile-tab" onclick="switchProfileTab('referral')">👥 Рефералы</div>
-            <div class="profile-tab" onclick="switchProfileTab('subscription')">💎 Подписка</div>
-            <div class="profile-tab" onclick="switchProfileTab('notifications')">🔔 Уведомления</div>
-            <div class="profile-tab" onclick="switchProfileTab('faq')">❓ FAQ</div>
-        </div>
+            <!-- Тема -->
+            <div class="theme-toggle">
+                <span>🌙 Тёмная</span>
+                <div class="theme-switch dark" id="theme-switch" onclick="toggleTheme()"></div>
+                <span>☀️ Светлая</span>
+            </div>
 
-        <div id="tab-favorites"><div class="products-grid" id="favorites-list"></div></div>
-        <div id="tab-orders" style="display:none;"><div id="orders-list"></div></div>
-        <div id="tab-referral" style="display:none;">
-            <div style="background:var(--card);border-radius:16px;padding:24px;border:1px solid var(--border);margin-bottom:16px;">
-                <h3 class="gold-text">🔗 Ваша реферальная ссылка</h3>
-                <div style="background:#111;padding:14px;border-radius:10px;word-break:break-all;font-size:13px;margin-bottom:12px;" id="ref-link">-</div>
-                <button class="btn btn-small" onclick="copyRef()">📋 Копировать</button>
-            </div>
-            <div style="background:var(--card);border-radius:16px;padding:24px;border:1px solid var(--border);">
-                <h3 class="gold-text">💰 Как работает?</h3>
-                <p style="color:var(--text-secondary);">Приглашайте друзей и получайте 10% от их покупок на баланс!</p>
+            <!-- Меню -->
+            <div class="menu-list">
+                <div class="menu-item" onclick="openProfileSection('orders')">
+                    <span class="menu-icon">📋</span>
+                    <span class="menu-text">Мои заказы</span>
+                    <span class="menu-arrow">→</span>
+                </div>
+                <div class="menu-item" onclick="openProfileSection('favorites')">
+                    <span class="menu-icon">❤️</span>
+                    <span class="menu-text">Избранное</span>
+                    <span class="menu-arrow">→</span>
+                </div>
+                <div class="menu-item" onclick="openProfileSection('subscription')">
+                    <span class="menu-icon">💎</span>
+                    <span class="menu-text">Подписка</span>
+                    <span class="menu-arrow">→</span>
+                </div>
+                <div class="menu-item" onclick="openProfileSection('referral')">
+                    <span class="menu-icon">👥</span>
+                    <span class="menu-text">Реферальная система</span>
+                    <span class="menu-arrow">→</span>
+                </div>
+                <div class="menu-item" onclick="openProfileSection('achievements')">
+                    <span class="menu-icon">🏆</span>
+                    <span class="menu-text">Достижения</span>
+                    <span class="menu-arrow">→</span>
+                </div>
+                <div class="menu-item" onclick="openProfileSection('chat')">
+                    <span class="menu-icon">💬</span>
+                    <span class="menu-text">Чат с поддержкой</span>
+                    <span id="chat-badge" class="menu-badge" style="display:none;">0</span>
+                    <span class="menu-arrow">→</span>
+                </div>
+                <div class="menu-item" onclick="openProfileSection('faq')">
+                    <span class="menu-icon">❓</span>
+                    <span class="menu-text">FAQ</span>
+                    <span class="menu-arrow">→</span>
+                </div>
             </div>
         </div>
-        <div id="tab-subscription" style="display:none;">
-            <div id="subscription-status"></div>
-            <div id="subscription-plans"></div>
-        </div>
-        <div id="tab-notifications" style="display:none;"><div id="notifications-list"></div></div>
-        <div id="tab-faq" style="display:none;">
-            <div class="faq-item"><div class="faq-question" onclick="this.parentElement.classList.toggle('open')">Как оформить заказ? <span class="faq-arrow">▼</span></div><div class="faq-answer">Выберите товар, добавьте в корзину, выберите доставку и оплату, нажмите «Оформить».</div></div>
-            <div class="faq-item"><div class="faq-question" onclick="this.parentElement.classList.toggle('open')">Как работает реферальная система? <span class="faq-arrow">▼</span></div><div class="faq-answer">Отправьте другу ссылку из раздела «Рефералы». Когда друг сделает заказ — вы получите 10% на баланс.</div></div>
-            <div class="faq-item"><div class="faq-question" onclick="this.parentElement.classList.toggle('open')">Способы оплаты? <span class="faq-arrow">▼</span></div><div class="faq-answer">Карта, СБП, криптовалюта (USDT/BTC) и внутренний баланс.</div></div>
-            <div class="faq-item"><div class="faq-question" onclick="this.parentElement.classList.toggle('open')">Как отследить заказ? <span class="faq-arrow">▼</span></div><div class="faq-answer">В разделе «Заказы» профиля отображается статус. Также приходят уведомления в бота.</div></div>
-            <div class="faq-item"><div class="faq-question" onclick="this.parentElement.classList.toggle('open')">Что даёт подписка? <span class="faq-arrow">▼</span></div><div class="faq-answer">Скидки до 15%, бесплатная доставка, эксклюзивные товары и многое другое.</div></div>
+        
+        <!-- Контент разделов -->
+        <div id="profile-section" style="display:none;">
+            <div class="section-back" onclick="closeProfileSection()">← Назад в профиль</div>
+            <div id="section-content"></div>
         </div>
     </div>
 
-    <!-- ============ АДМИН-ПАНЕЛЬ ============ -->
+    <!-- АДМИН-ПАНЕЛЬ -->
     <div id="admin" class="page">
         <h1>⚙️ АДМИН-ПАНЕЛЬ</h1>
-        
-        <div class="admin-section">
-            <h3>📦 Товары</h3>
-            <button class="btn btn-small" onclick="openProductModal()" style="margin-bottom:12px;">+ Добавить товар</button>
-            <div id="admin-products-list"></div>
+        <div id="admin-funnel" style="margin-bottom:16px;"></div>
+        <div class="menu-list">
+            <div class="menu-item" onclick="openAdminSection('products')">
+                <span class="menu-icon">📦</span><span class="menu-text">Товары</span><span class="menu-arrow">→</span>
+            </div>
+            <div class="menu-item" onclick="openAdminSection('promos')">
+                <span class="menu-icon">🎫</span><span class="menu-text">Промокоды</span><span class="menu-arrow">→</span>
+            </div>
+            <div class="menu-item" onclick="openAdminSection('users')">
+                <span class="menu-icon">👥</span><span class="menu-text">Пользователи</span><span class="menu-arrow">→</span>
+            </div>
+            <div class="menu-item" onclick="openAdminSection('orders')">
+                <span class="menu-icon">📋</span><span class="menu-text">Заказы</span><span class="menu-arrow">→</span>
+            </div>
+            <div class="menu-item" onclick="openAdminSection('analytics')">
+                <span class="menu-icon">📊</span><span class="menu-text">Аналитика</span><span class="menu-arrow">→</span>
+            </div>
+            <div class="menu-item" onclick="openAdminSection('ab_tests')">
+                <span class="menu-icon">🧪</span><span class="menu-text">А/Б Тесты</span><span class="menu-arrow">→</span>
+            </div>
         </div>
-        
-        <div class="admin-section">
-            <h3>🎫 Промокоды</h3>
-            <button class="btn btn-small" onclick="openPromoModal()" style="margin-bottom:12px;">+ Создать промокод</button>
-            <div id="admin-promos-list"></div>
-        </div>
-        
-        <div class="admin-section">
-            <h3>👥 Пользователи</h3>
-            <input class="input-group" placeholder="🔍 Поиск по username или ID" oninput="searchUsers(this.value)">
-            <div id="admin-users-list"></div>
-        </div>
-        
-        <div class="admin-section">
-            <h3>📋 Заказы</h3>
-            <div id="admin-orders-list"></div>
-        </div>
-        
-        <div class="admin-section">
-            <h3>📊 Аналитика</h3>
-            <div class="analytics-grid" id="analytics-data"></div>
+        <div id="admin-section" style="display:none;">
+            <div class="section-back" onclick="closeAdminSection()">← Назад</div>
+            <div id="admin-content"></div>
         </div>
     </div>
 
-    <!-- Модальные окна -->
+    <!-- Модальное окно товара -->
     <div class="modal-overlay" id="product-modal">
         <div class="modal">
             <button class="modal-close" onclick="closeModal('product-modal')">✕</button>
             <div class="media-slider" id="product-media"></div>
-            <div class="media-dots" id="media-dots"></div>
             <h2 id="modal-name"></h2>
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-                <span id="modal-price" style="font-size:24px;font-weight:800;color:var(--gold);"></span>
-                <span id="modal-old-price" style="text-decoration:line-through;color:var(--text-secondary);display:none;"></span>
+            <div id="modal-rating" style="margin-bottom:8px;"></div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                <span style="font-size:24px;font-weight:800;color:var(--gold);" id="modal-price"></span>
+                <span style="text-decoration:line-through;color:var(--text2);" id="modal-old-price"></span>
+                <span id="modal-badge"></span>
             </div>
-            <div id="modal-rating" style="margin-bottom:12px;"></div>
-            <p id="modal-desc" style="color:var(--text-secondary);margin-bottom:16px;line-height:1.6;"></p>
-            <div id="modal-reviews" style="margin-bottom:16px;"></div>
+            <p style="color:var(--text2);margin-bottom:16px;" id="modal-desc"></p>
+            
+            <!-- QR-код -->
+            <div style="text-align:center;margin:16px 0;">
+                <img id="modal-qr" style="width:150px;display:none;">
+                <button class="btn btn-small btn-outline" onclick="showQR()" id="qr-btn">📱 Поделиться QR</button>
+            </div>
+            
             <button class="btn" onclick="modalAddToCart()">🛒 В корзину</button>
-            <button class="btn btn-secondary" onclick="modalToggleWishlist()" style="margin-top:8px;">❤️ В избранное</button>
+            <button class="btn btn-outline" onclick="modalToggleFav()" style="margin-top:8px;">
+                <span id="fav-btn-text">❤️ В избранное</span>
+            </button>
         </div>
     </div>
 
@@ -774,7 +555,7 @@
         </div>
         <div class="nav-item" onclick="nav('cart', this)">
             <span class="nav-icon">🛒</span> Корзина
-            <span class="badge" id="cart-badge" style="display:none;">0</span>
+            <span class="nav-badge" id="cart-count" style="display:none;">0</span>
         </div>
         <div class="nav-item" onclick="nav('profile', this)">
             <span class="nav-icon">👤</span> Профиль
@@ -786,62 +567,114 @@
 
     <script>
         const tg = window.Telegram.WebApp;
-        const BASE_URL = 'https://multimedia-collecting-peak-arrives.trycloudflare.com'; // ЗАМЕНИ НА СВОЙ URL
+        const BASE_URL = 'https://multimedia-collecting-peak-arrives.trycloudflare.com'; // ← ЗАМЕНИ НА СВОЙ URL
+        
+        const LEVELS = {
+            'newbie': {name:'🌱 Новичок', min_xp:0, discount:0, cashback:1},
+            'bronze': {name:'🥉 Бронза', min_xp:1000, discount:3, cashback:2},
+            'silver': {name:'🥈 Серебро', min_xp:5000, discount:5, cashback:3},
+            'gold': {name:'🥇 Золото', min_xp:15000, discount:10, cashback:5},
+            'diamond': {name:'💎 Бриллиант', min_xp:50000, discount:15, cashback:7},
+            'legend': {name:'👑 Легенда', min_xp:10000, discount:20, cashback:10}
+        };
         
         let state = {
-            products: [],
-            categories: [],
-            cart: [],
-            favorites: [],
-            user: {},
-            currentProduct: null,
-            currentPage: 1,
-            totalPages: 1,
-            currentCategory: null,
-            currentSort: 'newest',
-            deliveryMethod: 'courier',
-            paymentMethod: 'card',
-            promoDiscount: 0,
-            promoCode: '',
-            notifications: []
+            products: [], categories: [],
+            cart: [], favorites: [], user: {},
+            currentProduct: null, currentPage: 1,
+            promoDiscount: 0, promoCode: '',
+            deliveryMethod: 'courier', paymentMethod: 'card',
+            theme: localStorage.getItem('theme') || 'dark',
+            variant: 'A',
+            notifications: [], searchTimeout: null
         };
 
         // ============ ИНИЦИАЛИЗАЦИЯ ============
         async function init() {
-            tg.ready();
-            tg.expand();
+            tg.ready(); tg.expand();
             
-            // Тема
-            if (tg.colorScheme === 'light') {
-                document.body.classList.add('light-theme');
-            }
+            applyTheme(state.theme);
             tg.onEvent('themeChanged', () => {
-                document.body.classList.toggle('light-theme', tg.colorScheme === 'light');
+                if (tg.colorScheme === 'light') applyTheme('light');
+                else applyTheme('dark');
             });
             
-            // Профиль из Telegram
             const user = tg.initDataUnsafe.user;
             if (user) {
                 document.getElementById('user-name').innerText = user.first_name || 'Пользователь';
-                document.getElementById('user-tag').innerText = '@' + (user.username || 'user' + user.id);
-                if (user.photo_url) {
-                    document.getElementById('user-photo').src = user.photo_url;
-                }
-                document.getElementById('ref-link').innerText = 
-                    `https://t.me/KodamaShopBot?start=${user.id}`;
+                document.getElementById('user-tag').innerText = '@' + (user.username || 'user'+user.id);
+                if (user.photo_url) document.getElementById('user-photo').src = user.photo_url;
             }
             
-            // Админ?
-            const adminIds = [1733464126, 8012481749];
-            if (adminIds.includes(user?.id)) {
-                document.getElementById('adm-nav').style.display = 'flex';
-            }
+            const admins = [1733464126, 8012481749];
+            if (admins.includes(user?.id)) document.getElementById('adm-nav').style.display = 'flex';
             
             await loadData();
-            loadFavoritesFromStorage();
+            loadCartFromStorage();
             updateCartUI();
+            renderDeliveryOptions();
+            renderPaymentOptions();
+            renderCategories();
+            initFlashSale();
         }
         
+        function applyTheme(mode) {
+            document.body.classList.toggle('light-theme', mode === 'light');
+            const sw = document.getElementById('theme-switch');
+            if (sw) sw.classList.toggle('dark', mode === 'dark');
+            state.theme = mode;
+            localStorage.setItem('theme', mode);
+        }
+        
+        function toggleTheme() {
+            applyTheme(state.theme === 'dark' ? 'light' : 'dark');
+        }
+        
+        // ============ FLASH SALE ============
+        function initFlashSale() {
+            const saleEnd = new Date();
+            saleEnd.setHours(saleEnd.getHours() + 2);
+            
+            if (localStorage.getItem('flash_sale_end')) {
+                const stored = new Date(localStorage.getItem('flash_sale_end'));
+                if (stored < new Date()) {
+                    localStorage.removeItem('flash_sale_end');
+                    return;
+                }
+            }
+            
+            document.getElementById('flash-sale').style.display = 'block';
+            updateFlashTimer();
+            setInterval(updateFlashTimer, 1000);
+        }
+        
+        function updateFlashTimer() {
+            const saleEnd = new Date(localStorage.getItem('flash_sale_end') || Date.now() + 7200000);
+            const now = new Date();
+            const left = Math.max(0, saleEnd - now);
+            
+            if (left <= 0) {
+                document.getElementById('flash-sale').style.display = 'none';
+                localStorage.removeItem('flash_sale_end');
+                return;
+            }
+            
+            const h = Math.floor(left / 3600000);
+            const m = Math.floor((left % 3600000) / 60000);
+            const s = Math.floor((left % 60000) / 1000);
+            
+            document.getElementById('flash-countdown').innerHTML = `
+                <div class="countdown-item"><div class="countdown-value">${String(h).padStart(2,'0')}</div><div class="countdown-label">часы</div></div>
+                <div class="countdown-item"><div class="countdown-value">${String(m).padStart(2,'0')}</div><div class="countdown-label">мин</div></div>
+                <div class="countdown-item"><div class="countdown-value">${String(s).padStart(2,'0')}</div><div class="countdown-label">сек</div></div>
+            `;
+            
+            if (!localStorage.getItem('flash_sale_end')) {
+                localStorage.setItem('flash_sale_end', saleEnd.toISOString());
+            }
+        }
+        
+        // ============ ДАННЫЕ ============
         async function loadData() {
             const uid = tg.initDataUnsafe.user?.id || 0;
             try {
@@ -849,91 +682,126 @@
                 const data = await res.json();
                 
                 state.products = data.products || [];
-                state.categories = data.categories || [];
                 state.user = data.user || {};
-                state.totalPages = data.pages || 1;
+                state.variant = data.ab_variant || 'A';
                 
                 updateProfileUI();
-                renderCategories();
                 renderProducts();
-                if (document.getElementById('admin').classList.contains('active')) {
-                    loadAdminData();
-                }
+                
+                // Применяем А/Б вариант
+                applyABVariant();
             } catch(e) {
                 console.error('Load error:', e);
-                showToast('Ошибка загрузки данных');
+                showToast('Ошибка загрузки');
+            }
+        }
+        
+        function applyABVariant() {
+            // Меняем цвет кнопок в зависимости от варианта
+            const root = document.documentElement;
+            if (state.variant === 'B') {
+                root.style.setProperty('--gold', '#FF6B6B');
+                root.style.setProperty('--gold2', '#FF4444');
             }
         }
         
         function updateProfileUI() {
+            if (!state.user) return;
+            
             document.getElementById('u-bal').innerText = (state.user.balance || 0) + ' ₽';
-            document.getElementById('u-refs').innerText = state.user.invited_count || 0;
+            document.getElementById('u-cashback').innerText = (state.user.cashback || 0) + ' ₽';
+            document.getElementById('u-spent').innerText = (state.user.total_spent || 0) + ' ₽';
+            document.getElementById('u-xp').innerText = (state.user.xp || 0) + ' XP';
             
             // Уровень
-            const spent = state.user.total_spent || 0;
-            let level = '⚪ Новичок';
-            if (spent >= 100000) level = '👑 Элит';
-            else if (spent >= 50000) level = '🟣 VIP';
-            else if (spent >= 20000) level = '🔵 Продвинутый';
-            else if (spent >= 5000) level = '🟢 Опытный';
-            document.getElementById('user-level').innerText = level;
+            const xp = state.user.xp || 0;
+            let currentLevel = 'newbie';
+            let nextLevel = 'bronze';
+            
+            for (const [key, data] of Object.entries(LEVELS)) {
+                if (xp >= data.min_xp) currentLevel = key;
+                if (data.min_xp > xp) { nextLevel = key; break; }
+            }
+            
+            const currentData = LEVELS[currentLevel];
+            const nextData = LEVELS[nextLevel];
+            
+            document.getElementById('user-level-tag').innerHTML = 
+                `<span class="tag tag-gold">${currentData.name}</span>`;
+            
+            const progress = nextData ? 
+                Math.min(100, ((xp - currentData.min_xp) / (nextData.min_xp - currentData.min_xp)) * 100) : 100;
+            
+            document.getElementById('level-fill').style.width = progress + '%';
+            document.getElementById('current-level').innerText = currentData.name;
+            document.getElementById('next-level').innerText = nextData ? `→ ${nextData.name}` : 'MAX';
+            
+            // Бейджи
+            const badges = JSON.parse(state.user.badges || '[]');
+            document.getElementById('badges-row').innerHTML = badges.map(b => 
+                `<span class="badge-item">${b}</span>`
+            ).join('') || '<span style="font-size:12px;color:var(--text2);">Покупайте чтобы получить бейджи</span>';
         }
         
-        // ============ ТОВАРЫ ============
+        // ============ КАТЕГОРИИ ============
         function renderCategories() {
-            const container = document.getElementById('categories-list');
-            container.innerHTML = '<div class="category-chip active" onclick="filterByCategory(null)">Все</div>' +
-                state.categories.map(c => 
-                    `<div class="category-chip" onclick="filterByCategory('${c.name}')">${c.icon || ''} ${c.name}</div>`
-                ).join('');
+            const cats = [
+                {name:'Все', icon:'🏠'},
+                {name:'Одежда', icon:'👕'},
+                {name:'Обувь', icon:'👟'},
+                {name:'Аксессуары', icon:'💍'},
+                {name:'Premium', icon:'💎'}
+            ];
+            
+            document.getElementById('categories-list').innerHTML = cats.map(c => `
+                <span class="tag ${c.name === 'Все' ? 'tag-gold' : ''}" 
+                      style="cursor:pointer;white-space:nowrap;"
+                      onclick="filterByCategory('${c.name === 'Все' ? '' : c.name}')">
+                    ${c.icon} ${c.name}
+                </span>
+            `).join('');
         }
         
-        function filterByCategory(cat) {
-            state.currentCategory = cat;
-            state.currentPage = 1;
-            document.querySelectorAll('.category-chip').forEach((chip, i) => {
-                chip.classList.toggle('active', i === 0 ? !cat : chip.innerText.includes(cat));
-            });
-            loadProducts();
+        async function filterByCategory(cat) {
+            const res = await fetch(`${BASE_URL}/products?category=${cat || ''}`);
+            const data = await res.json();
+            state.products = data.products;
+            renderProducts();
         }
         
-        function searchProducts() {
-            const query = document.getElementById('search-input').value;
+        // ============ ПОИСК ============
+        async function handleSearch(query) {
             clearTimeout(state.searchTimeout);
-            state.searchTimeout = setTimeout(() => {
-                state.currentPage = 1;
-                loadProducts(query);
+            
+            if (query.length < 2) {
+                document.getElementById('search-suggestions').classList.remove('active');
+                return;
+            }
+            
+            state.searchTimeout = setTimeout(async () => {
+                try {
+                    const res = await fetch(`${BASE_URL}/search/suggestions?q=${query}`);
+                    const suggestions = await res.json();
+                    
+                    const container = document.getElementById('search-suggestions');
+                    if (suggestions.length) {
+                        container.innerHTML = suggestions.map(s => `
+                            <div class="search-item" onclick="openProduct(${s.id});container.classList.remove('active');">
+                                <b>${s.name}</b> — ${s.price} ₽
+                            </div>
+                        `).join('');
+                        container.classList.add('active');
+                    } else {
+                        container.classList.remove('active');
+                    }
+                } catch(e) {}
             }, 300);
         }
         
-        function sortProducts(sort) {
-            state.currentSort = sort;
-            state.currentPage = 1;
-            loadProducts();
-        }
-        
-        async function loadProducts(search = '') {
-            const params = new URLSearchParams({
-                page: state.currentPage,
-                limit: 20,
-                sort: state.currentSort
-            });
-            if (state.currentCategory) params.append('category', state.currentCategory);
-            if (search) params.append('search', search);
-            
-            try {
-                const res = await fetch(`${BASE_URL}/products?${params}`);
-                const data = await res.json();
-                state.products = data.products;
-                state.totalPages = data.pages;
-                renderProducts();
-            } catch(e) {
-                console.error(e);
-            }
-        }
-        
+        // ============ ТОВАРЫ ============
         function renderProducts() {
             const list = document.getElementById('products-list');
+            
             if (!state.products.length) {
                 list.innerHTML = '<div class="empty-state"><div class="empty-icon">🛍️</div>Товары не найдены</div>';
                 return;
@@ -942,39 +810,40 @@
             list.innerHTML = state.products.map(p => {
                 const media = JSON.parse(p.image_url || '[]');
                 const thumb = media[0] || 'https://via.placeholder.com/300';
-                const isFav = state.favorites.includes(p.id);
-                const oldPrice = p.discount_price ? `<span class="product-discount">${p.price} ₽</span>` : '';
                 const price = p.discount_price || p.price;
+                const oldPrice = p.discount_price ? `<span class="product-old-price">${p.price} ₽</span>` : '';
+                const badge = p.badge ? `<span class="product-badge badge-${p.badge}">${p.badge.toUpperCase()}</span>` : '';
+                const isFav = state.favorites.includes(p.id);
                 
                 return `
                 <div class="product-card" onclick="openProduct(${p.id})">
-                    <button class="wishlist-btn" onclick="event.stopPropagation();quickToggleWishlist(${p.id})">
+                    <button class="wishlist-btn ${isFav ? 'active' : ''}" 
+                            onclick="event.stopPropagation();quickToggleFav(${p.id})">
                         ${isFav ? '❤️' : '🤍'}
                     </button>
+                    ${badge}
                     <img src="${thumb}" alt="${p.name}" loading="lazy">
                     <div class="product-info">
                         <div class="product-price">${price} ₽ ${oldPrice}</div>
                         <div class="product-name">${p.name}</div>
-                        <div class="product-rating">⭐ ${p.rating || 0} (${p.sales || 0} продаж)</div>
+                        <div class="product-rating">⭐ ${p.rating || 0} | 🛒 ${p.sales || 0}</div>
                     </div>
                 </div>`;
             }).join('');
             
-            // Кнопка "Загрузить ещё"
-            const loadMore = document.getElementById('load-more-btn');
-            if (state.currentPage < state.totalPages) {
-                loadMore.style.display = 'block';
-            } else {
-                loadMore.style.display = 'none';
-            }
+            document.getElementById('load-more').style.display = 'block';
         }
         
-        function loadMore() {
+        async function loadMore() {
             state.currentPage++;
-            loadProducts();
+            try {
+                const res = await fetch(`${BASE_URL}/products?page=${state.currentPage}`);
+                const data = await res.json();
+                state.products = [...state.products, ...data.products];
+                renderProducts();
+            } catch(e) {}
         }
         
-        // ============ МОДАЛЬНОЕ ОКНО ТОВАРА ============
         async function openProduct(id) {
             try {
                 const res = await fetch(`${BASE_URL}/product/${id}`);
@@ -983,31 +852,24 @@
                 
                 const media = JSON.parse(product.image_url || '[]');
                 const slider = document.getElementById('product-media');
-                const dots = document.getElementById('media-dots');
                 
-                if (media.length > 0) {
-                    slider.innerHTML = media.map((src, i) => `
+                if (media.length) {
+                    slider.innerHTML = media.map(src => `
                         <div class="media-slide">
-                            ${src.startsWith('data:video') 
-                                ? `<video src="${src}" controls playsinline></video>` 
-                                : `<img src="${src}" alt="${product.name}">`
+                            ${src.startsWith('data:video') ? 
+                                `<video src="${src}" controls playsinline></video>` : 
+                                `<img src="${src}" alt="${product.name}">`
                             }
                         </div>
                     `).join('');
-                    dots.innerHTML = media.map((_, i) => 
-                        `<div class="media-dot ${i === 0 ? 'active' : ''}"></div>`
-                    ).join('');
-                    
-                    slider.onscroll = () => {
-                        const idx = Math.round(slider.scrollLeft / slider.offsetWidth);
-                        document.querySelectorAll('.media-dot').forEach((d, i) => d.classList.toggle('active', i === idx));
-                    };
                 } else {
-                    slider.innerHTML = '<img src="https://via.placeholder.com/400" style="width:100%;border-radius:12px;">';
-                    dots.innerHTML = '';
+                    slider.innerHTML = '<div class="media-slide"><img src="https://via.placeholder.com/400"></div>';
                 }
                 
                 document.getElementById('modal-name').innerText = product.name;
+                document.getElementById('modal-rating').innerHTML = 
+                    `⭐ ${product.rating || 0} | 👁 ${product.views || 0} | 🛒 ${product.sales || 0}`;
+                document.getElementById('modal-desc').innerText = product.description || '';
                 
                 if (product.discount_price) {
                     document.getElementById('modal-price').innerText = product.discount_price + ' ₽';
@@ -1018,128 +880,99 @@
                     document.getElementById('modal-old-price').style.display = 'none';
                 }
                 
-                document.getElementById('modal-rating').innerHTML = 
-                    `⭐ ${product.rating || 0} | 👁 ${product.views || 0} просмотров | 🛒 ${product.sales || 0} продаж`;
-                document.getElementById('modal-desc').innerText = product.description || 'Описание отсутствует';
+                if (product.badge) {
+                    document.getElementById('modal-badge').innerHTML = 
+                        `<span class="tag tag-gold">${product.badge}</span>`;
+                }
                 
-                // Отзывы
-                loadReviews(id);
+                // QR
+                document.getElementById('modal-qr').style.display = 'none';
+                document.getElementById('qr-btn').style.display = 'inline-block';
+                
+                // Избранное
+                const isFav = state.favorites.includes(product.id);
+                document.getElementById('fav-btn-text').innerText = isFav ? '❤️ В избранном' : '🤍 В избранное';
                 
                 document.getElementById('product-modal').classList.add('active');
-            } catch(e) {
-                console.error(e);
-            }
+            } catch(e) { console.error(e); }
         }
         
-        async function loadReviews(productId) {
+        async function showQR() {
+            if (!state.currentProduct) return;
             try {
-                const res = await fetch(`${BASE_URL}/reviews/${productId}`);
-                const reviews = await res.json();
-                const container = document.getElementById('modal-reviews');
-                
-                if (reviews.length === 0) {
-                    container.innerHTML = '<p style="color:var(--text-secondary);">Пока нет отзывов</p>';
-                } else {
-                    container.innerHTML = '<h4>Отзывы:</h4>' + reviews.slice(0, 3).map(r => `
-                        <div style="background:var(--bg);padding:12px;border-radius:10px;margin-bottom:8px;">
-                            <div style="display:flex;justify-content:space-between;">
-                                <b>@${r.username || 'user'}</b>
-                                <span>${'⭐'.repeat(r.rating)}</span>
-                            </div>
-                            <p style="font-size:13px;color:var(--text-secondary);">${r.text || ''}</p>
-                        </div>
-                    `).join('');
-                }
-            } catch(e) {}
-        }
-        
-        function modalAddToCart() {
-            if (state.currentProduct) {
-                addToCart(state.currentProduct.id);
-                closeModal('product-modal');
-            }
-        }
-        
-        function modalToggleWishlist() {
-            if (state.currentProduct) {
-                toggleWishlist(state.currentProduct.id);
-            }
-        }
-        
-        function quickToggleWishlist(productId) {
-            toggleWishlist(productId);
-            renderProducts();
-        }
-        
-        async function toggleWishlist(productId) {
-            const uid = tg.initDataUnsafe.user?.id || 0;
-            try {
-                const res = await fetch(`${BASE_URL}/wishlist`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({user_id: uid, product_id: productId})
-                });
+                const res = await fetch(`${BASE_URL}/product/${state.currentProduct.id}/qr`);
                 const data = await res.json();
-                
-                if (data.action === 'added') {
-                    state.favorites.push(productId);
-                    showToast('❤️ Добавлено в избранное');
-                } else {
-                    state.favorites = state.favorites.filter(id => id !== productId);
-                    showToast('Удалено из избранного');
-                }
-                saveFavoritesToStorage();
-            } catch(e) {
-                // Локальное переключение
-                const idx = state.favorites.indexOf(productId);
-                if (idx > -1) {
-                    state.favorites.splice(idx, 1);
-                } else {
-                    state.favorites.push(productId);
-                }
-                saveFavoritesToStorage();
-            }
-        }
-        
-        function loadFavoritesFromStorage() {
-            const stored = localStorage.getItem('kodama_fav');
-            state.favorites = stored ? JSON.parse(stored) : [];
-        }
-        
-        function saveFavoritesToStorage() {
-            localStorage.setItem('kodama_fav', JSON.stringify(state.favorites));
+                document.getElementById('modal-qr').src = data.qr_code;
+                document.getElementById('modal-qr').style.display = 'block';
+                document.getElementById('qr-btn').style.display = 'none';
+            } catch(e) {}
         }
         
         function closeModal(id) {
             document.getElementById(id).classList.remove('active');
-            document.querySelectorAll('#' + id + ' video').forEach(v => v.pause());
+        }
+        
+        function modalAddToCart() {
+            if (state.currentProduct) {
+                addToCart(state.currentProduct);
+                closeModal('product-modal');
+                // Эффект Ripple
+                const btn = document.querySelector('#checkout-btn');
+                if (btn) btn.classList.add('btn-pulse');
+            }
+        }
+        
+        function modalToggleFav() {
+            if (!state.currentProduct) return;
+            quickToggleFav(state.currentProduct.id);
+            const isFav = state.favorites.includes(state.currentProduct.id);
+            document.getElementById('fav-btn-text').innerText = isFav ? '❤️ В избранном' : '🤍 В избранное';
+        }
+        
+        function quickToggleFav(id) {
+            const idx = state.favorites.indexOf(id);
+            if (idx > -1) {
+                state.favorites.splice(idx, 1);
+                showToast('Удалено из избранного');
+            } else {
+                state.favorites.push(id);
+                showToast('❤️ Добавлено в избранное');
+            }
+            localStorage.setItem('fav', JSON.stringify(state.favorites));
+            
+            // Отправляем на сервер
+            const uid = tg.initDataUnsafe.user?.id || 0;
+            fetch(`${BASE_URL}/wishlist`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({user_id: uid, product_id: id})
+            }).catch(() => {});
+            
+            renderProducts();
         }
         
         // ============ КОРЗИНА ============
-        function addToCart(productId) {
-            const product = state.products.find(p => p.id === productId);
-            if (!product) return;
-            
-            const existing = state.cart.find(item => item.id === productId);
+        function addToCart(product) {
+            const existing = state.cart.find(i => i.id === product.id);
             if (existing) {
                 existing.qty = (existing.qty || 1) + 1;
             } else {
-                const price = product.discount_price || product.price;
-                state.cart.push({id: productId, name: product.name, price: price, qty: 1});
+                state.cart.push({...product, qty: 1});
             }
-            
-            tg.HapticFeedback.impactOccurred('medium');
+            saveCartToStorage();
             updateCartUI();
-            showToast('Добавлено в корзину');
+            showToast('🛒 Добавлено в корзину');
             
-            // Анимация значка
-            const badge = document.getElementById('cart-badge');
-            badge.classList.add('cart-badge-anim');
-            setTimeout(() => badge.classList.remove('cart-badge-anim'), 300);
+            // Анимация бейджа
+            const badge = document.getElementById('cart-count');
+            badge.style.display = 'block';
+            badge.classList.add('bounce');
+            setTimeout(() => badge.classList.remove('bounce'), 500);
         }
         
         function removeFromCart(idx) {
             state.cart.splice(idx, 1);
+            saveCartToStorage();
             updateCartUI();
         }
         
@@ -1147,102 +980,110 @@
             const container = document.getElementById('cart-items');
             let total = 0;
             
-            if (state.cart.length === 0) {
+            if (!state.cart.length) {
                 container.innerHTML = '<div class="empty-state"><div class="empty-icon">🛒</div>Корзина пуста</div>';
             } else {
                 container.innerHTML = state.cart.map((item, idx) => {
-                    total += item.price * (item.qty || 1);
+                    total += item.price * item.qty;
                     return `
-                    <div class="cart-item">
-                        <span class="cart-item-name">${item.name} ${item.qty > 1 ? `x${item.qty}` : ''}</span>
-                        <span class="cart-item-price">${item.price * (item.qty || 1)} ₽</span>
-                        <span class="cart-item-remove" onclick="removeFromCart(${idx})">✕</span>
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
+                        <span style="flex:1;">${item.name} x${item.qty}</span>
+                        <span style="font-weight:700;margin:0 10px;">${item.price * item.qty} ₽</span>
+                        <span style="color:var(--danger);cursor:pointer;font-size:18px;" onclick="removeFromCart(${idx})">✕</span>
                     </div>`;
                 }).join('');
             }
             
             const discount = total * state.promoDiscount / 100;
             const finalTotal = Math.round(total - discount);
+            document.getElementById('total').innerText = finalTotal + ' ₽';
             
-            let totalHTML = `${finalTotal} ₽`;
-            if (state.promoDiscount > 0) {
-                totalHTML += ` <span class="discount-badge">-${state.promoDiscount}%</span>`;
-            }
-            document.getElementById('total').innerHTML = totalHTML;
+            // Кэшбэк
+            const level = LEVELS[state.user?.level || 'newbie'];
+            const cashback = Math.round(finalTotal * level.cashback / 100);
+            document.getElementById('cashback-info').innerText = 
+                cashback > 0 ? `💰 Кэшбэк: +${cashback} ₽ (${level.cashback}%)` : '';
             
-            // Бейдж корзины
-            const badge = document.getElementById('cart-badge');
-            const count = state.cart.length;
-            badge.innerText = count;
-            badge.style.display = count > 0 ? 'block' : 'none';
-            
-            // Кнопка оформления
-            const btn = document.getElementById('checkout-btn');
-            btn.disabled = count === 0;
-            btn.style.opacity = count === 0 ? '0.5' : '1';
+            // Бейдж
+            const badge = document.getElementById('cart-count');
+            badge.innerText = state.cart.length;
+            badge.style.display = state.cart.length > 0 ? 'flex' : 'none';
+        }
+        
+        function saveCartToStorage() { localStorage.setItem('cart', JSON.stringify(state.cart)); }
+        function loadCartFromStorage() { 
+            state.cart = JSON.parse(localStorage.getItem('cart') || '[]'); 
         }
         
         async function applyPromo() {
             const code = document.getElementById('promo').value.trim();
             if (!code) return;
             
-            const total = state.cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+            const total = state.cart.reduce((s, i) => s + i.price * i.qty, 0);
+            const res = await fetch(`${BASE_URL}/check_promo`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({code, order_amount: total})
+            });
+            const data = await res.json();
             
-            try {
-                const res = await fetch(`${BASE_URL}/check_promo`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({code, order_amount: total})
-                });
-                const data = await res.json();
-                
-                const msg = document.getElementById('promo-msg');
-                if (data.status === 'ok') {
-                    state.promoDiscount = data.discount;
-                    state.promoCode = code;
-                    msg.innerHTML = `<span style="color:var(--success);">✅ Скидка ${data.discount}%</span>`;
-                } else {
-                    state.promoDiscount = 0;
-                    state.promoCode = '';
-                    msg.innerHTML = '<span style="color:var(--danger);">❌ Недействительный код</span>';
-                }
-                updateCartUI();
-            } catch(e) {
-                document.getElementById('promo-msg').innerHTML = 
-                    '<span style="color:var(--danger);">Ошибка проверки</span>';
+            const msg = document.getElementById('promo-msg');
+            if (data.status === 'ok') {
+                state.promoDiscount = data.discount;
+                state.promoCode = code;
+                msg.innerHTML = `<span style="color:var(--success);">✅ Скидка ${data.discount}%</span>`;
+            } else {
+                state.promoDiscount = 0; state.promoCode = '';
+                msg.innerHTML = '<span style="color:var(--danger);">❌ Недействителен</span>';
             }
+            updateCartUI();
         }
         
-        function updateDelivery() {
-            state.deliveryMethod = document.querySelector('input[name="delivery"]:checked').value;
+        function renderDeliveryOptions() {
+            const options = [
+                {value:'courier', label:'🚚 Курьер (300 ₽)'},
+                {value:'pickup', label:'📦 Самовывоз (бесплатно)'},
+                {value:'post', label:'📮 Почта (200 ₽)'}
+            ];
+            document.getElementById('delivery-options').innerHTML = options.map(o => `
+                <label style="display:flex;align-items:center;gap:8px;padding:10px;background:var(--card);border-radius:10px;margin-bottom:6px;cursor:pointer;">
+                    <input type="radio" name="delivery" value="${o.value}" ${o.value==='courier'?'checked':''} onchange="state.deliveryMethod='${o.value}'">
+                    ${o.label}
+                </label>
+            `).join('');
         }
         
-        function updatePayment() {
-            state.paymentMethod = document.querySelector('input[name="payment"]:checked').value;
+        function renderPaymentOptions() {
+            const options = [
+                {value:'card', label:'💳 Банковская карта'},
+                {value:'sbp', label:'🔵 СБП'},
+                {value:'crypto', label:'₿ Криптовалюта'},
+                {value:'balance', label:'💰 Баланс'}
+            ];
+            document.getElementById('payment-options').innerHTML = options.map(o => `
+                <label style="display:flex;align-items:center;gap:8px;padding:10px;background:var(--card);border-radius:10px;margin-bottom:6px;cursor:pointer;">
+                    <input type="radio" name="payment" value="${o.value}" ${o.value==='card'?'checked':''} onchange="state.paymentMethod='${o.value}'">
+                    ${o.label}
+                </label>
+            `).join('');
         }
         
         async function checkout() {
-            if (state.cart.length === 0) {
-                tg.showAlert('Корзина пуста');
-                return;
-            }
+            if (!state.cart.length) { tg.showAlert('Корзина пуста'); return; }
             
             const totalText = document.getElementById('total').innerText;
             const total = parseInt(totalText.match(/\d+/)?.[0] || 0);
-            const uid = tg.initDataUnsafe.user?.id || 0;
             
             const orderData = {
                 action: 'checkout',
-                items: state.cart.map(item => item.id),
-                promo: state.promoCode,
-                total: total,
-                user_id: uid,
+                items: state.cart.map(i => i.id),
+                total, promo: state.promoCode,
+                user_id: tg.initDataUnsafe.user?.id || 0,
                 delivery_method: state.deliveryMethod,
                 payment_method: state.paymentMethod
             };
             
             try {
-                // Отправляем заказ через API
                 const res = await fetch(`${BASE_URL}/order`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -1251,319 +1092,390 @@
                 const result = await res.json();
                 
                 if (result.status === 'ok') {
-                    // Отправляем данные в бота
                     tg.sendData(JSON.stringify(orderData));
-                    tg.showAlert('✅ Заказ создан! Проверьте бота для оплаты.');
                     
-                    // Очищаем корзину
-                    state.cart = [];
-                    state.promoCode = '';
-                    state.promoDiscount = 0;
+                    state.cart = []; state.promoCode = ''; state.promoDiscount = 0;
                     document.getElementById('promo').value = '';
-                    document.getElementById('promo-msg').innerHTML = '';
-                    updateCartUI();
+                    saveCartToStorage(); updateCartUI();
+                    
+                    let msg = '✅ Заказ создан!';
+                    if (result.cashback) msg += `\n💰 Кэшбэк: +${result.cashback} ₽`;
+                    if (result.new_level) msg += `\n🎉 Новый уровень: ${LEVELS[result.new_level]?.name}`;
+                    if (result.xp_earned) msg += `\n⭐ +${result.xp_earned} XP`;
+                    
+                    tg.showAlert(msg);
                 } else {
-                    tg.showAlert('❌ Ошибка: ' + (result.message || 'неизвестная ошибка'));
+                    tg.showAlert('❌ Ошибка: ' + (result.message || ''));
                 }
             } catch(e) {
-                console.error('Checkout error:', e);
-                // Fallback
                 tg.sendData(JSON.stringify(orderData));
             }
         }
         
         // ============ ПРОФИЛЬ ============
-        function switchProfileTab(tab) {
-            document.querySelectorAll('.profile-tab').forEach((t, i) => {
-                const tabs = ['favorites', 'orders', 'referral', 'subscription', 'notifications', 'faq'];
-                t.classList.toggle('active', tabs[i] === tab);
-            });
+        function openProfileSection(section) {
+            document.getElementById('profile-main').style.display = 'none';
+            document.getElementById('profile-section').style.display = 'block';
             
-            document.querySelectorAll('[id^="tab-"]').forEach(el => el.style.display = 'none');
-            document.getElementById('tab-' + tab).style.display = 'block';
-            
-            if (tab === 'favorites') renderFavorites();
-            if (tab === 'orders') loadOrders();
-            if (tab === 'subscription') loadSubscription();
-            if (tab === 'notifications') loadNotifications();
-        }
-        
-        function renderFavorites() {
-            const list = document.getElementById('favorites-list');
-            const favProducts = state.products.filter(p => state.favorites.includes(p.id));
-            
-            if (!favProducts.length) {
-                list.innerHTML = '<div class="empty-state"><div class="empty-icon">❤️</div>Нет избранных товаров</div>';
-                return;
-            }
-            
-            list.innerHTML = favProducts.map(p => {
-                const media = JSON.parse(p.image_url || '[]');
-                const thumb = media[0] || 'https://via.placeholder.com/300';
-                const price = p.discount_price || p.price;
-                return `
-                <div class="product-card" onclick="openProduct(${p.id})">
-                    <img src="${thumb}" alt="${p.name}">
-                    <div class="product-info">
-                        <div class="product-price">${price} ₽</div>
-                        <div class="product-name">${p.name}</div>
-                    </div>
-                </div>`;
-            }).join('');
-        }
-        
-        async function loadOrders() {
+            const container = document.getElementById('section-content');
             const uid = tg.initDataUnsafe.user?.id || 0;
-            const list = document.getElementById('orders-list');
             
+            switch(section) {
+                case 'orders':
+                    loadOrders(container, uid); break;
+                case 'favorites':
+                    renderFavorites(container); break;
+                case 'subscription':
+                    renderSubscription(container); break;
+                case 'referral':
+                    renderReferral(container, uid); break;
+                case 'achievements':
+                    loadAchievements(container, uid); break;
+                case 'chat':
+                    renderChat(container, uid); break;
+                case 'faq':
+                    renderFAQ(container); break;
+            }
+        }
+        
+        function closeProfileSection() {
+            document.getElementById('profile-main').style.display = 'block';
+            document.getElementById('profile-section').style.display = 'none';
+        }
+        
+        async function loadOrders(container, uid) {
             try {
                 const res = await fetch(`${BASE_URL}/orders/${uid}`);
                 const orders = await res.json();
-                
                 if (!orders.length) {
-                    list.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div>Нет заказов</div>';
-                    return;
+                    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div>Нет заказов</div>';
+                } else {
+                    container.innerHTML = orders.map(o => `
+                        <div class="card">
+                            <div style="display:flex;justify-content:space-between;">
+                                <b>Заказ #${o.id}</b>
+                                <span>${o.status}</span>
+                            </div>
+                            <div style="margin-top:8px;color:var(--text2);">
+                                💰 ${o.total_amount} ₽ | 📅 ${o.created_at?.split('T')[0]}
+                            </div>
+                        </div>
+                    `).join('');
                 }
-                
-                const statusNames = {
-                    'pending': '⏳ Ожидает оплаты',
-                    'paid': '✅ Оплачен',
-                    'shipped': '📦 Отправлен',
-                    'delivered': '🎉 Доставлен',
-                    'cancelled': '❌ Отменён'
-                };
-                const statusClasses = {
-                    'pending': 'status-pending',
-                    'paid': 'status-paid',
-                    'shipped': 'status-shipped',
-                    'delivered': 'status-delivered',
-                    'cancelled': 'status-cancelled'
-                };
-                
-                list.innerHTML = orders.map(o => `
-                    <div class="order-card">
-                        <div style="display:flex;justify-content:space-between;align-items:center;">
-                            <b>Заказ #${o.id}</b>
-                            <span class="order-status ${statusClasses[o.status] || ''}">${statusNames[o.status] || o.status}</span>
+            } catch(e) {}
+        }
+        
+        function renderFavorites(container) {
+            const favProducts = state.products.filter(p => state.favorites.includes(p.id));
+            if (!favProducts.length) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-icon">❤️</div>Нет избранного</div>';
+            } else {
+                container.innerHTML = '<div class="products-grid">' + favProducts.map(p => {
+                    const media = JSON.parse(p.image_url || '[]');
+                    return `
+                    <div class="product-card" onclick="openProduct(${p.id})">
+                        <img src="${media[0] || 'https://via.placeholder.com/300'}">
+                        <div class="product-info">
+                            <div class="product-price">${p.discount_price || p.price} ₽</div>
+                            <div class="product-name">${p.name}</div>
                         </div>
-                        <div style="color:var(--text-secondary);font-size:13px;margin-top:8px;">
-                            Сумма: <b>${o.total_amount} ₽</b> | ${o.created_at?.split('T')[0] || ''}
-                        </div>
-                        ${o.tracking_number ? `<div style="margin-top:4px;">📮 Трек: ${o.tracking_number}</div>` : ''}
-                    </div>
-                `).join('');
-            } catch(e) {
-                list.innerHTML = '<div class="empty-state">Ошибка загрузки</div>';
+                    </div>`;
+                }).join('') + '</div>';
             }
         }
         
-        async function loadSubscription() {
-            const uid = tg.initDataUnsafe.user?.id || 0;
-            const statusDiv = document.getElementById('subscription-status');
-            const plansDiv = document.getElementById('subscription-plans');
-            
-            // Планы
-            plansDiv.innerHTML = `
-                <div class="plan-card">
-                    <h3>🟡 BASIC</h3>
-                    <div class="plan-price">299 ₽/мес</div>
-                    <ul class="plan-perks">
-                        <li>✅ Скидка 5% на все товары</li>
-                        <li>✅ Ранний доступ к новинкам</li>
-                        <li>✅ Бесплатная доставка от 3000₽</li>
-                    </ul>
-                    <button class="btn" onclick="subscribe('basic')">Подписаться</button>
+        function renderSubscription(container) {
+            container.innerHTML = `
+                <div class="card">
+                    <h3>💎 Подписка KODAMA GOLD</h3>
+                    <p style="color:var(--text2);">Эксклюзивные привилегии для наших клиентов</p>
                 </div>
-                <div class="plan-card recommended">
-                    <h3>💎 PREMIUM</h3>
-                    <div class="plan-price">999 ₽/мес</div>
-                    <ul class="plan-perks">
-                        <li>✅ Скидка 15% на все товары</li>
-                        <li>✅ Бесплатная доставка</li>
-                        <li>✅ Эксклюзивные товары</li>
-                        <li>✅ Приоритетная поддержка</li>
-                        <li>✅ Подарок каждый месяц</li>
+                <div class="card">
+                    <h3>🟡 BASIC — 299 ₽/мес</h3>
+                    <ul style="color:var(--text2);padding-left:20px;">
+                        <li>Скидка 5%</li><li>Ранний доступ</li><li>Доставка от 3000₽ бесплатно</li>
                     </ul>
-                    <button class="btn" onclick="subscribe('premium')">Подписаться</button>
+                    <button class="btn btn-small" style="margin-top:12px;" onclick="subscribePlan('basic')">Подписаться</button>
+                </div>
+                <div class="card" style="border-color:var(--gold);">
+                    <h3>💎 PREMIUM — 999 ₽/мес</h3>
+                    <ul style="color:var(--text2);padding-left:20px;">
+                        <li>Скидка 15%</li><li>Бесплатная доставка</li><li>Эксклюзивные товары</li>
+                    </ul>
+                    <button class="btn btn-small" style="margin-top:12px;" onclick="subscribePlan('premium')">Подписаться</button>
                 </div>
             `;
         }
         
-        async function subscribe(plan) {
-            const uid = tg.initDataUnsafe.user?.id || 0;
-            const prices = {basic: 299, premium: 999};
-            
-            // Отправляем в бота
-            tg.sendData(JSON.stringify({
-                action: 'subscribe',
-                plan: plan,
-                price: prices[plan],
-                user_id: uid
-            }));
-            
-            tg.showAlert('📝 Заявка на подписку отправлена! Проверьте бота для оплаты.');
+        function subscribePlan(plan) {
+            tg.sendData(JSON.stringify({action:'subscribe', plan, 
+                price: plan==='basic'?299:999,
+                user_id: tg.initDataUnsafe.user?.id || 0}));
+            tg.showAlert('Заявка отправлена! Проверьте бота.');
         }
         
-        async function loadNotifications() {
-            const uid = tg.initDataUnsafe.user?.id || 0;
-            const list = document.getElementById('notifications-list');
-            
+        function renderReferral(container, uid) {
+            const refLink = `https://t.me/KodamaShopBot?start=${uid}`;
+            container.innerHTML = `
+                <div class="card">
+                    <h3>🔗 Ваша ссылка</h3>
+                    <div style="background:var(--bg);padding:14px;border-radius:10px;word-break:break-all;font-size:13px;margin:12px 0;">${refLink}</div>
+                    <button class="btn btn-small" onclick="copyText('${refLink}')">📋 Копировать</button>
+                </div>
+                <div class="card">
+                    <h3>💰 Как заработать?</h3>
+                    <div style="color:var(--text2);line-height:1.8;">
+                        <p>🎯 <b>Шаг 1:</b> Отправьте ссылку другу</p>
+                        <p>🔗 <b>Шаг 2:</b> Друг регистрируется</p>
+                        <p>🛍 <b>Шаг 3:</b> Друг делает покупку</p>
+                        <p>💎 <b>Шаг 4:</b> Вы получаете <b>10%</b> от заказа!</p>
+                        <div style="background:var(--bg);padding:12px;border-radius:10px;margin-top:12px;">
+                            📊 <b>Пример:</b><br>
+                            5000₽ → <span style="color:var(--gold);">+500₽</span> на баланс
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        async function loadAchievements(container, uid) {
             try {
-                const res = await fetch(`${BASE_URL}/notifications/${uid}`);
-                const data = await res.json();
-                state.notifications = data.notifications || [];
+                const res = await fetch(`${BASE_URL}/achievements/${uid}`);
+                const achievements = await res.json();
                 
-                if (!state.notifications.length) {
-                    list.innerHTML = '<div class="empty-state"><div class="empty-icon">🔔</div>Нет уведомлений</div>';
-                    return;
+                container.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
+                    Object.entries(achievements).map(([id, a]) => `
+                        <div class="card" style="text-align:center;opacity:${a.unlocked ? '1' : '0.4'};">
+                            <div style="font-size:36px;">${a.icon}</div>
+                            <div style="font-weight:600;">${a.name}</div>
+                            <div style="font-size:12px;color:var(--text2);">+${a.xp} XP</div>
+                            ${!a.unlocked ? '<span class="tag" style="margin-top:4px;">🔒</span>' : 
+                                '<span class="tag tag-green">✅</span>'}
+                        </div>
+                    `).join('') + '</div>';
+            } catch(e) {}
+        }
+        
+        async function renderChat(container, uid) {
+            container.innerHTML = `
+                <div class="chat-container" id="chat-messages" style="height:350px;overflow-y:auto;margin-bottom:12px;"></div>
+                <div style="display:flex;gap:8px;">
+                    <input class="input" placeholder="Сообщение..." id="chat-input" style="flex:1;margin:0;">
+                    <button class="btn btn-small" onclick="sendChatMessage()">➤</button>
+                </div>
+            `;
+            loadChatMessages(uid);
+        }
+        
+        async function loadChatMessages(uid) {
+            try {
+                const res = await fetch(`${BASE_URL}/messages/${uid}`);
+                const messages = await res.json();
+                const container = document.getElementById('chat-messages');
+                if (container) {
+                    container.innerHTML = messages.map(m => `
+                        <div class="chat-message ${m.is_from_user ? 'user' : 'support'}">
+                            <div class="chat-bubble">${m.text}</div>
+                        </div>
+                    `).join('');
+                    container.scrollTop = container.scrollHeight;
                 }
-                
-                list.innerHTML = state.notifications.map(n => `
-                    <div class="notification-item ${n.is_read ? '' : 'unread'}">
-                        <b>${n.title}</b>
-                        <p style="font-size:13px;color:var(--text-secondary);">${n.message}</p>
-                        <span style="font-size:11px;color:var(--text-secondary);">${n.created_at}</span>
-                    </div>
-                `).join('');
-            } catch(e) {
-                list.innerHTML = '<div class="empty-state">Ошибка загрузки</div>';
+            } catch(e) {}
+        }
+        
+        async function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (!text) return;
+            
+            const uid = tg.initDataUnsafe.user?.id || 0;
+            
+            await fetch(`${BASE_URL}/messages`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({user_id: uid, text, is_from_user: true})
+            });
+            
+            input.value = '';
+            loadChatMessages(uid);
+        }
+        
+        function renderFAQ(container) {
+            container.innerHTML = `
+                <div class="card"><h3>Как оформить заказ?</h3><p style="color:var(--text2);">Добавьте товар в корзину, выберите доставку и оплату, нажмите «Оформить».</p></div>
+                <div class="card"><h3>Какие способы оплаты?</h3><p style="color:var(--text2);">Карта, СБП, криптовалюта, баланс.</p></div>
+                <div class="card"><h3>Как работает кэшбэк?</h3><p style="color:var(--text2);">С каждой покупки начисляется кэшбэк (1-10% в зависимости от уровня).</p></div>
+                <div class="card"><h3>Как повысить уровень?</h3><p style="color:var(--text2);">Покупайте больше, получайте XP и открывайте новые уровни.</p></div>
+                <div class="card"><h3>Реферальная система?</h3><p style="color:var(--text2);">Получайте 10% от покупок приглашённых друзей.</p></div>
+            `;
+        }
+        
+        // ============ АДМИН ============
+        async function openAdminSection(section) {
+            document.querySelector('#admin .menu-list').style.display = 'none';
+            document.querySelector('#admin h1').style.display = 'none';
+            document.getElementById('admin-section').style.display = 'block';
+            
+            const container = document.getElementById('admin-content');
+            
+            switch(section) {
+                case 'products':
+                    await loadAdminProducts(container); break;
+                case 'promos':
+                    await loadAdminPromos(container); break;
+                case 'users':
+                    await loadAdminUsers(container); break;
+                case 'orders':
+                    await loadAdminOrders(container); break;
+                case 'analytics':
+                    await loadAdminAnalytics(container); break;
+                case 'ab_tests':
+                    await loadABTests(container); break;
             }
         }
         
-        function copyRef() {
-            const link = document.getElementById('ref-link').innerText;
-            navigator.clipboard.writeText(link).then(() => showToast('✅ Скопировано!'));
+        function closeAdminSection() {
+            document.querySelector('#admin .menu-list').style.display = '';
+            document.querySelector('#admin h1').style.display = '';
+            document.getElementById('admin-section').style.display = 'none';
         }
         
-        // ============ АДМИН-ПАНЕЛЬ ============
-        async function loadAdminData() {
+        async function loadAdminFunnel() {
             try {
-                const res = await fetch(`${BASE_URL}/admin_data`);
-                const data = await res.json();
+                const res = await fetch(`${BASE_URL}/funnel`);
+                const funnel = await res.json();
+                const max = Math.max(funnel.visits, funnel.product_views, funnel.cart_adds, funnel.checkouts, funnel.orders, 1);
                 
-                // Товары
-                document.getElementById('admin-products-list').innerHTML = (data.products || []).map(p => `
-                    <div class="admin-list-item">
-                        <span>${p.name} — <b style="color:var(--gold);">${p.price} ₽</b></span>
-                        <div class="admin-actions">
-                            <button style="background:var(--gold);color:#000;" onclick="editProduct(${p.id})">✏️</button>
-                            <button style="background:var(--danger);color:#fff;" onclick="deleteProduct(${p.id})">🗑</button>
+                const steps = [
+                    {label:'👥 Посетители', value: funnel.visits, rate: 100},
+                    {label:'👁 Просмотры', value: funnel.product_views, rate: funnel.view_rate},
+                    {label:'🛒 В корзине', value: funnel.cart_adds, rate: funnel.cart_rate},
+                    {label:'📝 Оформляют', value: funnel.checkouts, rate: funnel.checkout_rate},
+                    {label:'✅ Заказы', value: funnel.orders, rate: funnel.conversion}
+                ];
+                
+                document.getElementById('admin-funnel').innerHTML = `
+                    <div class="card"><h3>📊 Воронка продаж (30 дней)</h3></div>
+                    <div class="funnel-visual">` +
+                    steps.map(s => `
+                        <div class="funnel-step">
+                            <span style="width:120px;font-size:13px;">${s.label}</span>
+                            <div class="funnel-bar" style="width:${Math.max(20, (s.value / max) * 100)}%;">
+                                ${s.value} (${s.rate}%)
+                            </div>
                         </div>
-                    </div>
-                `).join('') || 'Нет товаров';
-                
-                // Промокоды
-                document.getElementById('admin-promos-list').innerHTML = (data.promos || []).map(p => `
-                    <div class="admin-list-item">
-                        <span><b>${p.code}</b> — ${p.discount}% (ост: ${p.uses_left})</span>
-                        <div class="admin-actions">
-                            <button style="background:var(--danger);color:#fff;" onclick="deletePromo('${p.code}')">🗑</button>
-                        </div>
-                    </div>
-                `).join('') || 'Нет промокодов';
-                
-                // Пользователи
-                document.getElementById('admin-users-list').innerHTML = (data.users || []).slice(0, 20).map(u => `
-                    <div class="admin-list-item" onclick="openUserCard(${u.user_id})">
-                        <span>@${u.username || 'нет'} (ID: ${u.user_id})</span>
-                        <span style="color:var(--gold);">💰 ${u.balance || 0} ₽</span>
-                    </div>
-                `).join('');
-                
-                // Аналитика
-                const analytics = data.analytics || [];
-                const totalRevenue = analytics.reduce((s, a) => s + a.revenue, 0);
-                const totalOrders = analytics.reduce((s, a) => s + a.orders_count, 0);
-                const totalVisits = analytics.reduce((s, a) => s + a.visits, 0);
-                
-                document.getElementById('analytics-data').innerHTML = `
-                    <div class="analytics-card">
-                        <div class="analytics-value">${totalRevenue} ₽</div>
-                        <div class="analytics-label">Выручка (30 дн)</div>
-                    </div>
-                    <div class="analytics-card">
-                        <div class="analytics-value">${totalOrders}</div>
-                        <div class="analytics-label">Заказов</div>
-                    </div>
-                    <div class="analytics-card">
-                        <div class="analytics-value">${totalVisits}</div>
-                        <div class="analytics-label">Посетителей</div>
-                    </div>
-                    <div class="analytics-card">
-                        <div class="analytics-value">${data.users?.length || 0}</div>
-                        <div class="analytics-label">Пользователей</div>
-                    </div>
-                `;
-            } catch(e) {
-                console.error(e);
-            }
+                    `).join('') + '</div>';
+            } catch(e) {}
         }
         
-        function searchUsers(query) {
-            // Простой фильтр по отображаемым пользователям
-            const items = document.querySelectorAll('#admin-users-list .admin-list-item');
-            items.forEach(item => {
-                const text = item.innerText.toLowerCase();
-                item.style.display = text.includes(query.toLowerCase()) ? 'flex' : 'none';
+        async function loadAdminProducts(container) {
+            const res = await fetch(`${BASE_URL}/admin_data`);
+            const data = await res.json();
+            container.innerHTML = (data.products || []).map(p => `
+                <div class="admin-row">
+                    <span>${p.name} — <b>${p.price} ₽</b></span>
+                    <div>
+                        <button class="btn btn-small" onclick="editAdminProduct(${p.id})">✏️</button>
+                        <button class="btn btn-small" style="background:var(--danger);color:#fff;" onclick="deleteAdminProduct(${p.id})">🗑</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        async function loadAdminPromos(container) {
+            const res = await fetch(`${BASE_URL}/admin_data`);
+            const data = await res.json();
+            container.innerHTML = (data.promos || []).map(p => `
+                <div class="admin-row">
+                    <span><b>${p.code}</b> — ${p.discount}%</span>
+                    <button class="btn btn-small" style="background:var(--danger);color:#fff;" onclick="deleteAdminPromo('${p.code}')">🗑</button>
+                </div>
+            `).join('');
+        }
+        
+        async function loadAdminUsers(container) {
+            const res = await fetch(`${BASE_URL}/admin_data`);
+            const data = await res.json();
+            container.innerHTML = '<input class="input" placeholder="🔍 Поиск..." oninput="searchAdminRows(this.value)">' +
+                (data.users || []).map(u => `
+                <div class="admin-row user-row">
+                    <span>@${u.username || 'нет'} (ID:${u.user_id})</span>
+                    <span>💰 ${u.balance || 0} ₽ | ${u.level || 'newbie'}</span>
+                </div>
+            `).join('');
+        }
+        
+        async function loadAdminOrders(container) {
+            const res = await fetch(`${BASE_URL}/admin_data`);
+            const data = await res.json();
+            container.innerHTML = (data.orders || []).map(o => `
+                <div class="card">
+                    <b>#${o.id}</b> | ${o.status} | ${o.total_amount} ₽
+                </div>
+            `).join('');
+        }
+        
+        async function loadAdminAnalytics(container) {
+            const res = await fetch(`${BASE_URL}/admin_data`);
+            const data = await res.json();
+            const a = data.analytics || [];
+            const rev = a.reduce((s,x)=>s+x.revenue,0);
+            const ord = a.reduce((s,x)=>s+x.orders_count,0);
+            
+            container.innerHTML = `
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-value">${rev} ₽</div><div class="stat-label">Выручка</div></div>
+                    <div class="stat-card"><div class="stat-value">${ord}</div><div class="stat-label">Заказов</div></div>
+                </div>
+            `;
+        }
+        
+        async function loadABTests(container) {
+            container.innerHTML = '<div class="card"><h3>А/Б Тест: Цвет кнопок</h3><p style="color:var(--text2);">A = Золотой | B = Красный</p></div>';
+        }
+        
+        function searchAdminRows(query) {
+            document.querySelectorAll('.user-row').forEach(r => {
+                r.style.display = r.innerText.toLowerCase().includes(query.toLowerCase()) ? 'flex' : 'none';
             });
         }
         
-        function openProductModal() {
-            // Для простоты - редирект в бота для добавления товара
-            tg.sendData(JSON.stringify({action: 'add_product'}));
-            tg.showAlert('Откройте бота для добавления товара');
+        async function editAdminProduct(id) {
+            tg.sendData(JSON.stringify({action:'edit_product', product_id: id}));
+            tg.showAlert('Редактирование в боте');
         }
         
-        function editProduct(id) {
-            tg.sendData(JSON.stringify({action: 'edit_product', product_id: id}));
-            tg.showAlert('Откройте бота для редактирования');
+        async function deleteAdminProduct(id) {
+            if (!confirm('Удалить?')) return;
+            await fetch(`${BASE_URL}/admin_action`, {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({action:'delete_product', product_id: id})
+            });
+            loadAdminProducts(document.getElementById('admin-content'));
         }
         
-        async function deleteProduct(id) {
-            if (!confirm('Удалить товар?')) return;
-            try {
-                await fetch(`${BASE_URL}/admin_action`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({action: 'delete_product', product_id: id})
-                });
-                showToast('🗑 Удалено');
-                loadAdminData();
-            } catch(e) {}
+        async function deleteAdminPromo(code) {
+            if (!confirm('Удалить?')) return;
+            await fetch(`${BASE_URL}/admin_action`, {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({action:'delete_promo', code})
+            });
+            loadAdminPromos(document.getElementById('admin-content'));
         }
         
-        function openPromoModal() {
-            tg.sendData(JSON.stringify({action: 'add_promo'}));
-            tg.showAlert('Откройте бота для создания промокода');
-        }
-        
-        async function deletePromo(code) {
-            if (!confirm('Удалить промокод?')) return;
-            try {
-                await fetch(`${BASE_URL}/admin_action`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({action: 'delete_promo', code})
-                });
-                showToast('🗑 Удалено');
-                loadAdminData();
-            } catch(e) {}
-        }
-        
-        function openUserCard(uid) {
-            tg.sendData(JSON.stringify({action: 'view_user', user_id: uid}));
-            tg.showAlert('Откройте бота для просмотра пользователя');
-        }
-        
-        // ============ УТИЛИТЫ ============
+        // ============ НАВИГАЦИЯ ============
         function nav(pageId, el) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
             if (el) el.classList.add('active');
             
-            if (pageId === 'admin') loadAdminData();
             if (pageId === 'profile') updateProfileUI();
+            if (pageId === 'admin') loadAdminFunnel();
+        }
+        
+        function copyText(text) {
+            navigator.clipboard.writeText(text).then(() => showToast('✅ Скопировано!'));
         }
         
         function showToast(msg) {
@@ -1574,18 +1486,10 @@
             setTimeout(() => toast.remove(), 2000);
         }
         
-        // Закрытие модалок по фону
-        document.querySelectorAll('.modal-overlay').forEach(overlay => {
-            overlay.addEventListener('click', function(e) {
-                if (e.target === this) this.classList.remove('active');
-            });
+        document.querySelectorAll('.modal-overlay').forEach(o => {
+            o.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('active'); });
         });
         
-        // Главная кнопка Telegram
-        tg.MainButton.setText('ОТКРЫТЬ МАГАЗИН').show();
-        tg.MainButton.onClick(() => nav('shop', document.querySelector('.nav-item')));
-        
-        // Запуск
         window.onload = init;
     </script>
 </body>
