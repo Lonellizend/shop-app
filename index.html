@@ -359,26 +359,35 @@
         }
 
         // ============ ИНИЦИАЛИЗАЦИЯ ============
-        async function init() {
-            tg.ready(); tg.expand();
-            applyTheme(state.theme);
+async function init() {
+    tg.ready();
+    tg.expand();
+    
+    // Проверка работы sendData
+    console.log('📱 Telegram WebApp initialized');
+    console.log('📱 sendData available:', typeof tg.sendData === 'function');
+    console.log('📱 User:', tg.initDataUnsafe.user);
+    
+    applyTheme(state.theme);
 
-            const user = tg.initDataUnsafe.user;
-            if (user) {
-                document.getElementById('user-name').innerText = user.first_name || 'Пользователь';
-                document.getElementById('user-tag').innerText = '@' + (user.username || 'user' + user.id);
-                if (user.photo_url) document.getElementById('user-photo').src = user.photo_url;
-            }
+    const user = tg.initDataUnsafe.user;
+    if (user) {
+        document.getElementById('user-name').innerText = user.first_name || 'Пользователь';
+        document.getElementById('user-tag').innerText = '@' + (user.username || 'user' + user.id);
+        if (user.photo_url) document.getElementById('user-photo').src = user.photo_url;
+    }
 
-            const admins = [1733464126, 8012481749];
-            if (admins.includes(user?.id)) document.getElementById('adm-nav').style.display = 'flex';
+    const admins = [1733464126, 8012481749];
+    if (admins.includes(user?.id)) {
+        document.getElementById('adm-nav').style.display = 'flex';
+    }
 
-            await loadData();
-            loadCartFromStorage();
-            loadFavoritesFromStorage();
-            updateCartUI();
-            renderCategories();
-        }
+    await loadData();
+    loadCartFromStorage();
+    loadFavoritesFromStorage();
+    updateCartUI();
+    renderCategories();
+}
 
         async function loadData() {
             const uid = tg.initDataUnsafe.user?.id || 0;
@@ -546,18 +555,59 @@
             document.getElementById('checkout-modal').classList.add('active');
         }
 
-        async function confirmCheckout() {
-            if (!state.cart.length) { tg.showAlert('Корзина пуста'); return; }
-            const total = state.cart.reduce((s,i)=>s+(i.price||0)*(i.qty||1),0);
-            const final = Math.round(total*(1-state.promoDiscount/100));
-            const orderData = {action:'checkout',items:state.cart.map(i=>({id:i.id,qty:i.qty||1,name:i.name,price:i.price})),total:final,promo:state.promoCode,user_id:tg.initDataUnsafe.user?.id||0,username:tg.initDataUnsafe.user?.username||'',first_name:tg.initDataUnsafe.user?.first_name||'',delivery_method:state.deliveryMethod,payment_method:state.paymentMethod};
-            tg.sendData(JSON.stringify(orderData));
-            try { await fetch(`${BASE_URL}/order`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(orderData)}); } catch(e) {}
-            state.cart=[]; state.promoCode=''; state.promoDiscount=0;
-            document.getElementById('promo').value=''; document.getElementById('promo-msg').innerHTML='';
-            saveCartToStorage(); updateCartUI(); closeModal('checkout-modal');
-            tg.showAlert('✅ Заказ создан! Проверьте бота @KodamaShopBot для оплаты.');
-        }
+async function confirmCheckout() {
+    if (!state.cart.length) {
+        tg.showAlert('Корзина пуста');
+        return;
+    }
+    
+    const total = state.cart.reduce((s, i) => s + (i.price || 0) * (i.qty || 1), 0);
+    const final = Math.round(total * (1 - state.promoDiscount / 100));
+    
+    const orderData = {
+        action: 'checkout',
+        items: state.cart.map(i => ({ id: i.id, qty: i.qty || 1, name: i.name, price: i.price })),
+        total: final,
+        promo: state.promoCode,
+        user_id: tg.initDataUnsafe.user?.id || 0,
+        username: tg.initDataUnsafe.user?.username || '',
+        first_name: tg.initDataUnsafe.user?.first_name || '',
+        delivery_method: state.deliveryMethod,
+        payment_method: state.paymentMethod
+    };
+    
+    console.log('🛍 Отправляю заказ:', JSON.stringify(orderData).slice(0, 200));
+    
+    // Сначала создаём заказ через API
+    try {
+        const res = await fetch(`${BASE_URL}/order`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(orderData)
+        });
+        const result = await res.json();
+        console.log('✅ API ответ:', result);
+    } catch(e) {
+        console.error('❌ API ошибка:', e);
+    }
+    
+    // Затем отправляем данные в бота
+    console.log('📤 Отправляю через tg.sendData...');
+    tg.sendData(JSON.stringify(orderData));
+    console.log('📤 tg.sendData выполнен');
+    
+    // Очищаем корзину
+    state.cart = [];
+    state.promoCode = '';
+    state.promoDiscount = 0;
+    document.getElementById('promo').value = '';
+    document.getElementById('promo-msg').innerHTML = '';
+    saveCartToStorage();
+    updateCartUI();
+    closeModal('checkout-modal');
+    
+    tg.showAlert('✅ Заказ создан! Проверьте бота @KodamaShopBot для оплаты.');
+}
 
         // ============ ПРОФИЛЬ ============
         function openProfileSection(s) {
