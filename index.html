@@ -624,157 +624,893 @@
 
         function renderFAQ(c) { c.innerHTML=`<div class="card"><h3>Как оформить?</h3><p style="color:var(--text2);">Корзина → Оформить → Доставка → Оплата</p></div><div class="card"><h3>Оплата</h3><p style="color:var(--text2);">Карта, СБП, Баланс</p></div><div class="card"><h3>Кэшбэк</h3><p style="color:var(--text2);">1-10% с покупок</p></div><div class="card"><h3>Рефералы</h3><p style="color:var(--text2);">10% от покупок друзей</p></div>`; }
 
-        // ============ АДМИН-ПАНЕЛЬ ============
-        function openAdminSection(s) {
-            document.getElementById('admin-main').style.display='none';
-            document.getElementById('admin-section').style.display='block';
-            const c = document.getElementById('admin-content');
-            if (s==='add_product') renderAddProduct(c);
-            else if (s==='products') loadAdminProducts(c);
-            else if (s==='promos') loadAdminPromos(c);
-            else if (s==='flash_sale') renderFlashSale(c);
-            else if (s==='users') loadAdminUsers(c);
-            else if (s==='orders') loadAdminOrders(c);
-            else if (s==='analytics') loadAnalytics(c);
-            else if (s==='chats') loadChatsList(c);
+        // ============ АДМИН-ПАНЕЛЬ (ПОЛНАЯ ЗАМЕНА) ============
+function openAdminSection(s) {
+    document.getElementById('admin-main').style.display = 'none';
+    document.getElementById('admin-section').style.display = 'block';
+    const c = document.getElementById('admin-content');
+    
+    if (s === 'add_product') renderAddProduct(c);
+    else if (s === 'products') loadAdminProducts(c);
+    else if (s === 'promos') loadAdminPromos(c);
+    else if (s === 'flash_sale') renderFlashSale(c);
+    else if (s === 'users') loadAdminUsers(c);
+    else if (s === 'orders') loadAdminOrders(c);
+    else if (s === 'analytics') loadAnalytics(c);
+    else if (s === 'chats') loadChatsList(c);
+}
+
+function closeAdminSection() {
+    document.getElementById('admin-main').style.display = 'block';
+    document.getElementById('admin-section').style.display = 'none';
+}
+
+// 1. ДОБАВЛЕНИЕ ТОВАРА
+function renderAddProduct(c) {
+    state.adminFiles = [];
+    c.innerHTML = `
+        <h3>➕ Добавить товар</h3>
+        <input class="input" placeholder="Название товара" id="ap-name">
+        <input class="input" placeholder="Цена (₽)" type="number" id="ap-price">
+        <input class="input" placeholder="Скидочная цена (опционально)" type="number" id="ap-discount">
+        <textarea class="input" placeholder="Описание" id="ap-desc"></textarea>
+        <select class="input" id="ap-category">
+            <option value="Premium">Premium</option>
+            <option value="Одежда">Одежда</option>
+            <option value="Обувь">Обувь</option>
+            <option value="Аксессуары">Аксессуары</option>
+        </select>
+        <select class="input" id="ap-badge">
+            <option value="">Без бейджа</option>
+            <option value="new">🆕 Новинка</option>
+            <option value="hit">🔥 Хит</option>
+            <option value="sale">🎉 Скидка</option>
+            <option value="exclusive">💎 Эксклюзив</option>
+        </select>
+        <input class="input" placeholder="Количество на складе" type="number" id="ap-qty" value="10">
+        <input type="file" class="input" id="ap-files" multiple accept="image/*,video/*" onchange="previewAdminFiles(this.files)">
+        <div id="ap-preview" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"></div>
+        <button class="btn" onclick="submitProduct()">💾 СОХРАНИТЬ ТОВАР</button>
+        <div id="ap-status" style="margin-top:8px;font-size:13px;"></div>
+    `;
+}
+
+function previewAdminFiles(files) {
+    state.adminFiles = [];
+    const preview = document.getElementById('ap-preview');
+    if (!preview) return;
+    preview.innerHTML = '';
+    Array.from(files).forEach(f => {
+        const reader = new FileReader();
+        reader.onload = e => {
+            state.adminFiles.push(e.target.result);
+            preview.innerHTML += f.type.startsWith('video') 
+                ? `<video src="${e.target.result}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;" muted></video>` 
+                : `<img src="${e.target.result}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;">`;
+        };
+        reader.readAsDataURL(f);
+    });
+}
+
+async function submitProduct() {
+    const status = document.getElementById('ap-status');
+    const name = document.getElementById('ap-name')?.value?.trim();
+    const price = parseInt(document.getElementById('ap-price')?.value || 0);
+    
+    if (!name || !price) {
+        if (status) status.innerHTML = '<span style="color:var(--danger);">❌ Заполните название и цену</span>';
+        return;
+    }
+    
+    const data = {
+        action: 'save_product',
+        name: name,
+        price: price,
+        discount_price: parseInt(document.getElementById('ap-discount')?.value || 0) || null,
+        description: document.getElementById('ap-desc')?.value || '',
+        category: document.getElementById('ap-category')?.value || 'Premium',
+        badge: document.getElementById('ap-badge')?.value || null,
+        quantity: parseInt(document.getElementById('ap-qty')?.value || 10),
+        images: state.adminFiles || []
+    };
+    
+    if (status) status.innerHTML = '<span style="color:var(--blue);">⏳ Сохраняем...</span>';
+    
+    try {
+        const res = await fetch(`${BASE_URL}/admin_action`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        if (res.ok) {
+            const result = await res.json();
+            if (result.status === 'ok') {
+                await loadData(); // Обновляем товары с сервера
+                if (status) status.innerHTML = '<span style="color:var(--success);">✅ Товар сохранён!</span>';
+                showToast('✅ Товар сохранён!');
+                setTimeout(() => openAdminSection('products'), 500);
+                return;
+            }
         }
+        
+        // Fallback - сохраняем локально
+        data.id = Date.now();
+        data.image_url = JSON.stringify(data.images || []);
+        state.products.unshift(data);
+        saveProductsToStorage();
+        if (status) status.innerHTML = '<span style="color:var(--success);">✅ Товар сохранён локально!</span>';
+        showToast('✅ Товар добавлен!');
+        renderProducts();
+        setTimeout(() => openAdminSection('products'), 500);
+        
+    } catch (e) {
+        // Сохраняем локально при ошибке
+        data.id = Date.now();
+        data.image_url = JSON.stringify(data.images || []);
+        state.products.unshift(data);
+        saveProductsToStorage();
+        if (status) status.innerHTML = '<span style="color:var(--success);">✅ Товар сохранён локально!</span>';
+        showToast('✅ Товар добавлен!');
+        renderProducts();
+        setTimeout(() => openAdminSection('products'), 500);
+    }
+}
 
-        function closeAdminSection() { document.getElementById('admin-main').style.display='block'; document.getElementById('admin-section').style.display='none'; }
+function saveProductsToStorage() {
+    localStorage.setItem('kodama_products', JSON.stringify(state.products));
+}
 
-        function renderAddProduct(c) {
-            state.adminFiles=[];
-            c.innerHTML=`<h3>➕ Добавить товар</h3>
-                <input class="input" placeholder="Название" id="ap-name">
-                <input class="input" placeholder="Цена (₽)" type="number" id="ap-price">
-                <input class="input" placeholder="Скидочная цена" type="number" id="ap-discount">
-                <textarea class="input" placeholder="Описание" id="ap-desc"></textarea>
-                <select class="input" id="ap-category"><option>Premium</option><option>Одежда</option><option>Обувь</option><option>Аксессуары</option></select>
-                <select class="input" id="ap-badge"><option value="">Без бейджа</option><option value="new">🆕 Новинка</option><option value="hit">🔥 Хит</option><option value="sale">🎉 Скидка</option><option value="exclusive">💎 Эксклюзив</option></select>
-                <input class="input" placeholder="Количество" type="number" id="ap-qty" value="10">
-                <input type="file" class="input" id="ap-files" multiple accept="image/*,video/*" onchange="previewFiles(this.files)">
-                <div id="ap-preview" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"></div>
-                <button class="btn" onclick="submitProduct()">💾 СОХРАНИТЬ</button>
-                <div id="ap-status" style="margin-top:8px;"></div>`;
+function loadProductsFromStorage() {
+    const stored = localStorage.getItem('kodama_products');
+    if (stored) {
+        try {
+            return JSON.parse(stored);
+        } catch(e) {}
+    }
+    return null;
+}
+
+// 2. СПИСОК ТОВАРОВ (С РЕДАКТИРОВАНИЕМ)
+function loadAdminProducts(c) {
+    c.innerHTML = '<div style="text-align:center;padding:20px;">⏳ Загрузка...</div>';
+    
+    // Пробуем загрузить с сервера
+    fetch(`${BASE_URL}/admin_data`)
+        .then(r => r.json())
+        .then(d => {
+            if (d.products && d.products.length) {
+                state.products = d.products;
+            }
+            renderAdminProductsList(c);
+        })
+        .catch(() => {
+            // Используем локальные товары
+            const local = loadProductsFromStorage();
+            if (local && local.length) state.products = local;
+            renderAdminProductsList(c);
+        });
+}
+
+function renderAdminProductsList(c) {
+    if (!state.products.length) {
+        c.innerHTML = '<h3>📦 Список товаров</h3><div class="empty-state"><div class="empty-icon">📦</div>Нет товаров</div>';
+        return;
+    }
+    
+    c.innerHTML = '<h3>📦 Список товаров (' + state.products.length + ')</h3>' + 
+        state.products.map(p => `
+            <div class="card" style="margin-bottom:8px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div style="flex:1;">
+                        <b>${p.name}</b> — <span style="color:var(--gold);">${p.price} ₽</span>
+                        ${p.discount_price ? `<span style="color:var(--success);"> (скидка: ${p.discount_price} ₽)</span>` : ''}
+                        <div style="font-size:12px;color:var(--text2);">
+                            Категория: ${p.category || 'Premium'} | 
+                            Склад: ${p.quantity || 10} | 
+                            Продано: ${p.sales || 0}
+                            ${p.badge ? ` | Бейдж: ${p.badge}` : ''}
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:4px;">
+                        <button class="btn btn-small" style="background:var(--gold);color:#000;" onclick="editProductForm(${p.id})">✏️</button>
+                        <button class="btn btn-small btn-danger" onclick="deleteProduct(${p.id})">🗑</button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+}
+
+// РЕДАКТИРОВАНИЕ ТОВАРА
+function editProductForm(id) {
+    const product = state.products.find(p => p.id === id);
+    if (!product) return;
+    
+    const c = document.getElementById('admin-content');
+    state.adminFiles = [];
+    state.editingProductId = id;
+    
+    c.innerHTML = `
+        <h3>✏️ Редактировать товар #${id}</h3>
+        <input class="input" placeholder="Название" id="ep-name" value="${product.name || ''}">
+        <input class="input" placeholder="Цена (₽)" type="number" id="ep-price" value="${product.price || 0}">
+        <input class="input" placeholder="Скидочная цена" type="number" id="ep-discount" value="${product.discount_price || ''}">
+        <textarea class="input" placeholder="Описание" id="ep-desc">${product.description || ''}</textarea>
+        <select class="input" id="ep-category">
+            <option value="Premium" ${product.category === 'Premium' ? 'selected' : ''}>Premium</option>
+            <option value="Одежда" ${product.category === 'Одежда' ? 'selected' : ''}>Одежда</option>
+            <option value="Обувь" ${product.category === 'Обувь' ? 'selected' : ''}>Обувь</option>
+            <option value="Аксессуары" ${product.category === 'Аксессуары' ? 'selected' : ''}>Аксессуары</option>
+        </select>
+        <select class="input" id="ep-badge">
+            <option value="">Без бейджа</option>
+            <option value="new" ${product.badge === 'new' ? 'selected' : ''}>🆕 Новинка</option>
+            <option value="hit" ${product.badge === 'hit' ? 'selected' : ''}>🔥 Хит</option>
+            <option value="sale" ${product.badge === 'sale' ? 'selected' : ''}>🎉 Скидка</option>
+            <option value="exclusive" ${product.badge === 'exclusive' ? 'selected' : ''}>💎 Эксклюзив</option>
+        </select>
+        <input class="input" placeholder="Количество на складе" type="number" id="ep-qty" value="${product.quantity || 10}">
+        <input type="file" class="input" id="ep-files" multiple accept="image/*,video/*" onchange="previewEditFiles(this.files)">
+        <div id="ep-preview" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+            ${(JSON.parse(product.image_url || '[]')).map(src => 
+                src.startsWith('data:video') 
+                    ? `<video src="${src}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;" muted></video>`
+                    : `<img src="${src}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;">`
+            ).join('')}
+        </div>
+        <button class="btn" onclick="saveEditProduct()">💾 СОХРАНИТЬ ИЗМЕНЕНИЯ</button>
+        <button class="btn btn-outline" onclick="openAdminSection('products')" style="margin-top:8px;">Отмена</button>
+    `;
+}
+
+function previewEditFiles(files) {
+    Array.from(files).forEach(f => {
+        const reader = new FileReader();
+        reader.onload = e => {
+            state.adminFiles.push(e.target.result);
+            const preview = document.getElementById('ep-preview');
+            if (preview) {
+                preview.innerHTML += f.type.startsWith('video')
+                    ? `<video src="${e.target.result}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;" muted></video>`
+                    : `<img src="${e.target.result}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;">`;
+            }
+        };
+        reader.readAsDataURL(f);
+    });
+}
+
+async function saveEditProduct() {
+    const id = state.editingProductId;
+    const product = state.products.find(p => p.id === id);
+    if (!product) return;
+    
+    const updatedData = {
+        action: 'edit_product',
+        product_id: id,
+        name: document.getElementById('ep-name')?.value?.trim() || product.name,
+        price: parseInt(document.getElementById('ep-price')?.value || product.price),
+        discount_price: parseInt(document.getElementById('ep-discount')?.value || 0) || null,
+        description: document.getElementById('ep-desc')?.value || '',
+        category: document.getElementById('ep-category')?.value || product.category,
+        badge: document.getElementById('ep-badge')?.value || null,
+        quantity: parseInt(document.getElementById('ep-qty')?.value || 10),
+        images: state.adminFiles.length > 0 ? state.adminFiles : JSON.parse(product.image_url || '[]')
+    };
+    
+    // Обновляем локально
+    Object.assign(product, updatedData);
+    if (state.adminFiles.length > 0) {
+        product.image_url = JSON.stringify(state.adminFiles);
+    }
+    
+    saveProductsToStorage();
+    renderProducts();
+    showToast('✅ Товар обновлён!');
+    
+    // Пробуем отправить на сервер
+    try {
+        await fetch(`${BASE_URL}/admin_action`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedData)
+        });
+    } catch(e) {}
+    
+    openAdminSection('products');
+}
+
+function deleteProduct(id) {
+    if (!confirm('Удалить товар #' + id + '?')) return;
+    
+    state.products = state.products.filter(p => p.id !== id);
+    saveProductsToStorage();
+    renderProducts();
+    showToast('🗑 Товар удалён');
+    
+    try {
+        fetch(`${BASE_URL}/admin_action`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete_product', product_id: id })
+        });
+    } catch(e) {}
+    
+    loadAdminProducts(document.getElementById('admin-content'));
+}
+
+// 3. ПРОМОКОДЫ (С РЕДАКТИРОВАНИЕМ)
+let localPromos = JSON.parse(localStorage.getItem('kodama_promos') || '[]');
+
+function loadAdminPromos(c) {
+    c.innerHTML = `
+        <h3>🎫 Промокоды</h3>
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+            <input class="input" placeholder="Код" id="pr-code" style="flex:1;min-width:100px;">
+            <input class="input" placeholder="Скидка %" type="number" id="pr-discount" style="width:100px;">
+            <input class="input" placeholder="Использований" type="number" id="pr-uses" value="100" style="width:120px;">
+        </div>
+        <button class="btn btn-small" onclick="createPromo()" style="margin-bottom:12px;">➕ Создать</button>
+        <div id="promos-list"></div>
+    `;
+    
+    // Пробуем загрузить с сервера
+    fetch(`${BASE_URL}/admin_data`)
+        .then(r => r.json())
+        .then(d => {
+            if (d.promos && d.promos.length) {
+                localPromos = d.promos;
+                localStorage.setItem('kodama_promos', JSON.stringify(localPromos));
+            }
+            renderPromosList();
+        })
+        .catch(() => {
+            renderPromosList();
+        });
+}
+
+function renderPromosList() {
+    const list = document.getElementById('promos-list');
+    if (!list) return;
+    
+    if (!localPromos.length) {
+        list.innerHTML = '<div style="color:var(--text2);padding:12px;">Нет промокодов</div>';
+        return;
+    }
+    
+    list.innerHTML = localPromos.map((p, idx) => `
+        <div class="card" style="margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+                <b>${p.code}</b> — ${p.discount}% скидка
+                <div style="font-size:12px;color:var(--text2);">Осталось: ${p.uses_left || p.uses || 100}</div>
+            </div>
+            <div style="display:flex;gap:4px;">
+                <button class="btn btn-small" style="background:var(--gold);color:#000;" onclick="editPromoForm('${p.code}')">✏️</button>
+                <button class="btn btn-small btn-danger" onclick="deletePromo('${p.code}')">🗑</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function editPromoForm(code) {
+    const promo = localPromos.find(p => p.code === code);
+    if (!promo) return;
+    
+    const c = document.getElementById('admin-content');
+    c.innerHTML = `
+        <h3>✏️ Редактировать промокод ${code}</h3>
+        <input class="input" placeholder="Код" id="epr-code" value="${promo.code}">
+        <input class="input" placeholder="Скидка %" type="number" id="epr-discount" value="${promo.discount}">
+        <input class="input" placeholder="Осталось использований" type="number" id="epr-uses" value="${promo.uses_left || promo.uses || 100}">
+        <button class="btn" onclick="saveEditPromo('${code}')">💾 СОХРАНИТЬ</button>
+        <button class="btn btn-outline" onclick="openAdminSection('promos')" style="margin-top:8px;">Отмена</button>
+    `;
+}
+
+function saveEditPromo(oldCode) {
+    const newCode = document.getElementById('epr-code')?.value?.trim()?.toUpperCase();
+    const discount = parseInt(document.getElementById('epr-discount')?.value || 0);
+    const uses = parseInt(document.getElementById('epr-uses')?.value || 100);
+    
+    if (!newCode || !discount) {
+        showToast('Заполните поля');
+        return;
+    }
+    
+    const idx = localPromos.findIndex(p => p.code === oldCode);
+    if (idx > -1) {
+        localPromos[idx] = { code: newCode, discount, uses_left: uses, uses };
+        localStorage.setItem('kodama_promos', JSON.stringify(localPromos));
+    }
+    
+    try {
+        fetch(`${BASE_URL}/admin_action`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'save_promo', code: newCode, discount, uses })
+        });
+    } catch(e) {}
+    
+    showToast('✅ Промокод обновлён!');
+    openAdminSection('promos');
+}
+
+function createPromo() {
+    const code = document.getElementById('pr-code')?.value?.trim()?.toUpperCase();
+    const discount = parseInt(document.getElementById('pr-discount')?.value || 0);
+    const uses = parseInt(document.getElementById('pr-uses')?.value || 100);
+    
+    if (!code || !discount) {
+        showToast('Заполните код и скидку');
+        return;
+    }
+    
+    // Проверяем, существует ли уже
+    if (localPromos.find(p => p.code === code)) {
+        showToast('Такой код уже существует');
+        return;
+    }
+    
+    localPromos.push({ code, discount, uses_left: uses, uses });
+    localStorage.setItem('kodama_promos', JSON.stringify(localPromos));
+    
+    try {
+        fetch(`${BASE_URL}/admin_action`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'save_promo', code, discount, uses })
+        });
+    } catch(e) {}
+    
+    showToast('✅ Промокод создан!');
+    renderPromosList();
+    
+    // Очищаем поля
+    document.getElementById('pr-code').value = '';
+    document.getElementById('pr-discount').value = '';
+}
+
+function deletePromo(code) {
+    if (!confirm('Удалить промокод ' + code + '?')) return;
+    
+    localPromos = localPromos.filter(p => p.code !== code);
+    localStorage.setItem('kodama_promos', JSON.stringify(localPromos));
+    
+    try {
+        fetch(`${BASE_URL}/admin_action`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete_promo', code })
+        });
+    } catch(e) {}
+    
+    showToast('🗑 Удалено');
+    renderPromosList();
+}
+
+// 4. FLASH SALE
+function renderFlashSale(c) {
+    c.innerHTML = `
+        <h3>🔥 Управление Flash Sale</h3>
+        <p style="color:var(--text2);margin-bottom:12px;">Срочная распродажа для всех пользователей</p>
+        <input class="input" placeholder="Скидка (%)" type="number" id="fs-discount" value="${state.flashSale.discount || 30}">
+        <input class="input" placeholder="Длительность (часы)" type="number" id="fs-hours" value="2">
+        <button class="btn" onclick="startFlashSale()" style="margin-bottom:8px;">🚀 ЗАПУСТИТЬ FLASH SALE</button>
+        <button class="btn btn-danger" onclick="stopFlashSale()">⏹ ОСТАНОВИТЬ</button>
+        <div id="flash-status" style="margin-top:8px;font-size:13px;">
+            ${state.flashSale.active ? '<span style="color:var(--success);">✅ Активна: скидка ' + state.flashSale.discount + '%</span>' : '<span style="color:var(--text2);">Неактивна</span>'}
+        </div>
+    `;
+}
+
+function startFlashSale() {
+    const discount = parseInt(document.getElementById('fs-discount')?.value || 30);
+    const hours = parseInt(document.getElementById('fs-hours')?.value || 2);
+    
+    state.flashSale = {
+        active: true,
+        discount: discount,
+        endTime: new Date(Date.now() + hours * 3600000).toISOString()
+    };
+    
+    document.getElementById('flash-sale').style.display = 'block';
+    document.getElementById('flash-discount').innerText = discount;
+    
+    updateFlashTimer();
+    showToast('🔥 Flash Sale запущена! Скидка ' + discount + '%');
+    
+    try {
+        fetch(`${BASE_URL}/admin_action`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'flash_sale', active: true, discount, end_time: state.flashSale.endTime })
+        });
+    } catch(e) {}
+    
+    renderFlashSale(document.getElementById('admin-content'));
+}
+
+function stopFlashSale() {
+    state.flashSale = { active: false, discount: 0, endTime: null };
+    document.getElementById('flash-sale').style.display = 'none';
+    showToast('Flash Sale остановлена');
+    
+    try {
+        fetch(`${BASE_URL}/admin_action`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'flash_sale', active: false })
+        });
+    } catch(e) {}
+    
+    renderFlashSale(document.getElementById('admin-content'));
+}
+
+function updateFlashTimer() {
+    if (!state.flashSale.active || !state.flashSale.endTime) return;
+    
+    const end = new Date(state.flashSale.endTime);
+    const now = new Date();
+    const left = Math.max(0, end - now);
+    
+    if (left <= 0) {
+        document.getElementById('flash-sale').style.display = 'none';
+        state.flashSale.active = false;
+        return;
+    }
+    
+    const h = Math.floor(left / 3600000);
+    const m = Math.floor((left % 3600000) / 60000);
+    const s = Math.floor((left % 60000) / 1000);
+    
+    const countdown = document.getElementById('flash-countdown');
+    if (countdown) {
+        countdown.innerHTML = `
+            <div class="countdown-item"><div class="countdown-value">${String(h).padStart(2,'0')}</div><div class="countdown-label">часы</div></div>
+            <div class="countdown-item"><div class="countdown-value">${String(m).padStart(2,'0')}</div><div class="countdown-label">мин</div></div>
+            <div class="countdown-item"><div class="countdown-value">${String(s).padStart(2,'0')}</div><div class="countdown-label">сек</div></div>
+        `;
+    }
+    
+    setTimeout(updateFlashTimer, 1000);
+}
+
+// 5. ПОЛЬЗОВАТЕЛИ (ИСПРАВЛЕНО)
+function loadAdminUsers(c) {
+    c.innerHTML = `
+        <h3>👥 Пользователи</h3>
+        <input class="input" placeholder="🔍 Поиск по username или ID..." oninput="filterUsers(this.value)" id="user-search">
+        <div id="users-list">
+            <div style="text-align:center;padding:20px;">
+                <div style="font-size:36px;">👥</div>
+                <p style="color:var(--text2);">Загрузка пользователей...</p>
+                <p style="font-size:12px;color:var(--text2);">Если сервер недоступен, данные не загрузятся</p>
+            </div>
+        </div>
+    `;
+    
+    fetch(`${BASE_URL}/admin_data`)
+        .then(r => r.json())
+        .then(d => {
+            state.allUsers = d.users || [];
+            renderUsersList(state.allUsers);
+        })
+        .catch(() => {
+            const list = document.getElementById('users-list');
+            if (list) {
+                list.innerHTML = `
+                    <div style="text-align:center;padding:20px;color:var(--text2);">
+                        <div style="font-size:36px;">🔌</div>
+                        <p>Сервер недоступен</p>
+                        <p style="font-size:12px;">Запустите бота для загрузки пользователей</p>
+                    </div>
+                `;
+            }
+        });
+}
+
+function renderUsersList(users) {
+    const list = document.getElementById('users-list');
+    if (!list) return;
+    
+    if (!users || !users.length) {
+        list.innerHTML = '<div style="color:var(--text2);padding:20px;text-align:center;">Пользователи не найдены</div>';
+        return;
+    }
+    
+    list.innerHTML = users.slice(0, 30).map(u => `
+        <div class="card" style="margin-bottom:6px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <b>@${u.username || 'нет'}</b>
+                    <span style="font-size:12px;color:var(--text2);"> ID: ${u.user_id}</span>
+                </div>
+                <div style="text-align:right;">
+                    <div>💰 <b>${u.balance || 0} ₽</b></div>
+                    <div style="font-size:11px;color:var(--text2);">
+                        Уровень: ${u.level || 'Новичок'} | Потрачено: ${u.total_spent || 0} ₽
+                    </div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function filterUsers(query) {
+    if (!state.allUsers) return;
+    const q = query.toLowerCase();
+    const filtered = state.allUsers.filter(u => 
+        String(u.user_id).includes(q) || 
+        (u.username || '').toLowerCase().includes(q)
+    );
+    renderUsersList(filtered);
+}
+
+// 6. ЗАКАЗЫ (ИСПРАВЛЕНО)
+function loadAdminOrders(c) {
+    c.innerHTML = `
+        <h3>📋 Заказы</h3>
+        <div id="orders-list">
+            <div style="text-align:center;padding:20px;">
+                <div style="font-size:36px;">📋</div>
+                <p style="color:var(--text2);">Загрузка заказов...</p>
+            </div>
+        </div>
+    `;
+    
+    fetch(`${BASE_URL}/admin_data`)
+        .then(r => r.json())
+        .then(d => {
+            const orders = d.orders || [];
+            const list = document.getElementById('orders-list');
+            if (!list) return;
+            
+            if (!orders.length) {
+                list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text2);">Нет заказов</div>';
+                return;
+            }
+            
+            list.innerHTML = orders.map(o => {
+                const statusColors = {
+                    'pending': '#ffa500',
+                    'paid': 'var(--success)',
+                    'shipped': '#3498db',
+                    'delivered': 'var(--gold)',
+                    'cancelled': 'var(--danger)'
+                };
+                const statusNames = {
+                    'pending': '⏳ Ожидает',
+                    'paid': '✅ Оплачен',
+                    'shipped': '📦 Отправлен',
+                    'delivered': '🎉 Доставлен',
+                    'cancelled': '❌ Отменён'
+                };
+                
+                return `
+                <div class="card" style="margin-bottom:6px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <b>Заказ #${o.id}</b>
+                        <span style="color:${statusColors[o.status] || '#fff'};">
+                            ${statusNames[o.status] || o.status}
+                        </span>
+                    </div>
+                    <div style="margin-top:8px;color:var(--text2);font-size:13px;">
+                        💰 <b>${o.total_amount} ₽</b> | 
+                        👤 ID: ${o.user_id} | 
+                        📅 ${o.created_at?.split('T')[0] || ''}
+                    </div>
+                    ${o.payment_method ? `<div style="font-size:12px;color:var(--text2);">💳 ${o.payment_method}</div>` : ''}
+                </div>
+                `;
+            }).join('');
+        })
+        .catch(() => {
+            const list = document.getElementById('orders-list');
+            if (list) {
+                list.innerHTML = `
+                    <div style="text-align:center;padding:20px;color:var(--text2);">
+                        <div style="font-size:36px;">🔌</div>
+                        <p>Сервер недоступен</p>
+                        <p style="font-size:12px;">Запустите бота для загрузки заказов</p>
+                    </div>
+                `;
+            }
+        });
+}
+
+// 7. АНАЛИТИКА (ИСПРАВЛЕНО)
+function loadAnalytics(c) {
+    c.innerHTML = `
+        <h3>📊 Аналитика</h3>
+        <div id="analytics-content">
+            <div style="text-align:center;padding:20px;">⏳ Загрузка...</div>
+        </div>
+    `;
+    
+    fetch(`${BASE_URL}/admin_data`)
+        .then(r => r.json())
+        .then(d => {
+            const a = d.analytics || [];
+            const rev = a.reduce((s, x) => s + (x.revenue || 0), 0);
+            const ord = a.reduce((s, x) => s + (x.orders_count || 0), 0);
+            const vis = a.reduce((s, x) => s + (x.visits || 0), 0);
+            const pv = a.reduce((s, x) => s + (x.product_views || 0), 0);
+            
+            const content = document.getElementById('analytics-content');
+            if (!content) return;
+            
+            content.innerHTML = `
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value">${vis}</div>
+                        <div class="stat-label">👥 Посетители</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${pv}</div>
+                        <div class="stat-label">👁 Просмотры товаров</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${ord}</div>
+                        <div class="stat-label">🛍 Заказы</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${rev} ₽</div>
+                        <div class="stat-label">💰 Выручка</div>
+                    </div>
+                </div>
+                <div class="card" style="margin-top:12px;">
+                    <h4>📈 Конверсия</h4>
+                    <div style="margin-top:8px;color:var(--text2);">
+                        <p>👥 → 👁 Просмотры: <b>${vis ? Math.round(pv / vis * 100) : 0}%</b></p>
+                        <p>👁 → 🛍 Заказы: <b>${pv ? Math.round(ord / pv * 100) : 0}%</b></p>
+                        <p>💰 Средний чек: <b>${ord ? Math.round(rev / ord) : 0} ₽</b></p>
+                        <p>👤 Всего пользователей: <b>${d.users?.length || 0}</b></p>
+                        <p>📦 Всего товаров: <b>${d.products?.length || 0}</b></p>
+                    </div>
+                </div>
+            `;
+        })
+        .catch(() => {
+            const content = document.getElementById('analytics-content');
+            if (content) {
+                content.innerHTML = `
+                    <div style="text-align:center;padding:20px;color:var(--text2);">
+                        <div style="font-size:36px;">🔌</div>
+                        <p>Сервер недоступен</p>
+                        <p style="font-size:12px;">Запустите бота для загрузки аналитики</p>
+                    </div>
+                `;
+            }
+        });
+}
+
+// 8. ЧАТЫ ПОДДЕРЖКИ (ИСПРАВЛЕНО)
+function loadChatsList(c) {
+    c.innerHTML = `
+        <h3>💬 Чаты поддержки</h3>
+        <div id="chats-content">
+            <div style="text-align:center;padding:20px;">⏳ Загрузка...</div>
+        </div>
+    `;
+    
+    fetch(`${BASE_URL}/admin_data`)
+        .then(r => r.json())
+        .then(async d => {
+            const users = d.users || [];
+            let html = '';
+            let hasChats = false;
+            
+            for (const u of users.slice(0, 20)) {
+                try {
+                    const ms = await fetch(`${BASE_URL}/messages/${u.user_id}`).then(r => r.json());
+                    if (ms && ms.length > 0) {
+                        hasChats = true;
+                        const last = ms[ms.length - 1];
+                        html += `
+                        <div class="card" style="cursor:pointer;margin-bottom:6px;" onclick="openAdminChat(${u.user_id}, '${u.username || 'user'}')">
+                            <div style="display:flex;justify-content:space-between;">
+                                <b>@${u.username || 'user' + u.user_id}</b>
+                                <span style="font-size:11px;color:var(--text2);">${last.created_at?.split('T')[0] || ''}</span>
+                            </div>
+                            <div style="color:var(--text2);font-size:13px;margin-top:4px;">
+                                ${last.is_from_user ? '👤' : '👨‍💼'} ${last.text?.slice(0, 50) || '...'}
+                            </div>
+                        </div>`;
+                    }
+                } catch(e) {}
+            }
+            
+            const content = document.getElementById('chats-content');
+            if (content) {
+                content.innerHTML = hasChats ? html : '<div class="empty-state"><div class="empty-icon">💬</div><p>Нет активных чатов</p></div>';
+            }
+        })
+        .catch(() => {
+            const content = document.getElementById('chats-content');
+            if (content) {
+                content.innerHTML = '<div class="empty-state"><div class="empty-icon">🔌</div><p>Сервер недоступен</p></div>';
+            }
+        });
+}
+
+function openAdminChat(uid, uname) {
+    const c = document.getElementById('admin-content');
+    c.innerHTML = `
+        <div class="section-back" onclick="openAdminSection('chats')">← Назад к списку чатов</div>
+        <h4>💬 Чат с @${uname || 'user'}</h4>
+        <div class="chat-container" id="admin-chat-msgs" style="height:350px;">Загрузка сообщений...</div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+            <input class="input" placeholder="Ваш ответ..." id="admin-chat-input" style="flex:1;margin:0;">
+            <button class="btn btn-small" onclick="sendAdminReply(${uid})">➤ Ответить</button>
+        </div>
+    `;
+    
+    loadAdminChatMsgs(uid);
+}
+
+async function loadAdminChatMsgs(uid) {
+    try {
+        const res = await fetch(`${BASE_URL}/messages/${uid}`);
+        const msgs = await res.json();
+        const container = document.getElementById('admin-chat-msgs');
+        
+        if (!container) return;
+        
+        if (!msgs || !msgs.length) {
+            container.innerHTML = '<div style="text-align:center;color:var(--text2);padding:20px;">Нет сообщений</div>';
+            return;
         }
+        
+        container.innerHTML = msgs.map(m => `
+            <div class="chat-message ${m.is_from_user ? 'user' : 'admin'}">
+                <div class="chat-bubble">
+                    ${m.text}
+                    <div class="chat-time">${m.created_at?.split('T')[1]?.slice(0, 5) || ''}</div>
+                </div>
+            </div>
+        `).join('');
+        
+        container.scrollTop = container.scrollHeight;
+    } catch(e) {
+        const container = document.getElementById('admin-chat-msgs');
+        if (container) container.innerHTML = '<div style="text-align:center;padding:20px;">Ошибка загрузки</div>';
+    }
+}
 
-        function previewFiles(files) {
-            state.adminFiles=[]; const p=document.getElementById('ap-preview'); if(!p) return; p.innerHTML='';
-            Array.from(files).forEach(f=>{const r=new FileReader(); r.onload=e=>{state.adminFiles.push(e.target.result); p.innerHTML+=f.type.startsWith('video')?`<video src="${e.target.result}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;" muted></video>`:`<img src="${e.target.result}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;">`}; r.readAsDataURL(f);});
-        }
+async function sendAdminReply(uid) {
+    const input = document.getElementById('admin-chat-input');
+    if (!input) return;
+    
+    const text = input.value.trim();
+    if (!text) return;
+    
+    try {
+        await fetch(`${BASE_URL}/messages`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: uid, text, is_from_user: false })
+        });
+        
+        input.value = '';
+        await loadAdminChatMsgs(uid);
+    } catch(e) {
+        showToast('Ошибка отправки');
+    }
+}
 
-        function submitProduct() {
-            const st=document.getElementById('ap-status'), name=document.getElementById('ap-name')?.value?.trim(), price=parseInt(document.getElementById('ap-price')?.value||0);
-            if(!name||!price) { if(st) st.innerHTML='<span style="color:var(--danger);">❌ Заполните название и цену</span>'; return; }
-            const data={action:'save_product',name,price,discount_price:parseInt(document.getElementById('ap-discount')?.value||0)||null,description:document.getElementById('ap-desc')?.value||'',category:document.getElementById('ap-category')?.value||'Premium',badge:document.getElementById('ap-badge')?.value||null,quantity:parseInt(document.getElementById('ap-qty')?.value||10),images:state.adminFiles||[]};
-            st.innerHTML='<span style="color:var(--blue);">⏳ Сохраняем...</span>';
-            try {
-                fetch(`${BASE_URL}/admin_action`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
-                .then(r=>r.json()).then(result=>{
-                    if(result.status==='ok') { data.id=Date.now(); state.products.push(data); st.innerHTML='<span style="color:var(--success);">✅ Сохранён!</span>'; showToast('✅ Товар сохранён!'); renderProducts(); setTimeout(()=>openAdminSection('products'),500); }
-                    else { data.id=Date.now(); state.products.push(data); st.innerHTML='<span style="color:var(--success);">✅ Сохранён локально!</span>'; showToast('✅ Добавлен локально'); renderProducts(); setTimeout(()=>openAdminSection('products'),500); }
-                }).catch(()=>{ data.id=Date.now(); state.products.push(data); st.innerHTML='<span style="color:var(--success);">✅ Сохранён локально!</span>'; showToast('✅ Добавлен локально'); renderProducts(); setTimeout(()=>openAdminSection('products'),500); });
-            } catch(e) { data.id=Date.now(); state.products.push(data); st.innerHTML='<span style="color:var(--success);">✅ Сохранён локально!</span>'; renderProducts(); setTimeout(()=>openAdminSection('products'),500); }
-        }
+function nav(p, el) {
+    document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
+    document.getElementById(p).classList.add('active');
+    if (el) el.classList.add('active');
+}
 
-        function loadAdminProducts(c) {
-            try {
-                fetch(`${BASE_URL}/admin_data`).then(r=>r.json()).then(d=>{
-                    const p=d.products&&d.products.length?d.products:state.products;
-                    c.innerHTML='<h3>📦 Товары ('+p.length+')</h3>'+p.map(x=>`<div class="card" style="margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;"><div><b>${x.name}</b> — ${x.price} ₽${x.discount_price?` <span style="color:var(--success);">(${x.discount_price} ₽)</span>`:''}</div><button class="btn btn-small btn-danger" onclick="deleteProduct(${x.id})">🗑</button></div>`).join('');
-                }).catch(()=>{ c.innerHTML='<h3>📦 Товары</h3>'+state.products.map(x=>`<div class="card" style="margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;"><div><b>${x.name}</b> — ${x.price} ₽</div><button class="btn btn-small btn-danger" onclick="deleteProduct(${x.id})">🗑</button></div>`).join(''); });
-            } catch(e) {}
-        }
+document.querySelectorAll('.modal-overlay').forEach(o => {
+    o.addEventListener('click', function(e) {
+        if (e.target === this) this.classList.remove('active');
+    });
+});
 
-        function deleteProduct(id) { if(!confirm('Удалить?'))return; state.products=state.products.filter(p=>p.id!==id); renderProducts(); showToast('🗑 Удалено'); openAdminSection('products'); try { fetch(`${BASE_URL}/admin_action`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete_product',product_id:id})}); } catch(e) {} }
-
-        function loadAdminPromos(c) {
-            c.innerHTML=`<h3>🎫 Промокоды</h3><div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;"><input class="input" placeholder="Код" id="pr-code" style="flex:1;min-width:100px;"><input class="input" placeholder="Скидка %" type="number" id="pr-discount" style="width:100px;"><input class="input" placeholder="Использований" type="number" id="pr-uses" value="100" style="width:120px;"></div><button class="btn btn-small" onclick="createPromo()" style="margin-bottom:12px;">➕ Создать</button><div id="promos-list">Нет промокодов</div>`;
-            try { fetch(`${BASE_URL}/admin_data`).then(r=>r.json()).then(d=>{ const list=document.getElementById('promos-list'); if(list&&d.promos&&d.promos.length) list.innerHTML=d.promos.map(p=>`<div class="card" style="margin-bottom:6px;display:flex;justify-content:space-between;"><div><b>${p.code}</b> — ${p.discount}%</div><button class="btn btn-small btn-danger" onclick="deletePromo('${p.code}')">🗑</button></div>`).join(''); }).catch(()=>{}); } catch(e) {} }
-
-        function createPromo() {
-            const code=document.getElementById('pr-code')?.value?.trim()?.toUpperCase(), discount=parseInt(document.getElementById('pr-discount')?.value||0), uses=parseInt(document.getElementById('pr-uses')?.value||100);
-            if(!code||!discount) { showToast('Заполните поля'); return; }
-            showToast('✅ Промокод создан! (локально)');
-            try { fetch(`${BASE_URL}/admin_action`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save_promo',code,discount,uses})}); } catch(e) {}
-            loadAdminPromos(document.getElementById('admin-content'));
-        }
-
-        function deletePromo(code) { if(!confirm('Удалить?'))return; showToast('🗑 Удалено'); try { fetch(`${BASE_URL}/admin_action`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete_promo',code})}); } catch(e) {} }
-
-        function renderFlashSale(c) { c.innerHTML=`<h3>🔥 Flash Sale</h3><p style="color:var(--text2);">Мгновенная распродажа</p><input class="input" placeholder="Скидка (%)" type="number" id="fs-discount" value="30"><input class="input" placeholder="Длительность (часы)" type="number" id="fs-hours" value="2"><button class="btn" onclick="startFlashSale()" style="margin-bottom:8px;">🚀 ЗАПУСТИТЬ</button><button class="btn btn-danger" onclick="stopFlashSale()">⏹ ОСТАНОВИТЬ</button>`; }
-
-        function startFlashSale() {
-            const d=parseInt(document.getElementById('fs-discount')?.value||30), h=parseInt(document.getElementById('fs-hours')?.value||2);
-            state.flashSale={active:true,discount:d,endTime:new Date(Date.now()+h*3600000).toISOString()};
-            document.getElementById('flash-sale').style.display='block';
-            document.getElementById('flash-discount').innerText=d;
-            updateFlashTimer();
-            showToast('🔥 Запущена!');
-        }
-
-        function stopFlashSale() { state.flashSale={active:false,discount:0,endTime:null}; document.getElementById('flash-sale').style.display='none'; showToast('Остановлена'); }
-
-        function updateFlashTimer() {
-            if (!state.flashSale.active||!state.flashSale.endTime) return;
-            const end=new Date(state.flashSale.endTime), now=new Date(), left=Math.max(0,end-now);
-            if (left<=0) { document.getElementById('flash-sale').style.display='none'; state.flashSale.active=false; return; }
-            const h=Math.floor(left/3600000), m=Math.floor((left%3600000)/60000), s=Math.floor((left%60000)/1000);
-            document.getElementById('flash-countdown').innerHTML=`<div class="countdown-item"><div class="countdown-value">${String(h).padStart(2,'0')}</div><div class="countdown-label">часы</div></div><div class="countdown-item"><div class="countdown-value">${String(m).padStart(2,'0')}</div><div class="countdown-label">мин</div></div><div class="countdown-item"><div class="countdown-value">${String(s).padStart(2,'0')}</div><div class="countdown-label">сек</div></div>`;
-            setTimeout(updateFlashTimer,1000);
-        }
-
-        function loadAdminUsers(c) {
-            try {
-                fetch(`${BASE_URL}/admin_data`).then(r=>r.json()).then(d=>{
-                    state.allUsers=d.users||[];
-                    c.innerHTML=`<h3>👥 Пользователи (${state.allUsers.length})</h3><input class="input" placeholder="🔍 Поиск" oninput="filterUsers(this.value)"><div id="users-list"></div>`;
-                    renderUsersList(state.allUsers);
-                }).catch(()=>{ c.innerHTML='<h3>👥 Пользователи</h3><div class="empty-state">Ошибка</div>'; });
-            } catch(e) {}
-        }
-
-        function renderUsersList(users) { const l=document.getElementById('users-list'); if(!l) return; l.innerHTML=users.length?users.slice(0,30).map(u=>`<div class="card" style="margin-bottom:6px;"><b>@${u.username||'нет'}</b> (ID:${u.user_id}) | 💰 ${u.balance||0} ₽ | ${u.level||'Новичок'}</div>`).join(''):'<div style="color:var(--text2);">Не найдены</div>'; }
-        function filterUsers(q) { const f=state.allUsers.filter(u=>String(u.user_id).includes(q.toLowerCase())||(u.username||'').toLowerCase().includes(q.toLowerCase())); renderUsersList(f); }
-
-        function loadAdminOrders(c) {
-            try {
-                fetch(`${BASE_URL}/admin_data`).then(r=>r.json()).then(d=>{
-                    c.innerHTML=(d.orders||[]).length?`<h3>📋 Заказы</h3>`+d.orders.map(o=>`<div class="card" style="margin-bottom:6px;"><b>#${o.id}</b> | ${o.status} | ${o.total_amount} ₽ | ${o.created_at?.split('T')[0]||''}</div>`).join(''):'<h3>📋 Заказы</h3><div class="empty-state">Нет заказов</div>';
-                }).catch(()=>{ c.innerHTML='<h3>📋 Заказы</h3><div class="empty-state">Ошибка</div>'; });
-            } catch(e) {}
-        }
-
-        function loadAnalytics(c) {
-            try {
-                fetch(`${BASE_URL}/admin_data`).then(r=>r.json()).then(d=>{
-                    const a=d.analytics||[], rev=a.reduce((s,x)=>s+(x.revenue||0),0), ord=a.reduce((s,x)=>s+(x.orders_count||0),0), vis=a.reduce((s,x)=>s+(x.visits||0),0), pv=a.reduce((s,x)=>s+(x.product_views||0),0);
-                    c.innerHTML=`<h3>📊 Аналитика (30 дн)</h3><div class="stats-grid"><div class="stat-card"><div class="stat-value">${vis}</div><div class="stat-label">👥 Посетители</div></div><div class="stat-card"><div class="stat-value">${pv}</div><div class="stat-label">👁 Просмотры</div></div><div class="stat-card"><div class="stat-value">${ord}</div><div class="stat-label">🛍 Заказы</div></div><div class="stat-card"><div class="stat-value">${rev} ₽</div><div class="stat-label">💰 Выручка</div></div></div><div class="card"><p style="color:var(--text2);">👥→👁: ${vis?Math.round(pv/vis*100):0}% | 👁→🛍: ${pv?Math.round(ord/pv*100):0}% | Ср.чек: ${ord?Math.round(rev/ord):0} ₽</p></div>`;
-                }).catch(()=>{ c.innerHTML='<h3>📊 Аналитика</h3><div class="empty-state">Ошибка</div>'; });
-            } catch(e) {}
-        }
-
-        function loadChatsList(c) {
-            c.innerHTML='<h3>💬 Чаты</h3><div class="empty-state"><div class="empty-icon">💬</div>Загрузка...</div>';
-            try {
-                fetch(`${BASE_URL}/admin_data`).then(r=>r.json()).then(async d=>{
-                    const users=d.users||[]; let html='<h3>💬 Чаты поддержки</h3>', has=false;
-                    for(const u of users.slice(0,20)) { try { const ms=await fetch(`${BASE_URL}/messages/${u.user_id}`).then(r=>r.json()); if(ms&&ms.length) { has=true; const last=ms[ms.length-1]; html+=`<div class="card" style="cursor:pointer;margin-bottom:6px;" onclick="openAdminChat(${u.user_id},'${u.username||'user'}')"><b>@${u.username||'user'+u.user_id}</b><div style="color:var(--text2);font-size:13px;">${last.text?.slice(0,50)||'...'}</div></div>`; } } catch(e) {} }
-                    if(!has) html+='<div class="empty-state">Нет чатов</div>';
-                    c.innerHTML=html;
-                }).catch(()=>{ c.innerHTML='<h3>💬 Чаты</h3><div class="empty-state">Ошибка</div>'; });
-            } catch(e) {}
-        }
-
-        function openAdminChat(uid,uname) {
-            const c=document.getElementById('admin-content');
-            c.innerHTML=`<div class="section-back" onclick="openAdminSection('chats')">← Назад</div><h4>💬 @${uname||'user'}</h4><div class="chat-container" id="admin-chat-msgs">Загрузка...</div><div style="display:flex;gap:8px;"><input class="input" placeholder="Ответ..." id="admin-chat-input" style="flex:1;margin:0;"><button class="btn btn-small" onclick="sendAdminReply(${uid})">➤</button></div>`;
-            try { fetch(`${BASE_URL}/messages/${uid}`).then(r=>r.json()).then(m=>{const cc=document.getElementById('admin-chat-msgs'); if(cc&&m.length) cc.innerHTML=m.map(x=>`<div class="chat-message ${x.is_from_user?'user':'admin'}"><div class="chat-bubble">${x.text}</div></div>`).join(''); else if(cc) cc.innerHTML='<div style="text-align:center;color:var(--text2);">Нет сообщений</div>'; if(cc) cc.scrollTop=cc.scrollHeight; }).catch(()=>{}); } catch(e) {} }
-        function sendAdminReply(uid) { const inp=document.getElementById('admin-chat-input'); if(!inp) return; const t=inp.value.trim(); if(!t) return; try { fetch(`${BASE_URL}/messages`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:uid,text:t,is_from_user:false})}); inp.value=''; setTimeout(()=>openAdminChat(uid,''),300); } catch(e) {} }
-
-        function nav(p,el) { document.querySelectorAll('.page').forEach(x=>x.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active')); document.getElementById(p).classList.add('active'); if(el) el.classList.add('active'); }
-
-        document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',function(e){if(e.target===this)this.classList.remove('active');}));
-        window.onload = init;
+window.onload = init;
     </script>
 </body>
 </html>
