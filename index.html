@@ -578,17 +578,51 @@
             document.getElementById('checkout-modal').classList.add('active');
         }
 
-        function confirmCheckout() {
-            const total = state.cart.reduce((s,i)=>s+(i.price||0)*(i.qty||1),0);
-            const final = Math.round(total*(1-state.promoDiscount/100));
-            const orderData = {action:'checkout',items:state.cart.map(i=>({id:i.id,qty:i.qty||1})),total:final,promo:state.promoCode,user_id:tg.initDataUnsafe.user?.id||0,delivery_method:state.deliveryMethod,payment_method:state.paymentMethod};
-            tg.sendData(JSON.stringify(orderData));
-            state.cart=[]; state.promoCode=''; state.promoDiscount=0;
-            document.getElementById('promo').value=''; document.getElementById('promo-msg').innerHTML='';
-            saveCartToStorage(); updateCartUI();
-            closeModal('checkout-modal');
-            tg.showAlert('✅ Заказ отправлен! Проверьте бота для оплаты.');
-        }
+async function confirmCheckout() {
+    if (!state.cart.length) {
+        tg.showAlert('Корзина пуста');
+        return;
+    }
+    
+    const total = state.cart.reduce((s, i) => s + (i.price || 0) * (i.qty || 1), 0);
+    const final = Math.round(total * (1 - state.promoDiscount / 100));
+    
+    const orderData = {
+        action: 'checkout',
+        items: state.cart.map(i => ({ id: i.id, qty: i.qty || 1, name: i.name, price: i.price })),
+        total: final,
+        promo: state.promoCode,
+        user_id: tg.initDataUnsafe.user?.id || 0,
+        username: tg.initDataUnsafe.user?.username || '',
+        first_name: tg.initDataUnsafe.user?.first_name || '',
+        delivery_method: state.deliveryMethod,
+        payment_method: state.paymentMethod
+    };
+    
+    // Отправляем данные в бота
+    tg.sendData(JSON.stringify(orderData));
+    
+    // Также отправляем через API для надёжности
+    try {
+        await fetch(`${BASE_URL}/order`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(orderData)
+        });
+    } catch(e) {}
+    
+    // Очищаем корзину
+    state.cart = [];
+    state.promoCode = '';
+    state.promoDiscount = 0;
+    document.getElementById('promo').value = '';
+    document.getElementById('promo-msg').innerHTML = '';
+    saveCartToStorage();
+    updateCartUI();
+    closeModal('checkout-modal');
+    
+    tg.showAlert('✅ Заказ создан! Проверьте бота для оплаты.\n\nЕсли счёт не пришёл - откройте бота @KodamaShopBot');
+}
 
         // ============ ПРОФИЛЬ ============
         function openProfileSection(s) {
@@ -1091,13 +1125,23 @@ function deletePromo(code) {
 function renderFlashSale(c) {
     c.innerHTML = `
         <h3>🔥 Управление Flash Sale</h3>
-        <p style="color:var(--text2);margin-bottom:12px;">Срочная распродажа для всех пользователей</p>
-        <input class="input" placeholder="Скидка (%)" type="number" id="fs-discount" value="${state.flashSale.discount || 30}">
-        <input class="input" placeholder="Длительность (часы)" type="number" id="fs-hours" value="2">
+        <p style="color:var(--text2);margin-bottom:16px;">Мгновенная распродажа для всех пользователей</p>
+        
+        <div style="margin-bottom:12px;">
+            <label style="font-size:13px;color:var(--text2);margin-bottom:4px;display:block;">💸 Процент скидки</label>
+            <input class="input" placeholder="Например: 30" type="number" id="fs-discount" value="${state.flashSale.discount || 30}">
+        </div>
+        
+        <div style="margin-bottom:16px;">
+            <label style="font-size:13px;color:var(--text2);margin-bottom:4px;display:block;">⏱ Длительность (в часах)</label>
+            <input class="input" placeholder="Например: 2" type="number" id="fs-hours" value="2">
+        </div>
+        
         <button class="btn" onclick="startFlashSale()" style="margin-bottom:8px;">🚀 ЗАПУСТИТЬ FLASH SALE</button>
         <button class="btn btn-danger" onclick="stopFlashSale()">⏹ ОСТАНОВИТЬ</button>
-        <div id="flash-status" style="margin-top:8px;font-size:13px;">
-            ${state.flashSale.active ? '<span style="color:var(--success);">✅ Активна: скидка ' + state.flashSale.discount + '%</span>' : '<span style="color:var(--text2);">Неактивна</span>'}
+        
+        <div id="flash-status" style="margin-top:12px;font-size:13px;text-align:center;">
+            ${state.flashSale.active ? '<span style="color:var(--success);">✅ Активна: скидка ' + state.flashSale.discount + '%</span>' : '<span style="color:var(--text2);">Статус: неактивна</span>'}
         </div>
     `;
 }
@@ -1175,17 +1219,12 @@ function updateFlashTimer() {
 }
 
 // 5. ПОЛЬЗОВАТЕЛИ (ИСПРАВЛЕНО)
+// 5. ПОЛЬЗОВАТЕЛИ
 function loadAdminUsers(c) {
     c.innerHTML = `
         <h3>👥 Пользователи</h3>
         <input class="input" placeholder="🔍 Поиск по username или ID..." oninput="filterUsers(this.value)" id="user-search">
-        <div id="users-list">
-            <div style="text-align:center;padding:20px;">
-                <div style="font-size:36px;">👥</div>
-                <p style="color:var(--text2);">Загрузка пользователей...</p>
-                <p style="font-size:12px;color:var(--text2);">Если сервер недоступен, данные не загрузятся</p>
-            </div>
-        </div>
+        <div id="users-list" style="margin-top:12px;"></div>
     `;
     
     fetch(`${BASE_URL}/admin_data`)
@@ -1195,16 +1234,7 @@ function loadAdminUsers(c) {
             renderUsersList(state.allUsers);
         })
         .catch(() => {
-            const list = document.getElementById('users-list');
-            if (list) {
-                list.innerHTML = `
-                    <div style="text-align:center;padding:20px;color:var(--text2);">
-                        <div style="font-size:36px;">🔌</div>
-                        <p>Сервер недоступен</p>
-                        <p style="font-size:12px;">Запустите бота для загрузки пользователей</p>
-                    </div>
-                `;
-            }
+            document.getElementById('users-list').innerHTML = '<div style="text-align:center;padding:20px;color:var(--text2);">Сервер недоступен</div>';
         });
 }
 
@@ -1218,31 +1248,106 @@ function renderUsersList(users) {
     }
     
     list.innerHTML = users.slice(0, 30).map(u => `
-        <div class="card" style="margin-bottom:6px;">
+        <div class="card" style="margin-bottom:6px;cursor:pointer;" onclick="openUserProfile(${u.user_id})">
             <div style="display:flex;justify-content:space-between;align-items:center;">
                 <div>
                     <b>@${u.username || 'нет'}</b>
                     <span style="font-size:12px;color:var(--text2);"> ID: ${u.user_id}</span>
+                    <div style="font-size:11px;color:var(--text2);">👥 Пригласил: ${u.invited_count || 0}</div>
                 </div>
                 <div style="text-align:right;">
                     <div>💰 <b>${u.balance || 0} ₽</b></div>
-                    <div style="font-size:11px;color:var(--text2);">
-                        Уровень: ${u.level || 'Новичок'} | Потрачено: ${u.total_spent || 0} ₽
-                    </div>
+                    <div style="font-size:11px;color:var(--text2);">${u.level || 'Новичок'}</div>
                 </div>
             </div>
         </div>
     `).join('');
 }
 
+function openUserProfile(uid) {
+    const user = (state.allUsers || []).find(u => u.user_id === uid);
+    if (!user) return;
+    
+    const c = document.getElementById('admin-content');
+    c.innerHTML = `
+        <div class="section-back" onclick="openAdminSection('users')">← Назад к списку</div>
+        
+        <div class="card" style="text-align:center;">
+            <div style="font-size:64px;margin-bottom:8px;">👤</div>
+            <h2>@${user.username || 'нет'}</h2>
+            <p style="color:var(--text2);">ID: ${user.user_id}</p>
+            <span class="tag tag-gold">${user.level || 'Новичок'}</span>
+        </div>
+        
+        <div class="stats-grid" style="margin-top:12px;">
+            <div class="stat-card">
+                <div class="stat-value">${user.total_spent || 0} ₽</div>
+                <div class="stat-label">Потрачено</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">${user.xp || 0} XP</div>
+                <div class="stat-label">Опыт</div>
+            </div>
+        </div>
+        
+        <div class="card" style="margin-top:12px;">
+            <h4>💰 Изменить баланс</h4>
+            <div style="display:flex;gap:8px;">
+                <input class="input" type="number" id="ub-balance" value="${user.balance || 0}" style="flex:1;">
+                <button class="btn btn-small" onclick="updateUserBalance(${uid})">💾 Сохранить</button>
+            </div>
+            <div id="balance-status" style="font-size:12px;margin-top:4px;"></div>
+        </div>
+        
+        <div class="card" style="margin-top:12px;">
+            <h4>👥 Реферальная статистика</h4>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px;">
+                <div style="text-align:center;padding:12px;background:var(--bg);border-radius:10px;">
+                    <div style="font-size:24px;font-weight:800;color:var(--gold);">${user.invited_count || 0}</div>
+                    <div style="font-size:11px;color:var(--text2);">Перешло</div>
+                </div>
+                <div style="text-align:center;padding:12px;background:var(--bg);border-radius:10px;">
+                    <div style="font-size:24px;font-weight:800;color:var(--success);">${user.invited_bought_count || 0}</div>
+                    <div style="font-size:11px;color:var(--text2);">Купили</div>
+                </div>
+                <div style="text-align:center;padding:12px;background:var(--bg);border-radius:10px;">
+                    <div style="font-size:24px;font-weight:800;color:var(--gold);">${user.balance || 0} ₽</div>
+                    <div style="font-size:11px;color:var(--text2);">Заработал</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card" style="margin-top:12px;">
+            <h4>📋 Информация</h4>
+            <p style="color:var(--text2);">📅 Дата регистрации: ${user.join_date || 'Неизвестно'}</p>
+            <p style="color:var(--text2);">💎 Кэшбэк: ${user.cashback || 0} ₽</p>
+            <p style="color:var(--text2);">⭐ Premium: ${user.is_premium ? 'Да' : 'Нет'}</p>
+        </div>
+    `;
+}
+
+async function updateUserBalance(uid) {
+    const balance = parseInt(document.getElementById('ub-balance')?.value || 0);
+    const status = document.getElementById('balance-status');
+    
+    try {
+        await fetch(`${BASE_URL}/admin_action`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'update_balance', user_id: uid, balance })
+        });
+        status.innerHTML = '<span style="color:var(--success);">✅ Баланс обновлён!</span>';
+    } catch(e) {
+        status.innerHTML = '<span style="color:var(--danger);">Ошибка</span>';
+    }
+}
+
 function filterUsers(query) {
     if (!state.allUsers) return;
     const q = query.toLowerCase();
-    const filtered = state.allUsers.filter(u => 
-        String(u.user_id).includes(q) || 
-        (u.username || '').toLowerCase().includes(q)
-    );
-    renderUsersList(filtered);
+    renderUsersList(state.allUsers.filter(u => 
+        String(u.user_id).includes(q) || (u.username || '').toLowerCase().includes(q)
+    ));
 }
 
 // 6. ЗАКАЗЫ (ИСПРАВЛЕНО)
@@ -1384,12 +1489,11 @@ function loadAnalytics(c) {
 }
 
 // 8. ЧАТЫ ПОДДЕРЖКИ (ИСПРАВЛЕНО)
+// 8. ЧАТЫ ПОДДЕРЖКИ
 function loadChatsList(c) {
     c.innerHTML = `
         <h3>💬 Чаты поддержки</h3>
-        <div id="chats-content">
-            <div style="text-align:center;padding:20px;">⏳ Загрузка...</div>
-        </div>
+        <div id="chats-content">Загрузка...</div>
     `;
     
     fetch(`${BASE_URL}/admin_data`)
@@ -1406,30 +1510,41 @@ function loadChatsList(c) {
                         hasChats = true;
                         const last = ms[ms.length - 1];
                         html += `
-                        <div class="card" style="cursor:pointer;margin-bottom:6px;" onclick="openAdminChat(${u.user_id}, '${u.username || 'user'}')">
-                            <div style="display:flex;justify-content:space-between;">
-                                <b>@${u.username || 'user' + u.user_id}</b>
-                                <span style="font-size:11px;color:var(--text2);">${last.created_at?.split('T')[0] || ''}</span>
+                        <div class="card" style="margin-bottom:6px;">
+                            <div style="cursor:pointer;" onclick="openAdminChat(${u.user_id}, '${u.username || 'user'}')">
+                                <div style="display:flex;justify-content:space-between;">
+                                    <b>@${u.username || 'user' + u.user_id}</b>
+                                    <span style="font-size:11px;color:var(--text2);">${last.created_at?.split('T')[0] || ''}</span>
+                                </div>
+                                <div style="color:var(--text2);font-size:13px;">${last.is_from_user ? '👤' : '👨‍💼'} ${last.text?.slice(0, 50) || '...'}</div>
                             </div>
-                            <div style="color:var(--text2);font-size:13px;margin-top:4px;">
-                                ${last.is_from_user ? '👤' : '👨‍💼'} ${last.text?.slice(0, 50) || '...'}
-                            </div>
+                            <button class="btn btn-small btn-danger" onclick="event.stopPropagation();deleteChat(${u.user_id})" style="margin-top:8px;">🗑 Удалить чат</button>
                         </div>`;
                     }
                 } catch(e) {}
             }
             
-            const content = document.getElementById('chats-content');
-            if (content) {
-                content.innerHTML = hasChats ? html : '<div class="empty-state"><div class="empty-icon">💬</div><p>Нет активных чатов</p></div>';
-            }
+            document.getElementById('chats-content').innerHTML = hasChats ? html : '<div class="empty-state"><p>Нет активных чатов</p></div>';
         })
         .catch(() => {
-            const content = document.getElementById('chats-content');
-            if (content) {
-                content.innerHTML = '<div class="empty-state"><div class="empty-icon">🔌</div><p>Сервер недоступен</p></div>';
-            }
+            document.getElementById('chats-content').innerHTML = '<div class="empty-state"><p>Сервер недоступен</p></div>';
         });
+}
+
+async function deleteChat(uid) {
+    if (!confirm('Удалить чат с пользователем ' + uid + '?')) return;
+    
+    try {
+        await fetch(`${BASE_URL}/admin_action`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete_chat', user_id: uid })
+        });
+        showToast('🗑 Чат удалён');
+        loadChatsList(document.getElementById('admin-content'));
+    } catch(e) {
+        showToast('Ошибка');
+    }
 }
 
 function openAdminChat(uid, uname) {
@@ -1437,10 +1552,14 @@ function openAdminChat(uid, uname) {
     c.innerHTML = `
         <div class="section-back" onclick="openAdminSection('chats')">← Назад к списку чатов</div>
         <h4>💬 Чат с @${uname || 'user'}</h4>
-        <div class="chat-container" id="admin-chat-msgs" style="height:350px;">Загрузка сообщений...</div>
+        <div class="chat-container" id="admin-chat-msgs" style="height:350px;">Загрузка...</div>
         <div style="display:flex;gap:8px;margin-top:8px;">
             <input class="input" placeholder="Ваш ответ..." id="admin-chat-input" style="flex:1;margin:0;">
-            <button class="btn btn-small" onclick="sendAdminReply(${uid})">➤ Ответить</button>
+            <button class="btn btn-small" onclick="sendAdminReply(${uid})">➤</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+            <button class="btn btn-small" onclick="endDialog(${uid})" style="background:var(--danger);color:#fff;flex:1;">🔚 Завершить диалог</button>
+            <button class="btn btn-small btn-danger" onclick="deleteChat(${uid})" style="flex:1;">🗑 Удалить чат</button>
         </div>
     `;
     
@@ -1494,6 +1613,31 @@ async function sendAdminReply(uid) {
         await loadAdminChatMsgs(uid);
     } catch(e) {
         showToast('Ошибка отправки');
+    }
+}
+
+async function endDialog(uid) {
+    if (!confirm('Завершить диалог? Клиенту придёт уведомление.')) return;
+    
+    try {
+        // Отправляем системное сообщение
+        await fetch(`${BASE_URL}/messages`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: uid, text: '🔚 Диалог завершён. Если у вас остались вопросы - напишите снова.', is_from_user: false, is_system: true })
+        });
+        
+        // Отправляем уведомление клиенту
+        await fetch(`${BASE_URL}/admin_action`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'end_dialog', user_id: uid })
+        });
+        
+        showToast('✅ Диалог завершён');
+        loadAdminChatMsgs(uid);
+    } catch(e) {
+        showToast('Ошибка');
     }
 }
 
