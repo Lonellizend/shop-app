@@ -158,6 +158,14 @@
         
         .empty-state { text-align: center; padding: 40px; color: var(--text2); }
         .empty-icon { font-size: 48px; margin-bottom: 12px; }
+        .chat-input-row {
+    position: sticky;
+    bottom: 0;
+    background: var(--card);
+    padding: 12px;
+    border-top: 1px solid var(--border);
+    margin-top: 8px;
+}
     </style>
 </head>
 <body>
@@ -761,7 +769,16 @@ function loadOrders(c, uid) {
         function loadAchievements(c,uid) { c.innerHTML = '<div class="empty-state">Загрузка...</div>'; try { fetch(`${BASE_URL}/achievements/${uid}`).then(r=>r.json()).then(a=>{ c.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'+Object.entries(a).map(([id,d])=>`<div class="card" style="text-align:center;opacity:${d.unlocked?'1':'0.4'}"><div style="font-size:36px;">${d.icon||'🏆'}</div><div>${d.name}</div><div style="font-size:12px;">+${d.xp}XP</div>${d.unlocked?'<span class="tag tag-green">✅</span>':'<span class="tag">🔒</span>'}</div>`).join('')+'</div>'; }).catch(()=>{}); } catch(e) {} }
 
         // ============ ЧАТ КЛИЕНТА ============
-        function renderChat(c,uid) { c.innerHTML=`<div class="chat-container" id="chat-messages">Загрузка...</div><div style="display:flex;gap:8px;"><input class="input" placeholder="Сообщение..." id="chat-input" style="flex:1;margin:0;"><button class="btn btn-small" onclick="sendChat()">➤</button></div>`; loadChatMsgs(uid); }
+        function renderChat(c, uid) {
+    c.innerHTML = `
+        <div class="chat-container" id="chat-messages" style="height:calc(100vh - 250px);">Загрузка...</div>
+        <div class="chat-input-row" style="display:flex;gap:8px;">
+            <input class="input" placeholder="Сообщение..." id="chat-input" style="flex:1;margin:0;">
+            <button class="btn btn-small" onclick="sendChat()">➤</button>
+        </div>
+    `;
+    loadChatMsgs(uid);
+}
         async function loadChatMsgs(uid) { try { const r=await fetch(`${BASE_URL}/messages/${uid}`); const m=await r.json(); const cc=document.getElementById('chat-messages'); if(cc&&m.length) cc.innerHTML=m.map(x=>`<div class="chat-message ${x.is_from_user?'user':'admin'}"><div class="chat-bubble">${x.text}</div></div>`).join(''); else if(cc) cc.innerHTML='<div style="text-align:center;color:var(--text2);padding:20px;">Напишите ваш вопрос</div>'; if(cc) cc.scrollTop=cc.scrollHeight; } catch(e) {} }
         async function sendChat() { const inp=document.getElementById('chat-input'); if(!inp) return; const t=inp.value.trim(); if(!t) return; const uid=tg.initDataUnsafe.user?.id||0; await fetch(`${BASE_URL}/messages`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:uid,text:t,is_from_user:true})}); tg.sendData(JSON.stringify({action:'chat_message',text:t,user_id:uid,username:tg.initDataUnsafe.user?.username||''})); inp.value=''; loadChatMsgs(uid); }
 
@@ -962,13 +979,57 @@ async function updateOrderStatus(orderId, status) {
 }
 
         // 7. Аналитика
-        function loadAnalytics(c) {
-            c.innerHTML='<div>Загрузка...</div>';
-            fetch(`${BASE_URL}/admin_data`).then(r=>r.json()).then(d=>{
-                const a=d.analytics||[]; const rev=a.reduce((s,x)=>s+(x.revenue||0),0); const ord=a.reduce((s,x)=>s+(x.orders_count||0),0); const vis=a.reduce((s,x)=>s+(x.visits||0),0);
-                c.innerHTML=`<h3>📊 Аналитика</h3><div class="stats-grid"><div class="stat-card"><div class="stat-value">${vis}</div><div class="stat-label">👥 Посетители</div></div><div class="stat-card"><div class="stat-value">${ord}</div><div class="stat-label">🛍 Заказы</div></div><div class="stat-card"><div class="stat-value">${rev} ₽</div><div class="stat-label">💰 Выручка</div></div></div>`;
-            }).catch(()=>{ c.innerHTML='<div class="empty-state">Ошибка</div>'; });
-        }
+function loadAnalytics(c) {
+    c.innerHTML = '<div>Загрузка...</div>';
+    
+    // Добавляем выбор периода
+    c.innerHTML = `
+        <h3>📊 Аналитика</h3>
+        <select class="input" id="analytics-period" onchange="loadAnalyticsData()">
+            <option value="7">7 дней</option>
+            <option value="30" selected>30 дней</option>
+            <option value="90">90 дней</option>
+        </select>
+        <div id="analytics-content">Загрузка...</div>
+    `;
+    
+    loadAnalyticsData();
+}
+
+async function loadAnalyticsData() {
+    const days = document.getElementById('analytics-period')?.value || 30;
+    const content = document.getElementById('analytics-content');
+    if (!content) return;
+    
+    try {
+        const res = await fetch(`${BASE_URL}/admin_data`);
+        const d = await res.json();
+        const a = d.analytics || [];
+        const rev = a.reduce((s, x) => s + (x.revenue || 0), 0);
+        const ord = a.reduce((s, x) => s + (x.orders_count || 0), 0);
+        const vis = a.reduce((s, x) => s + (x.visits || 0), 0);
+        const pv = a.reduce((s, x) => s + (x.product_views || 0), 0);
+        const newUsers = a.reduce((s, x) => s + (x.new_users || 0), 0);
+        const totalUsers = d.users?.length || 0;
+        
+        content.innerHTML = `
+            <div class="stats-grid">
+                <div class="stat-card"><div class="stat-value">${totalUsers}</div><div class="stat-label">👥 Всего пользователей</div></div>
+                <div class="stat-card"><div class="stat-value">${newUsers}</div><div class="stat-label">🆕 Новых за период</div></div>
+                <div class="stat-card"><div class="stat-value">${vis}</div><div class="stat-label">👁 Посетителей</div></div>
+                <div class="stat-card"><div class="stat-value">${pv}</div><div class="stat-label">👀 Просмотров</div></div>
+                <div class="stat-card"><div class="stat-value">${ord}</div><div class="stat-label">🛍 Заказов</div></div>
+                <div class="stat-card"><div class="stat-value">${rev} ₽</div><div class="stat-label">💰 Выручка</div></div>
+            </div>
+            <div class="card" style="margin-top:12px;">
+                <h4>📈 Конверсия</h4>
+                <p style="color:var(--text2);">👥→👁: ${vis ? Math.round(pv / vis * 100) : 0}% | 👁→🛍: ${pv ? Math.round(ord / pv * 100) : 0}% | 💰 Средний чек: ${ord ? Math.round(rev / ord) : 0} ₽</p>
+            </div>
+        `;
+    } catch(e) {
+        content.innerHTML = '<div class="empty-state">Ошибка загрузки</div>';
+    }
+}
 
         // 8. ЧАТЫ ПОДДЕРЖКИ (с удалением и завершением)
         function loadChatsList(c) {
@@ -990,7 +1051,28 @@ async function updateOrderStatus(orderId, status) {
 
         async function loadAdminChatMsgs(uid) { try { const r=await fetch(`${BASE_URL}/messages/${uid}`); const m=await r.json(); const cc=document.getElementById('admin-chat-msgs'); if(cc&&m.length) cc.innerHTML=m.map(x=>`<div class="chat-message ${x.is_from_user?'user':'admin'}"><div class="chat-bubble">${x.text}</div></div>`).join(''); else if(cc) cc.innerHTML='<div style="text-align:center;color:var(--text2);">Нет сообщений</div>'; if(cc) cc.scrollTop=cc.scrollHeight; } catch(e) {} }
         async function sendAdminReply(uid) { const inp=document.getElementById('admin-chat-input'); if(!inp) return; const t=inp.value.trim(); if(!t) return; await fetch(`${BASE_URL}/messages`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:uid,text:t,is_from_user:false})}); inp.value=''; loadAdminChatMsgs(uid); }
-        async function endDialog(uid) { if(!confirm('Завершить диалог?')) return; await fetch(`${BASE_URL}/messages`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:uid,text:'🔚 Диалог завершён.',is_from_user:false})}); await fetch(`${BASE_URL}/end_dialog`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:uid})}); showToast('✅ Диалог завершён'); loadAdminChatMsgs(uid); }
+async function endDialog(uid) {
+    // Показываем окно подтверждения клиенту
+    await fetch(`${BASE_URL}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            user_id: uid,
+            text: '🔚 <b>Диалог завершён</b>\n\nНадеюсь, мы помогли вам! 😊\n\nЕсли хотите продолжить диалог — нажмите кнопку ниже.',
+            is_from_user: false,
+            is_system: true
+        })
+    });
+    
+    await fetch(`${BASE_URL}/end_dialog`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: uid })
+    });
+    
+    showToast('✅ Диалог завершён');
+    loadAdminChatMsgs(uid);
+}
 
         // ============ НАВИГАЦИЯ ============
         function nav(p,el) { document.querySelectorAll('.page').forEach(x=>x.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active')); document.getElementById(p).classList.add('active'); if(el) el.classList.add('active'); }
