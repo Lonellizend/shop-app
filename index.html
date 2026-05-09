@@ -271,19 +271,22 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="checkout-modal">
-        <div class="modal">
-            <button class="modal-close" onclick="closeModal('checkout-modal')">✕</button>
-            <h2>📋 ОФОРМЛЕНИЕ ЗАКАЗА</h2>
-            <h3>🚚 Способ доставки</h3>
-            <div id="checkout-delivery"></div>
-            <h3>💳 Способ оплаты</h3>
-            <div id="checkout-payment"></div>
-            <div style="display:flex;justify-content:space-between;margin:16px 0;font-size:20px;font-weight:700;"><span>Итого:</span><span id="checkout-total">0 ₽</span></div>
-            <div id="checkout-cashback" style="font-size:12px;color:var(--success);margin-bottom:8px;"></div>
-            <button class="btn btn-pulse" onclick="confirmCheckout()">✅ ПОДТВЕРДИТЬ ЗАКАЗ</button>
+<div class="modal-overlay" id="checkout-modal">
+    <div class="modal">
+        <button class="modal-close" onclick="closeModal('checkout-modal')">✕</button>
+        <h2>📋 ОФОРМЛЕНИЕ ЗАКАЗА</h2>
+        <div id="checkout-balance" style="font-size:14px;color:var(--gold);margin-bottom:8px;"></div>
+        <h3>🚚 Способ доставки</h3>
+        <div id="checkout-delivery"></div>
+        <h3>💳 Способ оплаты</h3>
+        <div id="checkout-payment"></div>
+        <div style="display:flex;justify-content:space-between;margin:16px 0;font-size:20px;font-weight:700;">
+            <span>Итого:</span><span id="checkout-total">0 ₽</span>
         </div>
+        <div id="checkout-cashback" style="font-size:12px;color:var(--success);margin-bottom:8px;"></div>
+        <button class="btn btn-pulse" onclick="confirmCheckout()">✅ ПОДТВЕРДИТЬ ЗАКАЗ</button>
     </div>
+</div>
 
     <!-- НАВИГАЦИЯ -->
     <div class="nav">
@@ -543,19 +546,7 @@ async function init() {
             } catch(e) {}
         }
 
-        function openCheckoutModal() {
-            if (!state.cart.length) { tg.showAlert('Корзина пуста'); return; }
-            const total = state.cart.reduce((s,i)=>s+(i.price||0)*(i.qty||1),0);
-            const final = Math.round(total*(1-state.promoDiscount/100));
-            document.getElementById('checkout-total').innerText = final + ' ₽';
-            const level = LEVELS[state.user?.level] || LEVELS.newbie;
-            document.getElementById('checkout-cashback').innerText = `💰 Кэшбэк: +${Math.round(final*level.cashback/100)} ₽`;
-            document.getElementById('checkout-delivery').innerHTML = `<label style="display:flex;align-items:center;gap:8px;padding:12px;background:var(--card2);border-radius:12px;margin-bottom:6px;cursor:pointer;"><input type="radio" name="del" value="courier" ${state.deliveryMethod==='courier'?'checked':''} onchange="state.deliveryMethod='courier'"> 🚚 Курьер (300 ₽)</label><label style="display:flex;align-items:center;gap:8px;padding:12px;background:var(--card2);border-radius:12px;margin-bottom:6px;cursor:pointer;"><input type="radio" name="del" value="pickup" ${state.deliveryMethod==='pickup'?'checked':''} onchange="state.deliveryMethod='pickup'"> 📦 Самовывоз (0 ₽)</label><label style="display:flex;align-items:center;gap:8px;padding:12px;background:var(--card2);border-radius:12px;cursor:pointer;"><input type="radio" name="del" value="post" ${state.deliveryMethod==='post'?'checked':''} onchange="state.deliveryMethod='post'"> 📮 Почта (200 ₽)</label>`;
-            document.getElementById('checkout-payment').innerHTML = `<label style="display:flex;align-items:center;gap:8px;padding:12px;background:var(--card2);border-radius:12px;margin-bottom:6px;cursor:pointer;"><input type="radio" name="pay" value="card" ${state.paymentMethod==='card'?'checked':''} onchange="state.paymentMethod='card'"> 💳 Карта</label><label style="display:flex;align-items:center;gap:8px;padding:12px;background:var(--card2);border-radius:12px;margin-bottom:6px;cursor:pointer;"><input type="radio" name="pay" value="sbp" ${state.paymentMethod==='sbp'?'checked':''} onchange="state.paymentMethod='sbp'"> 🔵 СБП</label><label style="display:flex;align-items:center;gap:8px;padding:12px;background:var(--card2);border-radius:12px;cursor:pointer;"><input type="radio" name="pay" value="balance" ${state.paymentMethod==='balance'?'checked':''} onchange="state.paymentMethod='balance'"> 💰 Баланс</label>`;
-            document.getElementById('checkout-modal').classList.add('active');
-        }
-
-async function confirmCheckout() {
+function openCheckoutModal() {
     if (!state.cart.length) {
         tg.showAlert('Корзина пуста');
         return;
@@ -563,6 +554,77 @@ async function confirmCheckout() {
     
     const total = state.cart.reduce((s, i) => s + (i.price || 0) * (i.qty || 1), 0);
     const final = Math.round(total * (1 - state.promoDiscount / 100));
+    
+    document.getElementById('checkout-total').innerText = final + ' ₽';
+    
+    // Показываем баланс
+    const balanceEl = document.getElementById('checkout-balance');
+    const userBalance = state.user?.balance || 0;
+    
+    // Добавь в HTML модального окна перед "Итого":
+    // <div id="checkout-balance" style="font-size:14px;color:var(--gold);margin-bottom:8px;"></div>
+    
+    if (balanceEl) {
+        balanceEl.innerText = `💰 Ваш баланс: ${userBalance} ₽`;
+    }
+    
+    const level = LEVELS[state.user?.level] || LEVELS.newbie;
+    document.getElementById('checkout-cashback').innerText = `💰 Кэшбэк: +${Math.round(final * level.cashback / 100)} ₽`;
+    
+    // Доставка
+    document.getElementById('checkout-delivery').innerHTML = `
+        <label style="display:flex;align-items:center;gap:8px;padding:12px;background:var(--card2);border-radius:12px;margin-bottom:6px;cursor:pointer;">
+            <input type="radio" name="del" value="courier" ${state.deliveryMethod==='courier'?'checked':''} onchange="state.deliveryMethod='courier'"> 🚚 Курьер (300 ₽)
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:12px;background:var(--card2);border-radius:12px;cursor:pointer;">
+            <input type="radio" name="del" value="pickup" ${state.deliveryMethod==='pickup'?'checked':''} onchange="state.deliveryMethod='pickup'"> 📦 Самовывоз (0 ₽)
+        </label>`;
+    
+    // Оплата
+    document.getElementById('checkout-payment').innerHTML = `
+        <label style="display:flex;align-items:center;gap:8px;padding:12px;background:var(--card2);border-radius:12px;margin-bottom:6px;cursor:pointer;">
+            <input type="radio" name="pay" value="card" ${state.paymentMethod==='card'?'checked':''} onchange="state.paymentMethod='card'"> 💳 Карта
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:12px;background:var(--card2);border-radius:12px;margin-bottom:6px;cursor:pointer;">
+            <input type="radio" name="pay" value="sbp" ${state.paymentMethod==='sbp'?'checked':''} onchange="state.paymentMethod='sbp'"> 🔵 СБП
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:12px;background:var(--card2);border-radius:12px;cursor:pointer;">
+            <input type="radio" name="pay" value="balance" ${state.paymentMethod==='balance'?'checked':''} onchange="state.paymentMethod='balance'"> 💰 Баланс (${userBalance} ₽)
+        </label>`;
+    
+    document.getElementById('checkout-modal').classList.add('active');
+}
+
+async function confirmCheckout() {
+    if (!state.cart.length) {
+        tg.showAlert('Корзина пуста');
+        return;
+    }
+    
+    // Блокируем кнопку
+    const btn = document.querySelector('#checkout-modal .btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+        btn.innerText = '⏳ ОБРАБОТКА...';
+    }
+    
+    const total = state.cart.reduce((s, i) => s + (i.price || 0) * (i.qty || 1), 0);
+    const final = Math.round(total * (1 - state.promoDiscount / 100));
+    
+    // Проверяем баланс если оплата с баланса
+    if (state.paymentMethod === 'balance') {
+        const userBalance = state.user?.balance || 0;
+        if (userBalance < final) {
+            tg.showAlert(`❌ Недостаточно средств!\n\n💰 Ваш баланс: ${userBalance} ₽\n🛍 Сумма заказа: ${final} ₽\n💳 Не хватает: ${final - userBalance} ₽`);
+            if (btn) {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.innerText = '✅ ПОДТВЕРДИТЬ ЗАКАЗ';
+            }
+            return;
+        }
+    }
     
     const orderData = {
         action: 'checkout',
@@ -576,9 +638,6 @@ async function confirmCheckout() {
         payment_method: state.paymentMethod
     };
     
-    console.log('🛍 Отправляю заказ:', JSON.stringify(orderData).slice(0, 200));
-    
-    // Сначала создаём заказ через API
     try {
         const res = await fetch(`${BASE_URL}/order`, {
             method: 'POST',
@@ -586,27 +645,45 @@ async function confirmCheckout() {
             body: JSON.stringify(orderData)
         });
         const result = await res.json();
-        console.log('✅ API ответ:', result);
+        
+        if (result.status === 'ok') {
+            // Отправляем в бота
+            tg.sendData(JSON.stringify(orderData));
+            
+            // Очищаем корзину
+            state.cart = [];
+            state.promoCode = '';
+            state.promoDiscount = 0;
+            document.getElementById('promo').value = '';
+            document.getElementById('promo-msg').innerHTML = '';
+            saveCartToStorage();
+            updateCartUI();
+            closeModal('checkout-modal');
+            
+            if (state.paymentMethod === 'balance') {
+                // Обновляем баланс локально
+                state.user.balance = (state.user.balance || 0) - final;
+                updateProfileUI();
+                tg.showAlert(`✅ Заказ #${result.order_id} оплачен с баланса!\n💰 Списано: ${final} ₽\n💳 Остаток: ${state.user.balance} ₽`);
+            } else {
+                tg.showAlert(`✅ Заказ #${result.order_id} создан! Проверьте бота для оплаты.`);
+            }
+        } else {
+            tg.showAlert('❌ ' + (result.message || 'Ошибка создания заказа'));
+            if (btn) {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.innerText = '✅ ПОДТВЕРДИТЬ ЗАКАЗ';
+            }
+        }
     } catch(e) {
-        console.error('❌ API ошибка:', e);
+        tg.sendData(JSON.stringify(orderData));
+        state.cart = [];
+        saveCartToStorage();
+        updateCartUI();
+        closeModal('checkout-modal');
+        tg.showAlert('✅ Заказ отправлен!');
     }
-    
-    // Затем отправляем данные в бота
-    console.log('📤 Отправляю через tg.sendData...');
-    tg.sendData(JSON.stringify(orderData));
-    console.log('📤 tg.sendData выполнен');
-    
-    // Очищаем корзину
-    state.cart = [];
-    state.promoCode = '';
-    state.promoDiscount = 0;
-    document.getElementById('promo').value = '';
-    document.getElementById('promo-msg').innerHTML = '';
-    saveCartToStorage();
-    updateCartUI();
-    closeModal('checkout-modal');
-    
-    tg.showAlert('✅ Заказ создан! Проверьте бота @KodamaShopBot для оплаты.');
 }
 
         // ============ ПРОФИЛЬ ============
@@ -625,7 +702,57 @@ async function confirmCheckout() {
 
         function closeProfileSection() { document.getElementById('profile-main').style.display='block'; document.getElementById('profile-section').style.display='none'; }
 
-        function loadOrders(c,uid) { c.innerHTML = '<div class="empty-state">Загрузка...</div>'; try { fetch(`${BASE_URL}/orders/${uid}`).then(r=>r.json()).then(o=>{ c.innerHTML = o.length ? o.map(o=>`<div class="card"><b>#${o.id}</b> | ${o.status} | ${o.total_amount} ₽</div>`).join('') : '<div class="empty-state">Нет заказов</div>'; }).catch(()=>{ c.innerHTML='<div class="empty-state">Нет заказов</div>'; }); } catch(e) {} }
+function loadOrders(c, uid) {
+    c.innerHTML = '<div class="empty-state">Загрузка...</div>';
+    fetch(`${BASE_URL}/orders/${uid}`).then(r => r.json()).then(orders => {
+        if (!orders || !orders.length) {
+            c.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div>Нет заказов</div>';
+            return;
+        }
+        
+        const statusNames = {
+            'pending': '⏳ Ожидает',
+            'paid': '✅ Оплачен',
+            'processing': '📦 Собирается',
+            'shipped': '🚚 Отправлен',
+            'delivered': '🎉 Доставлен',
+            'ready': '📦 Готов к выдаче',
+            'cancelled': '❌ Отменён'
+        };
+        
+        const statusColors = {
+            'pending': '#ffa500',
+            'paid': 'var(--success)',
+            'processing': '#3498db',
+            'shipped': '#9b59b6',
+            'delivered': 'var(--gold)',
+            'ready': '#2ecc71',
+            'cancelled': 'var(--danger)'
+        };
+        
+        c.innerHTML = orders.map(o => {
+            const items = typeof o.items === 'string' ? JSON.parse(o.items || '[]') : (o.items || []);
+            const itemsText = items.map(i => `${i.name || 'Товар'} x${i.qty || 1}`).join(', ');
+            
+            return `
+            <div class="card" style="margin-bottom:8px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <b>Заказ #${o.id}</b>
+                    <span style="color:${statusColors[o.status] || '#fff'};font-weight:600;">
+                        ${statusNames[o.status] || o.status}
+                    </span>
+                </div>
+                <div style="color:var(--text2);font-size:13px;">
+                    📦 ${itemsText || 'Товары'}<br>
+                    💰 <b>${o.total_amount} ₽</b> | 📅 ${o.created_at?.split('T')[0] || ''}
+                    ${o.delivery_method ? ` | 🚚 ${o.delivery_method === 'courier' ? 'Курьер' : o.delivery_method === 'pickup' ? 'Самовывоз' : 'Доставка'}` : ''}
+                </div>
+            </div>`;
+        }).join('');
+    }).catch(() => {
+        c.innerHTML = '<div class="empty-state">Ошибка загрузки</div>';
+    });
+}
         function renderFavorites(c) { const fp = state.products.filter(p=>state.favorites.includes(p.id)); c.innerHTML = fp.length?'<div class="products-grid">'+fp.map(p=>{const m=JSON.parse(p.image_url||'[]');return `<div class="product-card" onclick="openProduct(${p.id})"><img src="${m[0]||'https://via.placeholder.com/300'}"><div class="product-info"><div class="product-price">${p.discount_price||p.price} ₽</div><div class="product-name">${p.name}</div></div></div>`}).join('')+'</div>':'<div class="empty-state"><div class="empty-icon">❤️</div>Нет избранного</div>'; }
         function renderSubscription(c) { c.innerHTML = `<div class="card"><h3>💎 Подписка</h3><p style="color:var(--text2);">Эксклюзивные привилегии</p></div><div class="card"><h3>🟡 BASIC — 299 ₽/мес</h3><p style="color:var(--text2);">Скидка 5%, ранний доступ</p><button class="btn btn-small" onclick="subscribePlan('basic')">Подписаться</button></div><div class="card" style="border-color:var(--gold);"><h3>💎 PREMIUM — 999 ₽/мес</h3><p style="color:var(--text2);">Скидка 15%, бесплатная доставка</p><button class="btn btn-small" onclick="subscribePlan('premium')">Подписаться</button></div>`; }
         function subscribePlan(p) { tg.sendData(JSON.stringify({action:'subscribe',plan:p,price:p==='basic'?299:999,user_id:tg.initDataUnsafe.user?.id||0})); tg.showAlert('Заявка отправлена!'); }
@@ -772,12 +899,67 @@ async function confirmCheckout() {
         async function updateBalance(uid) { const b=parseInt(document.getElementById('ub-balance')?.value||0); try { await fetch(`${BASE_URL}/admin_action`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'update_balance',user_id:uid,balance:b})}); document.getElementById('balance-status').innerHTML='<span style="color:var(--success);">✅ Обновлено!</span>'; } catch(e) { document.getElementById('balance-status').innerHTML='<span style="color:var(--danger);">Ошибка</span>'; } }
 
         // 6. Заказы
-        function loadAdminOrders(c) {
-            c.innerHTML='<div>Загрузка...</div>';
-            fetch(`${BASE_URL}/admin_data`).then(r=>r.json()).then(d=>{
-                c.innerHTML=(d.orders||[]).length?'<h3>📋 Заказы</h3>'+d.orders.map(o=>`<div class="card"><b>#${o.id}</b> | ${o.status} | ${o.total_amount} ₽ | ${o.created_at?.split('T')[0]||''}</div>`).join(''):'<div class="empty-state">Нет заказов</div>';
-            }).catch(()=>{ c.innerHTML='<div class="empty-state">Ошибка</div>'; });
+function loadAdminOrders(c) {
+    c.innerHTML = '<div>Загрузка...</div>';
+    fetch(`${BASE_URL}/admin_data`).then(r => r.json()).then(d => {
+        const orders = d.orders || [];
+        if (!orders.length) {
+            c.innerHTML = '<h3>📋 Заказы</h3><div class="empty-state">Нет заказов</div>';
+            return;
         }
+        
+        const statusNames = {
+            'pending': '⏳ Ожидает',
+            'paid': '✅ Оплачен',
+            'processing': '📦 Собирается',
+            'shipped': '🚚 Отправлен',
+            'delivered': '🎉 Доставлен',
+            'ready': '📦 Готов к выдаче',
+            'cancelled': '❌ Отменён'
+        };
+        
+        c.innerHTML = '<h3>📋 Заказы (' + orders.length + ')</h3>' + orders.map(o => {
+            const items = typeof o.items === 'string' ? JSON.parse(o.items || '[]') : (o.items || []);
+            const itemsText = items.map(i => `${i.name || 'Товар'} x${i.qty || 1}`).join(', ');
+            
+            return `
+            <div class="card" style="margin-bottom:8px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <b>#${o.id}</b>
+                    <span style="font-weight:600;">${statusNames[o.status] || o.status}</span>
+                </div>
+                <div style="color:var(--text2);font-size:13px;margin-top:4px;">
+                    📦 ${itemsText || 'Товары'}<br>
+                    💰 <b>${o.total_amount} ₽</b> | 👤 ${o.user_id} | 📅 ${o.created_at?.split('T')[0] || ''}
+                </div>
+                <div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap;">
+                    <button class="btn btn-small" onclick="updateOrderStatus(${o.id}, 'paid')">✅ Оплачен</button>
+                    <button class="btn btn-small" onclick="updateOrderStatus(${o.id}, 'processing')">📦 Собирается</button>
+                    <button class="btn btn-small" onclick="updateOrderStatus(${o.id}, 'shipped')">🚚 Отправлен</button>
+                    <button class="btn btn-small" onclick="updateOrderStatus(${o.id}, 'delivered')">🎉 Доставлен</button>
+                    <button class="btn btn-small" onclick="updateOrderStatus(${o.id}, 'ready')">📦 Готов к выдаче</button>
+                    <button class="btn btn-small" style="background:var(--danger);color:#fff;" onclick="updateOrderStatus(${o.id}, 'cancelled')">❌ Отменить</button>
+                </div>
+            </div>`;
+        }).join('');
+    }).catch(() => {
+        c.innerHTML = '<h3>📋 Заказы</h3><div class="empty-state">Ошибка</div>';
+    });
+}
+
+async function updateOrderStatus(orderId, status) {
+    try {
+        await fetch(`${BASE_URL}/admin_action`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'update_order_status', order_id: orderId, status })
+        });
+        showToast('✅ Статус обновлён!');
+        loadAdminOrders(document.getElementById('admin-content'));
+    } catch(e) {
+        showToast('Ошибка');
+    }
+}
 
         // 7. Аналитика
         function loadAnalytics(c) {
