@@ -207,6 +207,11 @@
     <!-- ПРОФИЛЬ -->
     <div id="profile" class="page">
         <div id="profile-main">
+            <div class="menu-item" onclick="openProfileSection('topup')">
+    <span class="menu-icon">💰</span>
+    <span class="menu-text">Пополнить баланс</span>
+    <span class="menu-arrow">→</span>
+</div>
             <div class="profile-header">
                 <img id="user-photo" src="https://via.placeholder.com/100" class="avatar">
                 <div class="username" id="user-name">Пользователь</div>
@@ -662,6 +667,7 @@
         else if (s==='achievements') loadAchievements(c,uid);
         else if (s==='chat') renderChat(c,uid);
         else if (s==='faq') renderFAQ(c);
+        else if (s === 'topup') renderTopup(c, uid);
     }
 
     function closeProfileSection() { document.getElementById('profile-main').style.display='block'; document.getElementById('profile-section').style.display='none'; }
@@ -694,6 +700,65 @@
     async function sendChat() { const inp=document.getElementById('chat-input'); if(!inp) return; const t=inp.value.trim(); if(!t) return; const uid=tg.initDataUnsafe.user?.id||0; await fetch(`${BASE_URL}/messages`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:uid,text:t,is_from_user:true})}); tg.sendData(JSON.stringify({action:'chat_message',text:t,user_id:uid,username:tg.initDataUnsafe.user?.username||''})); inp.value=''; loadChatMsgs(uid); }
 
     function renderFAQ(c) { c.innerHTML=`<div class="card"><h3>Как оформить?</h3><p style="color:var(--text2);">Корзина → Оформить → Доставка → Оплата</p></div><div class="card"><h3>Оплата</h3><p style="color:var(--text2);">Карта, СБП, Баланс</p></div><div class="card"><h3>Кэшбэк</h3><p style="color:var(--text2);">1-10% с покупок</p></div><div class="card"><h3>Рефералы</h3><p style="color:var(--text2);">10% от покупок друзей</p></div>`; }
+    function renderTopup(c, uid) {
+    const balance = state.user?.balance || 0;
+    const amounts = [500, 1000, 2000, 5000, 10000];
+    
+    c.innerHTML = `
+        <div class="card" style="text-align:center;">
+            <div style="font-size:48px;margin-bottom:8px;">💰</div>
+            <h3>Пополнение баланса</h3>
+            <p style="color:var(--text2);">Текущий баланс: <b style="color:var(--gold);">${balance} ₽</b></p>
+        </div>
+        
+        <div class="card">
+            <h4>💳 Выберите сумму</h4>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;">
+                ${amounts.map(a => `
+                    <button class="btn btn-outline" onclick="topupAmount(${a})" style="padding:14px;">
+                        ${a} ₽
+                    </button>
+                `).join('')}
+            </div>
+        </div>
+        
+        <div class="card">
+            <h4>✏️ Своя сумма</h4>
+            <div style="display:flex;gap:8px;">
+                <input class="input" type="number" placeholder="Минимум 100 ₽" id="custom-amount" style="flex:1;">
+                <button class="btn btn-small" onclick="topupCustom()">Пополнить</button>
+            </div>
+        </div>
+        
+        <div class="card" style="text-align:center;color:var(--text2);font-size:13px;">
+            💳 Оплата через ЮKassa<br>
+            🔒 Безопасное соединение<br>
+            ⚡ Мгновенное зачисление
+        </div>
+    `;
+}
+
+function topupAmount(amount) {
+    tg.sendData(JSON.stringify({
+        action: 'topup_balance',
+        amount: amount,
+        user_id: tg.initDataUnsafe.user?.id || 0
+    }));
+    tg.showAlert(`📱 Счёт на ${amount} ₽ отправлен в бота!\n\nПроверьте @KodamaShopBot для оплаты.`);
+}
+
+function topupCustom() {
+    const amount = parseInt(document.getElementById('custom-amount')?.value || 0);
+    if (amount < 100) {
+        tg.showAlert('❌ Минимальная сумма — 100 ₽');
+        return;
+    }
+    if (amount > 500000) {
+        tg.showAlert('❌ Максимальная сумма — 500 000 ₽');
+        return;
+    }
+    topupAmount(amount);
+}
 
     // ============ АДМИН-ПАНЕЛЬ ============
     function openAdminSection(s) {
