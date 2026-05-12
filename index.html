@@ -207,11 +207,6 @@
     <!-- ПРОФИЛЬ -->
     <div id="profile" class="page">
         <div id="profile-main">
-            <div class="menu-item" onclick="openProfileSection('topup')">
-    <span class="menu-icon">💰</span>
-    <span class="menu-text">Пополнить баланс</span>
-    <span class="menu-arrow">→</span>
-</div>
             <div class="profile-header">
                 <img id="user-photo" src="https://via.placeholder.com/100" class="avatar">
                 <div class="username" id="user-name">Пользователь</div>
@@ -221,15 +216,24 @@
                 <div class="level-text"><span id="current-level">🌱 Новичок</span><span id="next-level">→ 🥉 Бронза</span></div>
                 <div class="badges-row" id="badges-row"></div>
             </div>
-                        <!-- Активные заказы (трекер) -->
+            
+            <!-- Активные заказы (трекер) -->
             <div id="active-orders-widget" style="display:none;margin-bottom:16px;"></div>
+            
             <div class="stats-grid">
                 <div class="stat-card"><div class="stat-value" id="u-bal">0 ₽</div><div class="stat-label">Баланс</div></div>
-                <div class="stat-card"><div class="stat-value" id="u-cashback">0 ₽</div><div class="stat-label">Кэшбэк</div></div>
+                <div class="stat-card" style="cursor:pointer;" onclick="showCashbackInfo()"><div class="stat-value" id="u-cashback">0 ₽</div><div class="stat-label">Кэшбэк</div></div>
                 <div class="stat-card"><div class="stat-value" id="u-spent">0 ₽</div><div class="stat-label">Потрачено</div></div>
                 <div class="stat-card"><div class="stat-value" id="u-xp">0 XP</div><div class="stat-label">Опыт</div></div>
             </div>
+            
+            <!-- Кнопка пополнения баланса -->
+            <button class="btn btn-small" onclick="openProfileSection('topup')" style="margin-bottom:12px;width:100%;">
+                💰 Пополнить баланс
+            </button>
+            
             <div class="theme-toggle"><span>🌙 Тёмная</span><div class="theme-switch dark" id="theme-switch" onclick="toggleTheme()"></div><span>☀️ Светлая</span></div>
+            
             <div class="menu-list">
                 <div class="menu-item" onclick="openProfileSection('orders')"><span class="menu-icon">📋</span><span class="menu-text">Мои заказы</span><span class="menu-arrow">→</span></div>
                 <div class="menu-item" onclick="openProfileSection('favorites')"><span class="menu-icon">❤️</span><span class="menu-text">Избранное</span><span class="menu-arrow">→</span></div>
@@ -281,6 +285,35 @@
             </div>
             <p style="color:var(--text2);margin-bottom:16px;" id="modal-desc"></p>
             <div class="qty-control"><span style="font-weight:600;">Количество:</span><button class="qty-btn" onclick="changeQty(-1)">−</button><span class="qty-value" id="modal-qty">1</span><button class="qty-btn" onclick="changeQty(1)">+</button></div>
+                <!-- Модальное окно товара -->
+    <div class="modal-overlay" id="product-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal('product-modal')">✕</button>
+            <div class="media-slider" id="product-media"></div>
+            <h2 id="modal-name"></h2>
+            <div id="modal-rating" style="margin-bottom:8px;"></div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                <span style="font-size:24px;font-weight:800;color:var(--gold);" id="modal-price"></span>
+                <span style="text-decoration:line-through;color:var(--text2);" id="modal-old-price"></span>
+                <span id="modal-badge"></span>
+            </div>
+            <p style="color:var(--text2);margin-bottom:16px;" id="modal-desc"></p>
+            
+            <!-- Количество и наличие -->
+            <div class="qty-control">
+                <span style="font-weight:600;">Количество:</span>
+                <button class="qty-btn" onclick="changeQty(-1)">−</button>
+                <span class="qty-value" id="modal-qty">1</span>
+                <button class="qty-btn" onclick="changeQty(1)">+</button>
+            </div>
+            <div id="modal-stock" style="font-size:12px;color:var(--text2);margin-bottom:8px;"></div>
+            
+            <button class="btn" onclick="modalAddToCart()">🛒 В корзину</button>
+            <button class="btn btn-outline" onclick="modalToggleFav()" style="margin-top:8px;">
+                <span id="fav-btn-text">❤️ В избранное</span>
+            </button>
+        </div>
+    </div>
             <button class="btn" onclick="modalAddToCart()">🛒 В корзину</button>
             <button class="btn btn-outline" onclick="modalToggleFav()" style="margin-top:8px;"><span id="fav-btn-text">❤️ В избранное</span></button>
         </div>
