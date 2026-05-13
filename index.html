@@ -346,7 +346,7 @@
 
 <script>
     const tg = window.Telegram.WebApp;
-    const BASE_URL = 'https://infrared-invoice-powers-antique.trycloudflare.com';
+    const BASE_URL = 'https://experience-environment-recruiting-front.trycloudflare.com';
 
     const LEVELS = {
         'newbie': {name:'🌱 Новичок', min_xp:0, discount:0, cashback:1, next_xp:1000},
@@ -808,10 +808,25 @@
         `;
     }
 
-    function topupAmount(amount) {
-        tg.sendData(JSON.stringify({action:'topup_balance',amount,user_id:tg.initDataUnsafe.user?.id||0}));
-        tg.showAlert(`📱 Счёт на ${amount} ₽ отправлен!\nПроверьте @KodamaShopBot`);
-    }
+function topupAmount(amount) {
+    // Отправляем через API вместо tg.sendData
+    fetch(`${BASE_URL}/topup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            user_id: tg.initDataUnsafe.user?.id || 0,
+            amount: amount
+        })
+    }).then(r => r.json()).then(data => {
+        if (data.status === 'ok') {
+            tg.showAlert(`✅ Счёт на ${amount} ₽ отправлен в бота!\n\nПроверьте @KodamaShopBot для оплаты.`);
+        } else {
+            tg.showAlert('❌ Ошибка: ' + (data.message || 'попробуйте позже'));
+        }
+    }).catch(() => {
+        tg.showAlert('❌ Ошибка соединения');
+    });
+}
 
     function topupCustom() {
         const amount = parseInt(document.getElementById('custom-amount')?.value || 0);
