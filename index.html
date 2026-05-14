@@ -312,6 +312,9 @@
             <button class="btn btn-outline" onclick="modalToggleFav()" style="margin-top:8px;">
                 <span id="fav-btn-text">❤️ В избранное</span>
             </button>
+            <button class="btn btn-outline" id="share-product-btn" style="margin-top:8px;">
+    📤 Поделиться с другом
+</button>
         </div>
     </div>
             <button class="btn" onclick="modalAddToCart()">🛒 В корзину</button>
@@ -580,7 +583,21 @@
         document.getElementById('modal-qty').innerText = '1';
         document.getElementById('modal-stock').innerText = `В наличии: ${p.quantity || 0} шт.`;
         document.getElementById('product-modal').classList.add('active');
+        document.getElementById('share-product-btn').onclick = () => shareProduct(id);
     }
+
+    // Где-то рядом с другими функциями (после openProduct)
+async function shareProduct(id) {
+    try {
+        const res = await fetch(`${BASE_URL}/share/product/${id}`);
+        const data = await res.json();
+        if (data.status === 'ok') {
+            // Копируем текст в буфер обмена
+            await navigator.clipboard.writeText(data.share_text);
+            tg.showAlert('✅ Ссылка скопирована!\nОтправьте её другу.');
+        }
+    } catch(e) {}
+}
 
     function changeQty(delta) {
         const max = state.currentProduct?.quantity || 1;
@@ -682,13 +699,43 @@
 
     function closeProfileSection() { document.getElementById('profile-main').style.display='block'; document.getElementById('profile-section').style.display='none'; }
 
-    function showOrdersHistory(c) {
-        if (!state.ordersHistory.length) { c.innerHTML = '<div class="empty-state">Нет завершённых заказов</div>'; return; }
-        c.innerHTML = '<h3>📋 История заказов</h3>' + state.ordersHistory.map(o => {
-            const items = typeof o.items === 'string' ? JSON.parse(o.items||'[]') : (o.items||[]);
-            return `<div class="card"><b>#${o.id}</b> — ${o.total_amount} ₽<br><span style="color:var(--text2);">${items.map(i=>`${i.name} x${i.qty}`).join(', ')}</span></div>`;
-        }).join('');
+function showOrdersHistory(c) {
+    if (!state.ordersHistory.length) { c.innerHTML = '<div class="empty-state">Нет завершённых заказов</div>'; return; }
+    c.innerHTML = '<h3>📋 История заказов</h3>' + state.ordersHistory.map(o => {
+        const items = typeof o.items === 'string' ? JSON.parse(o.items||'[]') : (o.items||[]);
+        return `<div class="card">
+            <b>#${o.id}</b> — ${o.total_amount} ₽
+            <br><span style="color:var(--text2);">${items.map(i=>`${i.name} x${i.qty}`).join(', ')}</span>
+            <br><button class="btn btn-small" onclick="downloadReceipt(${o.id})" style="margin-top:4px;">🧾 Чек</button>
+        </div>`;
+    }).join('');
+}
+
+async function downloadReceipt(orderId) {
+    try {
+        const res = await fetch(`${BASE_URL}/orders/${tg.initDataUnsafe.user?.id || 0}`);
+        const orders = await res.json();
+        const order = orders.find(o => o.id === orderId);
+        
+        if (!order) {
+            tg.showAlert('❌ Заказ не найден');
+            return;
+        }
+        
+        const items = typeof order.items === 'string' ? JSON.parse(order.items || '[]') : (order.items || []);
+        const itemsText = items.map(i => `• ${i.name || 'Товар'} x${i.qty || 1} — ${(i.price || 0) * (i.qty || 1)} ₽`).join('\n');
+        
+        const receipt = `🧾 Чек №${orderId}\n\n📅 ${order.created_at?.split('T')[0] || ''}\n\n📦 Товары:\n${itemsText}\n\n💰 Итого: ${order.total_amount} ₽\n💳 Оплата: ${order.payment_method || 'Не указана'}\n📦 Статус: ${order.status}`;
+        
+        tg.showPopup({
+            title: '🧾 Чек',
+            message: receipt,
+            buttons: [{type: 'ok', text: 'Закрыть'}]
+        });
+    } catch(e) {
+        tg.showAlert('❌ Ошибка загрузки');
     }
+}
 
     function renderFavorites(c) {
         const fp = state.products.filter(p => state.favorites.includes(p.id));
@@ -867,11 +914,138 @@
 
     function loadAnalytics(c) { c.innerHTML='<h3>📊 Аналитика</h3><div id="analytics-content">Загрузка...</div>'; fetch(`${BASE_URL}/admin_data`).then(r=>r.json()).then(d=>{ const a=d.analytics||[]; const rev=a.reduce((s,x)=>s+(x.revenue||0),0); const ord=a.reduce((s,x)=>s+(x.orders_count||0),0); const vis=a.reduce((s,x)=>s+(x.visits||0),0); document.getElementById('analytics-content').innerHTML=`<div class="stats-grid"><div class="stat-card"><div class="stat-value">${d.users?.length||0}</div><div class="stat-label">👥 Пользователей</div></div><div class="stat-card"><div class="stat-value">${vis}</div><div class="stat-label">👁 Посетителей</div></div><div class="stat-card"><div class="stat-value">${ord}</div><div class="stat-label">🛍 Заказов</div></div><div class="stat-card"><div class="stat-value">${rev} ₽</div><div class="stat-label">💰 Выручка</div></div></div>`; }); }
 
-    function loadChatsList(c) { /* как было */ }
-    function openAdminChat(uid,uname) { /* как было */ }
-    function sendAdminReply(uid) { /* как было */ }
-    function endDialog(uid) { /* как было */ }
-    function deleteChat(uid) { /* как было */ }
+function loadChatsList(c) {
+    c.innerHTML = '<h3>💬 Чаты поддержки</h3><div id="chats-content">Загрузка...</div>';
+    fetch(`${BASE_URL}/admin_data`).then(r => r.json()).then(async d => {
+        const users = d.users || [];
+        let html = '';
+        let has = false;
+        for (const u of users.slice(0, 20)) {
+            try {
+                const ms = await fetch(`${BASE_URL}/messages/${u.user_id}`).then(r => r.json());
+                if (ms && ms.length) {
+                    has = true;
+                    const last = ms[ms.length - 1];
+                    html += `<div class="card" style="margin-bottom:6px;">
+                        <div style="cursor:pointer;" onclick="openAdminChat(${u.user_id},'${u.username||'user'}')">
+                            <b>@${u.username || 'user' + u.user_id}</b>
+                            <div style="color:var(--text2);">${last.text?.slice(0, 50)}</div>
+                        </div>
+                        <button class="btn btn-small btn-danger" onclick="event.stopPropagation();deleteChat(${u.user_id})" style="margin-top:8px;">🗑 Удалить</button>
+                    </div>`;
+                }
+            } catch(e) {}
+        }
+        document.getElementById('chats-content').innerHTML = has ? html : '<div class="empty-state">Нет чатов</div>';
+    }).catch(() => {
+        document.getElementById('chats-content').innerHTML = '<div class="empty-state">Сервер недоступен</div>';
+    });
+}
+
+function openAdminChat(uid, uname) {
+    const c = document.getElementById('admin-content');
+    c.innerHTML = `
+        <div class="section-back" onclick="openAdminSection('chats')">← Назад</div>
+        <h4>💬 @${uname || 'user'}</h4>
+        <div class="chat-container" id="admin-chat-msgs">Загрузка...</div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+            <input class="input" placeholder="Ответ..." id="admin-chat-input" style="flex:1;margin:0;" data-uid="${uid}">
+            <button class="btn btn-small" onclick="sendAdminReply(${uid})">➤</button>
+        </div>
+        <div id="quick-replies" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px;"></div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+            <button class="btn btn-small" onclick="endDialog(${uid})" style="background:var(--danger);color:#fff;flex:1;">🔚 Завершить</button>
+            <button class="btn btn-small btn-danger" onclick="deleteChat(${uid})" style="flex:1;">🗑 Удалить</button>
+        </div>
+    `;
+    loadAdminChatMsgs(uid);
+    loadQuickReplies();
+}
+
+async function loadAdminChatMsgs(uid) {
+    try {
+        const r = await fetch(`${BASE_URL}/messages/${uid}`);
+        const m = await r.json();
+        const cc = document.getElementById('admin-chat-msgs');
+        if (cc && m.length) {
+            cc.innerHTML = m.map(x => `<div class="chat-message ${x.is_from_user ? 'user' : 'admin'}"><div class="chat-bubble">${x.text}</div></div>`).join('');
+        } else if (cc) {
+            cc.innerHTML = '<div style="text-align:center;color:var(--text2);">Нет сообщений</div>';
+        }
+        if (cc) cc.scrollTop = cc.scrollHeight;
+    } catch(e) {}
+}
+
+async function sendAdminReply(uid) {
+    const inp = document.getElementById('admin-chat-input');
+    if (!inp) return;
+    const t = inp.value.trim();
+    if (!t) return;
+    await fetch(`${BASE_URL}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: uid, text: t, is_from_user: false })
+    });
+    inp.value = '';
+    loadAdminChatMsgs(uid);
+}
+
+async function endDialog(uid) {
+    if (!confirm('Завершить диалог?')) return;
+    await fetch(`${BASE_URL}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: uid, text: '🔚 Диалог завершён. Если нужна помощь — напишите снова.', is_from_user: false })
+    });
+    await fetch(`${BASE_URL}/end_dialog`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: uid })
+    });
+    showToast('✅ Диалог завершён');
+    loadAdminChatMsgs(uid);
+}
+
+async function deleteChat(uid) {
+    if (!confirm('Удалить чат?')) return;
+    await fetch(`${BASE_URL}/admin_action`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete_chat', user_id: uid })
+    });
+    showToast('🗑 Чат удалён');
+    loadChatsList(document.getElementById('admin-content'));
+}
+
+// Быстрые ответы
+async function loadQuickReplies() {
+    try {
+        const res = await fetch(`${BASE_URL}/quick-reply`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'list' })
+        });
+        const data = await res.json();
+        const replies = data.replies || {};
+        const container = document.getElementById('quick-replies');
+        if (container) {
+            container.innerHTML = Object.entries(replies).map(([key, text]) =>
+                `<button class="btn btn-small" onclick="sendQuickReply('${key}')" style="margin:2px;">${text.slice(0, 25)}</button>`
+            ).join('');
+        }
+    } catch(e) {}
+}
+
+async function sendQuickReply(key) {
+    const uid = document.getElementById('admin-chat-input')?.getAttribute('data-uid');
+    if (!uid) return;
+    await fetch(`${BASE_URL}/quick-reply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'send', reply: key, user_id: parseInt(uid) })
+    });
+    loadAdminChatMsgs(uid);
+}
 
     function nav(p,el) { document.querySelectorAll('.page').forEach(x=>x.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active')); document.getElementById(p).classList.add('active'); if(el) el.classList.add('active'); }
     document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',function(e){if(e.target===this)this.classList.remove('active');}));
