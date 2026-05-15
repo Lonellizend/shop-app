@@ -301,38 +301,22 @@
             </div>
             <p style="color:var(--text2);margin-bottom:16px;" id="modal-desc"></p>
             <div class="qty-control"><span style="font-weight:600;">Количество:</span><button class="qty-btn" onclick="changeQty(-1)">−</button><span class="qty-value" id="modal-qty">1</span><button class="qty-btn" onclick="changeQty(1)">+</button></div>
-                <!-- Модальное окно товара -->
-<div class="modal-overlay" id="product-modal">
-    <div class="modal">
-        <button class="modal-close" onclick="closeModal('product-modal')">✕</button>
-        
-        <!-- Слайдер для фото и видео -->
-        <div class="media-slider" id="product-media" style="display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:8px;margin-bottom:12px;"></div>
-        
-        <h2 id="modal-name"></h2>
-        <div id="modal-rating" style="margin-bottom:8px;"></div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-            <span style="font-size:24px;font-weight:800;color:var(--gold);" id="modal-price"></span>
-            <span style="text-decoration:line-through;color:var(--text2);" id="modal-old-price"></span>
-            <span id="modal-badge"></span>
-        </div>
-        <p style="color:var(--text2);margin-bottom:16px;" id="modal-desc"></p>
-        
-        <div class="qty-control">
-            <span style="font-weight:600;">Количество:</span>
-            <button class="qty-btn" onclick="changeQty(-1)">−</button>
-            <span class="qty-value" id="modal-qty">1</span>
-            <button class="qty-btn" onclick="changeQty(1)">+</button>
-        </div>
-        <div id="modal-stock" style="font-size:12px;color:var(--text2);margin-bottom:8px;"></div>
-        
-        <button class="btn" onclick="modalAddToCart()">🛒 В корзину</button>
-        <button class="btn btn-outline" onclick="modalToggleFav()" style="margin-top:8px;">
-            <span id="fav-btn-text">❤️ В избранное</span>
-        </button>
-        <button class="btn btn-outline" id="share-product-btn" style="margin-top:8px;">📤 Поделиться</button>
-    </div>
-</div>
+    <!-- Модальное окно товара -->
+    <div class="modal-overlay" id="product-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal('product-modal')">✕</button>
+            
+            <!-- Слайдер для фото и видео -->
+            <div class="media-slider" id="product-media" style="display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:8px;margin-bottom:12px;"></div>
+            
+            <h2 id="modal-name"></h2>
+            <div id="modal-rating" style="margin-bottom:8px;"></div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                <span style="font-size:24px;font-weight:800;color:var(--gold);" id="modal-price"></span>
+                <span style="text-decoration:line-through;color:var(--text2);" id="modal-old-price"></span>
+                <span id="modal-badge"></span>
+            </div>
+            <p style="color:var(--text2);margin-bottom:16px;" id="modal-desc"></p>
             
             <!-- Количество и наличие -->
             <div class="qty-control">
@@ -347,13 +331,7 @@
             <button class="btn btn-outline" onclick="modalToggleFav()" style="margin-top:8px;">
                 <span id="fav-btn-text">❤️ В избранное</span>
             </button>
-            <button class="btn btn-outline" id="share-product-btn" style="margin-top:8px;">
-    📤 Поделиться с другом
-</button>
-        </div>
-    </div>
-            <button class="btn" onclick="modalAddToCart()">🛒 В корзину</button>
-            <button class="btn btn-outline" onclick="modalToggleFav()" style="margin-top:8px;"><span id="fav-btn-text">❤️ В избранное</span></button>
+            <button class="btn btn-outline" id="share-product-btn" onclick="shareProduct(state.currentProduct?.id)" style="margin-top:8px;">📤 Поделиться</button>
         </div>
     </div>
 
