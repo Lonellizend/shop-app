@@ -577,30 +577,28 @@
 function renderProducts() {
     const list = document.getElementById('products-list');
     if (!state.products.length) { 
-        list.innerHTML = '<div class="empty-state"><div class="empty-icon">🛍️</div>Товары не найдены</div>'; 
+        list.innerHTML = '<div class="empty-state">🛍️ Товары не найдены</div>'; 
         return; 
     }
     
     list.innerHTML = state.products.map(p => {
-        // Пытаемся достать первое фото из image_url
-        let thumb = 'https://via.placeholder.com/300';
+        // Парсим фото правильно
+        let thumb = 'https://via.placeholder.com/300?text=No+Photo';
         try {
-            const media = JSON.parse(p.image_url || '[]');
-            if (media.length > 0 && !media[0].startsWith('data:')) {
-                thumb = media[0];
-            }
+            let media = p.image_url;
+            if (typeof media === 'string') media = JSON.parse(media);
+            if (Array.isArray(media) && media.length > 0) thumb = media[0];
         } catch(e) {}
         
         const price = p.discount_price || p.price;
-        const isFav = state.favorites.includes(p.id);
+        const oldPrice = p.discount_price ? `<span class="product-old-price">${p.price} ₽</span>` : '';
         
         return `
         <div class="product-card" onclick="openProduct(${p.id})">
-            <button class="wishlist-btn ${isFav?'active':''}" onclick="event.stopPropagation();quickToggleFav(${p.id})">${isFav?'❤️':'🤍'}</button>
             ${p.badge ? `<span class="product-badge badge-${p.badge}">${p.badge.toUpperCase()}</span>` : ''}
-            <img src="${thumb}" alt="${p.name}" loading="lazy" onerror="this.src='https://via.placeholder.com/300'">
+            <img src="${thumb}" alt="${p.name}" onerror="this.src='https://via.placeholder.com/300?text=Error'">
             <div class="product-info">
-                <div class="product-price">${price} ₽</div>
+                <div class="product-price">${price} ₽ ${oldPrice}</div>
                 <div class="product-name">${p.name}</div>
             </div>
         </div>`;
