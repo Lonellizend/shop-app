@@ -26,8 +26,17 @@
             font-size: 15px; padding-bottom: 75px;
             transition: background 0.3s, color 0.3s; overflow-x: hidden;
         }
-        .page { display: none; padding: 16px; animation: fadeIn 0.3s; }
-        .page.active { display: block; }
+.page {
+    display: none;
+    padding: 16px;
+    animation: fadeIn 0.3s;
+    position: relative;
+    z-index: 1;
+}
+
+.page.active {
+    display: block;
+}
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes slideUp { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
@@ -51,11 +60,11 @@
     right: 0;
     background: var(--bg);
     backdrop-filter: blur(20px);
-    display: flex;
+    display: flex !important;
     justify-content: space-around;
     border-top: 1px solid var(--border);
     height: 68px;
-    z-index: 100;
+    z-index: 150;
 }
         .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text2); font-size: 10px; cursor: pointer; padding: 4px 8px; transition: 0.2s; position: relative; }
         .nav-item.active { color: var(--gold); }
@@ -350,7 +359,7 @@
     <!-- НАВИГАЦИЯ -->
     <div class="nav">
         <div class="nav-item active" onclick="nav('shop', this)"><span class="nav-icon">🏠</span> Шоп</div>
-        <div class="nav-item" onclick="nav('cart', this)"><span class="nav-icon">🛒</span> Корзина<span class="nav-badge" id="cart-count" style="display:none;">0</span></div>
+        <div class="nav-item" onclick="nav('cart', this)"><span class="nav-icon">🛒</span> Корзина</div>
         <div class="nav-item" onclick="nav('profile', this)"><span class="nav-icon">👤</span> Профиль</div>
         <div class="nav-item admin-only" id="adm-nav" style="display:none;" onclick="nav('admin', this)"><span class="nav-icon">⚙️</span> Админ</div>
     </div>
@@ -445,27 +454,34 @@ function closeModal(id) {
     }
 
     // ============ ИНИЦИАЛИЗАЦИЯ ============
-    async function init() {
-        tg.ready(); tg.expand();
-        applyTheme(state.theme);
-        showOnboarding();
+async function init() {
+    tg.ready(); tg.expand();
+    
+    // Скрываем все модальные окна при запуске
+    document.querySelectorAll('.modal-overlay').forEach(m => {
+        m.classList.remove('active');
+        m.style.display = 'none';
+    });
+    
+    applyTheme(state.theme);
+    showOnboarding();
 
-        const user = tg.initDataUnsafe.user;
-        if (user) {
-            document.getElementById('user-name').innerText = user.first_name || 'Пользователь';
-            document.getElementById('user-tag').innerText = '@' + (user.username || 'user' + user.id);
-            if (user.photo_url) document.getElementById('user-photo').src = user.photo_url;
-        }
-
-        const admins = [1733464126, 8012481749];
-        if (admins.includes(user?.id)) document.getElementById('adm-nav').style.display = 'flex';
-
-        await loadData();
-        loadCartFromStorage();
-        loadFavoritesFromStorage();
-        updateCartUI();
-        renderCategories();
+    const user = tg.initDataUnsafe.user;
+    if (user) {
+        document.getElementById('user-name').innerText = user.first_name || 'Пользователь';
+        document.getElementById('user-tag').innerText = '@' + (user.username || 'user' + user.id);
+        if (user.photo_url) document.getElementById('user-photo').src = user.photo_url;
     }
+
+    const admins = [1733464126, 8012481749];
+    if (admins.includes(user?.id)) document.getElementById('adm-nav').style.display = 'flex';
+
+    await loadData();
+    loadCartFromStorage();
+    loadFavoritesFromStorage();
+    updateCartUI();
+    renderCategories();
+}
 
     async function loadData() {
         const uid = tg.initDataUnsafe.user?.id || 0;
