@@ -286,18 +286,37 @@
             <p style="color:var(--text2);margin-bottom:16px;" id="modal-desc"></p>
             <div class="qty-control"><span style="font-weight:600;">Количество:</span><button class="qty-btn" onclick="changeQty(-1)">−</button><span class="qty-value" id="modal-qty">1</span><button class="qty-btn" onclick="changeQty(1)">+</button></div>
                 <!-- Модальное окно товара -->
-    <div class="modal-overlay" id="product-modal">
-        <div class="modal">
-            <button class="modal-close" onclick="closeModal('product-modal')">✕</button>
-            <div class="media-slider" id="product-media"></div>
-            <h2 id="modal-name"></h2>
-            <div id="modal-rating" style="margin-bottom:8px;"></div>
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-                <span style="font-size:24px;font-weight:800;color:var(--gold);" id="modal-price"></span>
-                <span style="text-decoration:line-through;color:var(--text2);" id="modal-old-price"></span>
-                <span id="modal-badge"></span>
-            </div>
-            <p style="color:var(--text2);margin-bottom:16px;" id="modal-desc"></p>
+<div class="modal-overlay" id="product-modal">
+    <div class="modal">
+        <button class="modal-close" onclick="closeModal('product-modal')">✕</button>
+        
+        <!-- Слайдер для фото и видео -->
+        <div class="media-slider" id="product-media" style="display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:8px;margin-bottom:12px;"></div>
+        
+        <h2 id="modal-name"></h2>
+        <div id="modal-rating" style="margin-bottom:8px;"></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <span style="font-size:24px;font-weight:800;color:var(--gold);" id="modal-price"></span>
+            <span style="text-decoration:line-through;color:var(--text2);" id="modal-old-price"></span>
+            <span id="modal-badge"></span>
+        </div>
+        <p style="color:var(--text2);margin-bottom:16px;" id="modal-desc"></p>
+        
+        <div class="qty-control">
+            <span style="font-weight:600;">Количество:</span>
+            <button class="qty-btn" onclick="changeQty(-1)">−</button>
+            <span class="qty-value" id="modal-qty">1</span>
+            <button class="qty-btn" onclick="changeQty(1)">+</button>
+        </div>
+        <div id="modal-stock" style="font-size:12px;color:var(--text2);margin-bottom:8px;"></div>
+        
+        <button class="btn" onclick="modalAddToCart()">🛒 В корзину</button>
+        <button class="btn btn-outline" onclick="modalToggleFav()" style="margin-top:8px;">
+            <span id="fav-btn-text">❤️ В избранное</span>
+        </button>
+        <button class="btn btn-outline" id="share-product-btn" style="margin-top:8px;">📤 Поделиться</button>
+    </div>
+</div>
             
             <!-- Количество и наличие -->
             <div class="qty-control">
@@ -588,18 +607,55 @@ function renderProducts() {
     }).join('');
 }
 
-    function openProduct(id) {
-        const p = state.products.find(x => x.id === id);
-        if (!p) return;
-        state.currentProduct = p; state.modalQty = 1;
-        document.getElementById('modal-name').innerText = p.name;
-        document.getElementById('modal-desc').innerText = p.description || '';
-        document.getElementById('modal-price').innerText = (p.discount_price || p.price) + ' ₽';
-        document.getElementById('modal-qty').innerText = '1';
-        document.getElementById('modal-stock').innerText = `В наличии: ${p.quantity || 0} шт.`;
-        document.getElementById('product-modal').classList.add('active');
-        document.getElementById('share-product-btn').onclick = () => shareProduct(id);
+function openProduct(id) {
+    const p = state.products.find(x => x.id === id);
+    if (!p) return;
+    
+    state.currentProduct = p;
+    state.modalQty = 1;
+    
+    // Отображаем все медиа (фото и видео)
+    const media = JSON.parse(p.image_url || '[]');
+    const slider = document.getElementById('product-media');
+    
+    if (media.length > 0) {
+        slider.innerHTML = media.map((src, i) => {
+            const isVideo = src.startsWith('data:video') || src.includes('video');
+            return `
+            <div class="media-slide">
+                ${isVideo 
+                    ? `<video src="${src}" controls playsinline style="width:100%;aspect-ratio:1/1;object-fit:cover;"></video>`
+                    : `<img src="${src}" alt="${p.name}" style="width:100%;aspect-ratio:1/1;object-fit:cover;" onerror="this.src='https://via.placeholder.com/400'">`
+                }
+            </div>`;
+        }).join('');
+    } else {
+        slider.innerHTML = '<div class="media-slide"><img src="https://via.placeholder.com/400" style="width:100%;"></div>';
     }
+    
+    document.getElementById('modal-name').innerText = p.name || 'Без названия';
+    document.getElementById('modal-desc').innerText = p.description || 'Описание отсутствует';
+    document.getElementById('modal-price').innerText = (p.discount_price || p.price || 0) + ' ₽';
+    
+    const oldPrice = document.getElementById('modal-old-price');
+    if (p.discount_price) {
+        oldPrice.innerText = (p.price || 0) + ' ₽';
+        oldPrice.style.display = 'inline';
+    } else {
+        oldPrice.style.display = 'none';
+    }
+    
+    document.getElementById('modal-badge').innerHTML = p.badge ? `<span class="tag tag-gold">${p.badge}</span>` : '';
+    document.getElementById('modal-qty').innerText = '1';
+    document.getElementById('modal-stock').innerText = `В наличии: ${p.quantity || 0} шт.`;
+    document.getElementById('fav-btn-text').innerText = state.favorites.includes(p.id) ? '❤️ В избранном' : '🤍 В избранное';
+    
+    // Кнопка "Поделиться"
+    const shareBtn = document.getElementById('share-product-btn');
+    if (shareBtn) shareBtn.onclick = () => shareProduct(id);
+    
+    document.getElementById('product-modal').classList.add('active');
+}
 
     // Где-то рядом с другими функциями (после openProduct)
 async function shareProduct(id) {
@@ -850,23 +906,134 @@ async function downloadReceipt(orderId) {
 
     function closeAdminSection() { document.getElementById('admin-main').style.display='block'; document.getElementById('admin-section').style.display='none'; }
 
-    function renderAddProduct(c) {
-        state.adminFiles=[];
-        c.innerHTML=`<h3>➕ Добавить товар</h3>
-            <input class="input" placeholder="Название" id="ap-name">
-            <input class="input" placeholder="Цена (₽)" type="number" id="ap-price">
-            <input class="input" placeholder="Скидочная цена" type="number" id="ap-discount">
-            <textarea class="input" placeholder="Описание" id="ap-desc"></textarea>
-            <select class="input" id="ap-category"><option>Premium</option><option>Одежда</option><option>Обувь</option><option>Аксессуары</option></select>
-            <select class="input" id="ap-badge"><option value="">Без бейджа</option><option value="new">🆕 Новинка</option><option value="hit">🔥 Хит</option><option value="sale">🎉 Скидка</option></select>
-            <input class="input" placeholder="Количество" type="number" id="ap-qty" value="10">
+function renderAddProduct(c) {
+    state.adminFiles = [];
+    c.innerHTML = `
+        <h3>➕ Добавить товар</h3>
+        <input class="input" placeholder="Название товара" id="ap-name">
+        <input class="input" placeholder="Цена (₽)" type="number" id="ap-price">
+        <input class="input" placeholder="Скидочная цена (необязательно)" type="number" id="ap-discount">
+        <textarea class="input" placeholder="Описание" id="ap-desc"></textarea>
+        <select class="input" id="ap-category">
+            <option value="Premium">Premium</option>
+            <option value="Одежда">Одежда</option>
+            <option value="Обувь">Обувь</option>
+            <option value="Аксессуары">Аксессуары</option>
+        </select>
+        <select class="input" id="ap-badge">
+            <option value="">Без бейджа</option>
+            <option value="new">🆕 Новинка</option>
+            <option value="hit">🔥 Хит</option>
+            <option value="sale">🎉 Скидка</option>
+            <option value="exclusive">💎 Эксклюзив</option>
+        </select>
+        <input class="input" placeholder="Количество на складе" type="number" id="ap-qty" value="10">
+        
+        <div style="margin-bottom:12px;">
+            <label style="font-size:13px;color:var(--text2);display:block;margin-bottom:4px;">
+                📸 Фото и видео (можно выбрать несколько файлов)
+            </label>
             <input type="file" class="input" id="ap-files" multiple accept="image/*,video/*" onchange="previewFiles(this.files)">
-            <div id="ap-preview" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"></div>
-            <button class="btn" onclick="submitProduct()">💾 Сохранить</button>`;
-    }
+        </div>
+        
+        <div id="ap-preview" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"></div>
+        <button class="btn" onclick="submitProduct()">💾 СОХРАНИТЬ ТОВАР</button>
+        <div id="ap-status" style="margin-top:8px;font-size:13px;"></div>
+    `;
+}
 
-    function previewFiles(files) { state.adminFiles=[]; const p=document.getElementById('ap-preview'); p.innerHTML=''; Array.from(files).forEach(f=>{const r=new FileReader(); r.onload=e=>{state.adminFiles.push(e.target.result); p.innerHTML+=`<img src="${e.target.result}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;">`}; r.readAsDataURL(f);}); }
-    async function submitProduct() { const name=document.getElementById('ap-name')?.value?.trim(), price=parseInt(document.getElementById('ap-price')?.value||0); if(!name||!price) { showToast('Заполните название и цену'); return; } const data={action:'save_product',name,price,discount_price:parseInt(document.getElementById('ap-discount')?.value||0)||null,description:document.getElementById('ap-desc')?.value||'',category:document.getElementById('ap-category')?.value||'Premium',badge:document.getElementById('ap-badge')?.value||null,quantity:parseInt(document.getElementById('ap-qty')?.value||10),images:state.adminFiles||[]}; try { const res=await fetch(`${BASE_URL}/admin_action`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); if(res.ok) { loadData(); showToast('✅ Сохранён!'); openAdminSection('products'); } else { data.id=Date.now(); data.image_url=JSON.stringify(data.images); state.products.unshift(data); renderProducts(); showToast('✅ Локально!'); openAdminSection('products'); } } catch(e) { data.id=Date.now(); state.products.unshift(data); renderProducts(); openAdminSection('products'); } }
+function previewFiles(files) {
+    state.adminFiles = [];
+    const preview = document.getElementById('ap-preview');
+    if (!preview) return;
+    preview.innerHTML = '';
+    
+    Array.from(files).forEach((f, index) => {
+        const reader = new FileReader();
+        reader.onload = e => {
+            state.adminFiles.push({
+                data: e.target.result,
+                type: f.type.startsWith('video') ? 'video' : 'image',
+                name: f.name
+            });
+            
+            const card = document.createElement('div');
+            card.style.cssText = 'position:relative;width:80px;height:80px;border-radius:8px;overflow:hidden;border:2px solid var(--border);';
+            
+            if (f.type.startsWith('video')) {
+                card.innerHTML = `
+                    <video src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;" muted></video>
+                    <div style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.7);color:#fff;font-size:10px;padding:2px 6px;border-radius:10px;">🎬</div>
+                `;
+            } else {
+                card.innerHTML = `
+                    <img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;">
+                    <div style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.7);color:#fff;font-size:10px;padding:2px 6px;border-radius:10px;">📷</div>
+                `;
+            }
+            
+            // Номер файла
+            card.innerHTML += `<div style="position:absolute;bottom:4px;left:4px;background:var(--gold);color:#000;font-size:10px;padding:2px 6px;border-radius:10px;">${index + 1}</div>`;
+            
+            preview.appendChild(card);
+        };
+        reader.readAsDataURL(f);
+    });
+}
+async function submitProduct() {
+    const status = document.getElementById('ap-status');
+    const name = document.getElementById('ap-name')?.value?.trim();
+    const price = parseInt(document.getElementById('ap-price')?.value || 0);
+    
+    if (!name || !price) {
+        if (status) status.innerHTML = '<span style="color:var(--danger);">❌ Заполните название и цену</span>';
+        return;
+    }
+    
+    // Собираем только data (base64) из файлов
+    const images = (state.adminFiles || []).map(f => f.data);
+    
+    const data = {
+        action: 'save_product',
+        name: name,
+        price: price,
+        discount_price: parseInt(document.getElementById('ap-discount')?.value || 0) || null,
+        description: document.getElementById('ap-desc')?.value || '',
+        category: document.getElementById('ap-category')?.value || 'Premium',
+        badge: document.getElementById('ap-badge')?.value || null,
+        quantity: parseInt(document.getElementById('ap-qty')?.value || 10),
+        images: images  // Массив base64 строк (фото и видео)
+    };
+    
+    if (status) status.innerHTML = '<span style="color:var(--blue);">⏳ Сохраняем...</span>';
+    
+    try {
+        const res = await fetch(`${BASE_URL}/admin_action`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        
+        if (result.status === 'ok') {
+            if (status) status.innerHTML = '<span style="color:var(--success);">✅ Товар сохранён!</span>';
+            showToast('✅ Товар сохранён!');
+            await loadData();
+            setTimeout(() => openAdminSection('products'), 500);
+        } else {
+            if (status) status.innerHTML = `<span style="color:var(--danger);">❌ ${result.message || 'Ошибка'}</span>`;
+        }
+    } catch(e) {
+        // Сохраняем локально
+        data.id = Date.now();
+        data.image_url = JSON.stringify(images);
+        state.products.unshift(data);
+        renderProducts();
+        if (status) status.innerHTML = '<span style="color:var(--success);">✅ Сохранён локально!</span>';
+        showToast('✅ Товар добавлен локально');
+        setTimeout(() => openAdminSection('products'), 500);
+    }
+}
 
     function loadAdminProducts(c) {
         c.innerHTML='<div>Загрузка...</div>';
