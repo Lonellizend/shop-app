@@ -120,8 +120,24 @@
         .theme-switch.dark { background: var(--gold); }
         .theme-switch.dark::after { left: 26px; }
         
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 200; padding: 20px; overflow-y: auto; }
-        .modal-overlay.active { display: flex; align-items: flex-start; justify-content: center; }
+.modal-overlay {
+    display: none !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.9);
+    z-index: 200;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.modal-overlay.active {
+    display: flex !important;
+    align-items: flex-start;
+    justify-content: center;
+}
         .modal { background: var(--card); border-radius: 20px; padding: 24px; width: 100%; max-width: 500px; margin: 20px 0; border: 1px solid var(--border); animation: slideUp 0.3s; }
         .modal-close { float: right; background: none; border: none; color: var(--text2); font-size: 24px; cursor: pointer; }
         
@@ -408,9 +424,19 @@
         document.body.appendChild(t); setTimeout(() => t.remove(), 2500);
     }
 
-    function closeModal(id) {
-        document.getElementById(id)?.classList.remove('active');
+function closeModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) {
+        modal.classList.remove('active');
+        modal.style.display = 'none';
     }
+    // Останавливаем все видео в модальном окне
+    const videos = modal ? modal.querySelectorAll('video') : [];
+    videos.forEach(v => {
+        v.pause();
+        v.currentTime = 0;
+    });
+}
 
     function applyTheme(mode) {
         document.body.classList.toggle('light-theme', mode === 'light');
