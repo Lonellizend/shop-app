@@ -44,7 +44,19 @@
         .skeleton-img { width: 100%; aspect-ratio: 1/1; }
         .skeleton-text { height: 16px; margin: 8px 0; width: 80%; }
         
-        .nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg); backdrop-filter: blur(20px); display: flex; justify-content: space-around; border-top: 1px solid var(--border); height: 68px; z-index: 100; }
+.nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--bg);
+    backdrop-filter: blur(20px);
+    display: flex;
+    justify-content: space-around;
+    border-top: 1px solid var(--border);
+    height: 68px;
+    z-index: 100;
+}
         .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text2); font-size: 10px; cursor: pointer; padding: 4px 8px; transition: 0.2s; position: relative; }
         .nav-item.active { color: var(--gold); }
         .nav-item .nav-icon { font-size: 22px; }
@@ -288,37 +300,19 @@
     </div>
 
     <!-- МОДАЛЬНЫЕ ОКНА -->
+    
+    <!-- Товар -->
     <div class="modal-overlay" id="product-modal">
         <div class="modal">
             <button class="modal-close" onclick="closeModal('product-modal')">✕</button>
             <div class="media-slider" id="product-media"></div>
             <h2 id="modal-name"></h2>
-            <div id="modal-rating" style="margin-bottom:8px;"></div>
+            <p style="color:var(--text2);margin-bottom:16px;" id="modal-desc"></p>
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
                 <span style="font-size:24px;font-weight:800;color:var(--gold);" id="modal-price"></span>
                 <span style="text-decoration:line-through;color:var(--text2);" id="modal-old-price"></span>
                 <span id="modal-badge"></span>
             </div>
-            <p style="color:var(--text2);margin-bottom:16px;" id="modal-desc"></p>
-            <div class="qty-control"><span style="font-weight:600;">Количество:</span><button class="qty-btn" onclick="changeQty(-1)">−</button><span class="qty-value" id="modal-qty">1</span><button class="qty-btn" onclick="changeQty(1)">+</button></div>
-    <!-- Модальное окно товара -->
-    <div class="modal-overlay" id="product-modal">
-        <div class="modal">
-            <button class="modal-close" onclick="closeModal('product-modal')">✕</button>
-            
-            <!-- Слайдер для фото и видео -->
-            <div class="media-slider" id="product-media" style="display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:8px;margin-bottom:12px;"></div>
-            
-            <h2 id="modal-name"></h2>
-            <div id="modal-rating" style="margin-bottom:8px;"></div>
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-                <span style="font-size:24px;font-weight:800;color:var(--gold);" id="modal-price"></span>
-                <span style="text-decoration:line-through;color:var(--text2);" id="modal-old-price"></span>
-                <span id="modal-badge"></span>
-            </div>
-            <p style="color:var(--text2);margin-bottom:16px;" id="modal-desc"></p>
-            
-            <!-- Количество и наличие -->
             <div class="qty-control">
                 <span style="font-weight:600;">Количество:</span>
                 <button class="qty-btn" onclick="changeQty(-1)">−</button>
@@ -326,31 +320,32 @@
                 <button class="qty-btn" onclick="changeQty(1)">+</button>
             </div>
             <div id="modal-stock" style="font-size:12px;color:var(--text2);margin-bottom:8px;"></div>
-            
             <button class="btn" onclick="modalAddToCart()">🛒 В корзину</button>
             <button class="btn btn-outline" onclick="modalToggleFav()" style="margin-top:8px;">
                 <span id="fav-btn-text">❤️ В избранное</span>
             </button>
-            <button class="btn btn-outline" id="share-product-btn" onclick="shareProduct(state.currentProduct?.id)" style="margin-top:8px;">📤 Поделиться</button>
+            <button class="btn btn-outline" id="share-product-btn" style="margin-top:8px;">📤 Поделиться</button>
         </div>
     </div>
 
-<div class="modal-overlay" id="checkout-modal">
-    <div class="modal">
-        <button class="modal-close" onclick="closeModal('checkout-modal')">✕</button>
-        <h2>📋 ОФОРМЛЕНИЕ ЗАКАЗА</h2>
-        <div id="checkout-balance" style="font-size:14px;color:var(--gold);margin-bottom:12px;"></div>
-        <h3>🚚 Доставка</h3>
-        <div id="checkout-delivery"></div>
-        <h3>💳 Оплата</h3>
-        <div id="checkout-payment"></div>
-        <div style="display:flex;justify-content:space-between;margin:16px 0;font-size:20px;font-weight:700;">
-            <span>Итого:</span><span id="checkout-total">0 ₽</span>
+    <!-- Оформление заказа -->
+    <div class="modal-overlay" id="checkout-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal('checkout-modal')">✕</button>
+            <h2>📋 ОФОРМЛЕНИЕ ЗАКАЗА</h2>
+            <div id="checkout-balance" style="font-size:14px;color:var(--gold);margin-bottom:12px;"></div>
+            <h3>🚚 Доставка</h3>
+            <div id="checkout-delivery"></div>
+            <h3>💳 Оплата</h3>
+            <div id="checkout-payment"></div>
+            <div style="display:flex;justify-content:space-between;margin:16px 0;font-size:20px;font-weight:700;">
+                <span>Итого:</span><span id="checkout-total">0 ₽</span>
+            </div>
+            <button class="btn btn-pulse" onclick="confirmCheckout()">✅ ПОДТВЕРДИТЬ ЗАКАЗ</button>
         </div>
-        <div id="checkout-cashback" style="font-size:12px;color:var(--success);margin-bottom:8px;"></div>
-        <button class="btn btn-pulse" onclick="confirmCheckout()">✅ ПОДТВЕРДИТЬ ЗАКАЗ</button>
     </div>
-</div>
+
+    <!-- НАВИГАЦИЯ -->
 
     <!-- НАВИГАЦИЯ -->
     <div class="nav">
