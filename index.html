@@ -555,23 +555,38 @@
         renderProducts();
     }
 
-    function renderProducts() {
-        const list = document.getElementById('products-list');
-        const available = state.products.filter(p => (p.quantity || 1) > 0);
-        if (!available.length) { list.innerHTML = '<div class="empty-state">🛍️ Товары не найдены</div>'; return; }
-        list.innerHTML = available.map(p => {
-            const media = JSON.parse(p.image_url || '[]');
-            const thumb = media[0] || 'https://via.placeholder.com/300';
-            const price = p.discount_price || p.price;
-            const isFav = state.favorites.includes(p.id);
-            return `<div class="product-card" onclick="openProduct(${p.id})">
-                <button class="wishlist-btn ${isFav?'active':''}" onclick="event.stopPropagation();quickToggleFav(${p.id})">${isFav?'❤️':'🤍'}</button>
-                ${p.badge ? `<span class="product-badge badge-${p.badge}">${p.badge.toUpperCase()}</span>` : ''}
-                <img src="${thumb}" alt="${p.name}" onerror="this.src='https://via.placeholder.com/300'">
-                <div class="product-info"><div class="product-price">${price} ₽</div><div class="product-name">${p.name}</div></div>
-            </div>`;
-        }).join('');
+function renderProducts() {
+    const list = document.getElementById('products-list');
+    if (!state.products.length) { 
+        list.innerHTML = '<div class="empty-state"><div class="empty-icon">🛍️</div>Товары не найдены</div>'; 
+        return; 
     }
+    
+    list.innerHTML = state.products.map(p => {
+        // Пытаемся достать первое фото из image_url
+        let thumb = 'https://via.placeholder.com/300';
+        try {
+            const media = JSON.parse(p.image_url || '[]');
+            if (media.length > 0 && !media[0].startsWith('data:')) {
+                thumb = media[0];
+            }
+        } catch(e) {}
+        
+        const price = p.discount_price || p.price;
+        const isFav = state.favorites.includes(p.id);
+        
+        return `
+        <div class="product-card" onclick="openProduct(${p.id})">
+            <button class="wishlist-btn ${isFav?'active':''}" onclick="event.stopPropagation();quickToggleFav(${p.id})">${isFav?'❤️':'🤍'}</button>
+            ${p.badge ? `<span class="product-badge badge-${p.badge}">${p.badge.toUpperCase()}</span>` : ''}
+            <img src="${thumb}" alt="${p.name}" loading="lazy" onerror="this.src='https://via.placeholder.com/300'">
+            <div class="product-info">
+                <div class="product-price">${price} ₽</div>
+                <div class="product-name">${p.name}</div>
+            </div>
+        </div>`;
+    }).join('');
+}
 
     function openProduct(id) {
         const p = state.products.find(x => x.id === id);
