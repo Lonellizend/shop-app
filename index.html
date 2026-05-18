@@ -55,16 +55,18 @@
         
 .nav {
     position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: var(--bg);
+    bottom: 12px;
+    left: 12px;
+    right: 12px;
+    background: var(--card);
     backdrop-filter: blur(20px);
-    display: flex !important;
+    display: flex;
     justify-content: space-around;
-    border-top: 1px solid var(--border);
-    height: 68px;
+    border-radius: 20px;
+    height: 64px;
     z-index: 150;
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
 }
         .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text2); font-size: 10px; cursor: pointer; padding: 4px 8px; transition: 0.2s; position: relative; }
         .nav-item.active { color: var(--gold); }
@@ -79,7 +81,6 @@
         .btn-outline { background: transparent; color: var(--gold); border: 2px solid var(--gold); }
         .btn-small { padding: 10px 16px; font-size: 13px; width: auto; }
         .btn-danger { background: var(--danger); color: #fff; }
-        .btn-pulse { animation: pulse 2s infinite; }
         
         .input { background: var(--card2); border: 1px solid var(--border); padding: 14px 16px; border-radius: 14px; color: var(--text); width: 100%; margin-bottom: 10px; font-size: 15px; transition: 0.2s; }
         .input:focus { outline: none; border-color: var(--gold); }
@@ -384,8 +385,8 @@
         <div id="checkout-cashback" style="font-size:12px;color:var(--success);margin-bottom:12px;text-align:center;"></div>
         
         <!-- Кнопка -->
-        <button class="btn btn-pulse" onclick="confirmCheckout()" id="confirm-order-btn">
-            ✅ ПОДТВЕРДИТЬ ЗАКАЗ
+        <button class="btn" onclick="confirmCheckout()" id="confirm-order-btn">
+            ✅ Подтвердить заказ
         </button>
     </div>
 </div>
@@ -605,7 +606,7 @@ async function init() {
             const items = typeof o.items === 'string' ? JSON.parse(o.items||'[]') : (o.items||[]);
             const itemsList = items.map(i => `${i.name || 'Товар'} x${i.qty || 1}`).join(', ');
             return `<div class="card" style="border-left:4px solid var(--gold);">
-                <div style="display:flex;justify-content:space-between;"><b>Заказ #${o.id}</b><span class="tag tag-gold">${o.total_amount} ₽</span></div>
+                <div style="display:flex;justify-content:space-between;"><b>🛍 Заказ</b><span class="tag tag-gold">${o.total_amount} ₽</span></div>
                 <div style="color:var(--text2);font-size:13px;">📦 ${itemsList}</div>
                 <div style="color:var(--gold);font-weight:600;">${names[o.status] || o.status}</div>
             </div>`;
@@ -637,20 +638,32 @@ function renderProducts() {
         let thumb = 'https://via.placeholder.com/300?text=No+Photo';
         try {
             let media = p.image_url;
-            if (typeof media === 'string') media = JSON.parse(media);
-            if (Array.isArray(media) && media.length > 0) thumb = media[0];
-        } catch(e) {}
+            // Пробуем распарсить JSON
+            if (typeof media === 'string' && media.startsWith('[')) {
+                const parsed = JSON.parse(media);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    thumb = parsed[0];
+                }
+            } else if (typeof media === 'string' && media.length > 10) {
+                thumb = media;
+            }
+        } catch(e) {
+            console.log('Photo parse error:', e);
+        }
         
         const price = p.discount_price || p.price;
         const oldPrice = p.discount_price ? `<span class="product-old-price">${p.price} ₽</span>` : '';
         
         return `
-        <div class="product-card" onclick="openProduct(${p.id})">
-            ${p.badge ? `<span class="product-badge badge-${p.badge}">${p.badge.toUpperCase()}</span>` : ''}
-            <img src="${thumb}" alt="${p.name}" onerror="this.src='https://via.placeholder.com/300?text=Error'">
-            <div class="product-info">
-                <div class="product-price">${price} ₽ ${oldPrice}</div>
-                <div class="product-name">${p.name}</div>
+        <div class="product-card" onclick="openProduct(${p.id})" style="background:var(--card);border-radius:16px;overflow:hidden;cursor:pointer;border:1px solid var(--border);transition:0.2s;">
+            <div style="position:relative;">
+                <img src="${thumb}" alt="${p.name}" style="width:100%;aspect-ratio:1/1;object-fit:cover;" onerror="this.src='https://via.placeholder.com/300?text=No+Photo'">
+                ${p.badge ? `<span style="position:absolute;top:8px;left:8px;padding:4px 10px;border-radius:12px;font-size:10px;font-weight:700;background:${p.badge==='new'?'var(--blue)':p.badge==='sale'?'var(--success)':'var(--danger)'};color:#fff;">${p.badge.toUpperCase()}</span>` : ''}
+                ${state.favorites.includes(p.id) ? `<span style="position:absolute;top:8px;right:8px;background:var(--danger);color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;">❤️</span>` : ''}
+            </div>
+            <div style="padding:10px;">
+                <div style="font-size:16px;font-weight:800;color:var(--gold);">${price} ₽ ${oldPrice}</div>
+                <div style="font-size:13px;color:var(--text2);">${p.name}</div>
             </div>
         </div>`;
     }).join('');
@@ -767,18 +780,32 @@ async function shareProduct(id) {
 
     function removeFromCart(idx) { state.cart.splice(idx, 1); saveCartToStorage(); updateCartUI(); }
 
-    function updateCartUI() {
-        const c = document.getElementById('cart-items');
-        let total = 0;
-        if (!state.cart.length) { c.innerHTML = '<div class="empty-state">Корзина пуста</div>'; }
-        else {
-            c.innerHTML = state.cart.map((item, idx) => {
-                total += (item.price||0) * (item.qty||1);
-                return `<div style="display:flex;justify-content:space-between;padding:8px 0;">${item.name} x${item.qty} — ${(item.price||0)*item.qty} ₽ <span onclick="removeFromCart(${idx})" style="color:var(--danger);cursor:pointer;">✕</span></div>`;
-            }).join('');
-        }
-        document.getElementById('total').innerText = Math.round(total*(1-state.promoDiscount/100)) + ' ₽';
+function updateCartUI() {
+    const c = document.getElementById('cart-items');
+    let total = 0;
+    if (!state.cart.length) { 
+        c.innerHTML = '<div class="empty-state"><div style="font-size:48px;">🛒</div><p>Корзина пуста</p></div>'; 
+    } else {
+        c.innerHTML = state.cart.map((item, idx) => {
+            total += (item.price||0)*(item.qty||1);
+            return `
+            <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--card);border-radius:12px;margin-bottom:8px;border:1px solid var(--border);">
+                <div style="flex:1;">
+                    <div style="font-weight:600;">${item.name}</div>
+                    <div style="color:var(--text2);font-size:12px;">${item.price} ₽ × ${item.qty}</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <button style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:16px;cursor:pointer;" onclick="changeCartQty(${idx},-1)">−</button>
+                    <span style="font-weight:700;min-width:20px;text-align:center;">${item.qty}</span>
+                    <button style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:16px;cursor:pointer;" onclick="changeCartQty(${idx},1)">+</button>
+                </div>
+                <div style="font-weight:700;color:var(--gold);min-width:60px;text-align:right;">${(item.price||0)*(item.qty||1)} ₽</div>
+                <div onclick="removeFromCart(${idx})" style="color:var(--danger);cursor:pointer;font-size:18px;padding:4px;">✕</div>
+            </div>`;
+        }).join('');
     }
+    document.getElementById('total').innerText = Math.round(total*(1-state.promoDiscount/100)) + ' ₽';
+}
 
     function saveCartToStorage() { localStorage.setItem('cart', JSON.stringify(state.cart)); }
     function loadCartFromStorage() { state.cart = JSON.parse(localStorage.getItem('cart') || '[]'); }
@@ -794,71 +821,49 @@ function openCheckoutModal() {
     
     // Карточки доставки
     const deliveryOptions = [
-        {
-            id: 'yandex',
-            name: '🏃 Яндекс.Доставка',
-            desc: 'По городу • 1-2 часа',
-            price: 'от 300 ₽',
-            badge: '🚀 Быстро'
-        },
-        {
-            id: 'cdek',
-            name: '📦 СДЭК',
-            desc: 'Межгород • от 1 дня',
-            price: 'от 350 ₽',
-            badge: '⭐ Популярно'
-        },
-        {
-            id: 'pochta',
-            name: '📮 Почта России',
-            desc: 'Межгород • эконом',
-            price: 'от 200 ₽',
-            badge: '💰 Эконом'
-        }
+        {id:'yandex', name:'🏃 Яндекс.Доставка', desc:'По городу • 1-2 часа', price:'от 300 ₽'},
+        {id:'cdek', name:'📦 СДЭК', desc:'Межгород • от 1 дня', price:'от 350 ₽'},
+        {id:'pochta', name:'📮 Почта России', desc:'Межгород • эконом', price:'от 200 ₽'}
     ];
     
     document.getElementById('delivery-cards').innerHTML = deliveryOptions.map(d => `
-        <div class="delivery-card ${state.deliveryMethod === d.id ? 'selected' : ''}" 
-             onclick="selectDelivery('${d.id}')" style="
-             background:var(--card); border:2px solid ${state.deliveryMethod === d.id ? 'var(--gold)' : 'var(--border)'}; 
-             border-radius:14px; padding:14px; cursor:pointer; transition:0.2s;
-             ${state.deliveryMethod === d.id ? 'box-shadow:0 0 15px rgba(212,175,55,0.3);' : ''}
-         ">
+        <div onclick="selectDelivery('${d.id}')" style="
+            background:var(--card); border:2px solid ${state.deliveryMethod===d.id?'var(--gold)':'var(--border)'}; 
+            border-radius:12px; padding:12px; cursor:pointer; width:100%; box-sizing:border-box;
+        ">
             <div style="display:flex;justify-content:space-between;align-items:center;">
                 <div>
-                    <div style="font-weight:700;font-size:15px;">${d.name}</div>
-                    <div style="color:var(--text2);font-size:12px;">${d.desc}</div>
+                    <div style="font-weight:600;font-size:14px;">${d.name}</div>
+                    <div style="color:var(--text2);font-size:11px;">${d.desc}</div>
                 </div>
                 <div style="text-align:right;">
                     <div style="font-weight:700;color:var(--gold);">${d.price}</div>
-                    <span class="tag" style="background:${state.deliveryMethod === d.id ? 'var(--gold)' : 'var(--card2)'};color:${state.deliveryMethod === d.id ? '#000' : 'var(--text2)'};">${d.badge}</span>
+                    ${state.deliveryMethod===d.id ? '<span style="color:var(--gold);font-size:11px;">✓ Выбрано</span>' : ''}
                 </div>
             </div>
-            ${state.deliveryMethod === d.id ? '<div style="color:var(--gold);text-align:center;margin-top:6px;">✓ Выбрано</div>' : ''}
         </div>
     `).join('');
     
     // Карточки оплаты
     const paymentOptions = [
-        { id: 'card', icon: '💳', name: 'Банковская карта', desc: 'Visa, MC, МИР' },
-        { id: 'cash', icon: '💵', name: 'При получении', desc: 'Наличными или картой' },
-        { id: 'balance', icon: '💰', name: 'Баланс', desc: `${state.user?.balance||0} ₽` }
+        {id:'card', icon:'💳', name:'Карта', desc:'Visa, MC, МИР'},
+        {id:'cash', icon:'💵', name:'При получении', desc:'Наличные или карта'},
+        {id:'balance', icon:'💰', name:'Баланс', desc:`${state.user?.balance||0} ₽`}
     ];
     
     document.getElementById('payment-cards').innerHTML = paymentOptions.map(p => `
-        <div class="payment-card ${state.paymentMethod === p.id ? 'selected' : ''}"
-             onclick="selectPayment('${p.id}')" style="
-             background:var(--card); border:2px solid ${state.paymentMethod === p.id ? 'var(--gold)' : 'var(--border)'};
-             border-radius:14px; padding:16px; cursor:pointer; text-align:center; transition:0.2s;
-             ${state.paymentMethod === p.id ? 'box-shadow:0 0 15px rgba(212,175,55,0.3);' : ''}
-         ">
+        <div onclick="selectPayment('${p.id}')" style="
+            background:var(--card); border:2px solid ${state.paymentMethod===p.id?'var(--gold)':'var(--border)'}; 
+            border-radius:12px; padding:14px; cursor:pointer; text-align:center;
+        ">
             <div style="font-size:28px;">${p.icon}</div>
-            <div style="font-weight:700;margin-top:4px;">${p.name}</div>
-            <div style="color:var(--text2);font-size:11px;">${p.desc}</div>
-            ${state.paymentMethod === p.id ? '<div style="color:var(--gold);margin-top:4px;">✓ Выбрано</div>' : ''}
+            <div style="font-weight:600;font-size:13px;margin-top:4px;">${p.name}</div>
+            <div style="color:var(--text2);font-size:10px;">${p.desc}</div>
+            ${state.paymentMethod===p.id ? '<div style="color:var(--gold);font-size:11px;margin-top:2px;">✓</div>' : ''}
         </div>
     `).join('');
     
+    // Сбрасываем индикатор
     document.getElementById('checkout-modal').classList.add('active');
     document.getElementById('checkout-modal').style.display = 'flex';
 }
