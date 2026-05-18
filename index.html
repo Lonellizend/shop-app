@@ -337,22 +337,58 @@
         </div>
     </div>
 
-    <!-- Оформление заказа -->
-    <div class="modal-overlay" id="checkout-modal">
-        <div class="modal">
-            <button class="modal-close" onclick="closeModal('checkout-modal')">✕</button>
-            <h2>📋 ОФОРМЛЕНИЕ ЗАКАЗА</h2>
-            <div id="checkout-balance" style="font-size:14px;color:var(--gold);margin-bottom:12px;"></div>
-            <h3>🚚 Доставка</h3>
-            <div id="checkout-delivery"></div>
-            <h3>💳 Оплата</h3>
-            <div id="checkout-payment"></div>
-            <div style="display:flex;justify-content:space-between;margin:16px 0;font-size:20px;font-weight:700;">
-                <span>Итого:</span><span id="checkout-total">0 ₽</span>
+<!-- Оформление заказа -->
+<div class="modal-overlay" id="checkout-modal">
+    <div class="modal" style="max-width:520px;">
+        <button class="modal-close" onclick="closeModal('checkout-modal')">✕</button>
+        <h2>📋 ОФОРМЛЕНИЕ ЗАКАЗА</h2>
+        
+        <!-- Баланс -->
+        <div id="checkout-balance" style="font-size:14px;color:var(--gold);margin-bottom:16px;text-align:center;"></div>
+        
+        <!-- Прогресс-бар -->
+        <div style="display:flex;justify-content:space-between;margin-bottom:20px;position:relative;">
+            <div style="position:absolute;top:14px;left:20%;right:20%;height:2px;background:var(--border);z-index:0;"></div>
+            <div style="text-align:center;z-index:1;">
+                <div style="width:28px;height:28px;border-radius:50%;background:var(--gold);color:#000;display:flex;align-items:center;justify-content:center;margin:0 auto;font-weight:700;font-size:14px;">1</div>
+                <div style="font-size:11px;color:var(--gold);margin-top:4px;">Доставка</div>
             </div>
-            <button class="btn btn-pulse" onclick="confirmCheckout()">✅ ПОДТВЕРДИТЬ ЗАКАЗ</button>
+            <div style="text-align:center;z-index:1;">
+                <div style="width:28px;height:28px;border-radius:50%;background:var(--gold);color:#000;display:flex;align-items:center;justify-content:center;margin:0 auto;font-weight:700;font-size:14px;">2</div>
+                <div style="font-size:11px;color:var(--gold);margin-top:4px;">Оплата</div>
+            </div>
+            <div style="text-align:center;z-index:1;">
+                <div style="width:28px;height:28px;border-radius:50%;background:var(--border);color:var(--text2);display:flex;align-items:center;justify-content:center;margin:0 auto;font-weight:700;font-size:14px;">3</div>
+                <div style="font-size:11px;color:var(--text2);margin-top:4px;">Готово</div>
+            </div>
         </div>
+        
+        <!-- Выбор доставки -->
+        <h3 style="margin-bottom:10px;">🚚 Способ доставки</h3>
+        <div id="delivery-cards" style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;"></div>
+        
+        <!-- Выбор оплаты -->
+        <h3 style="margin-bottom:10px;">💳 Способ оплаты</h3>
+        <div id="payment-cards" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:20px;"></div>
+        
+        <!-- Итого -->
+        <div style="background:var(--card2);border-radius:14px;padding:16px;margin-bottom:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:16px;font-weight:600;">💰 Итого к оплате:</span>
+                <span style="font-size:24px;font-weight:800;color:var(--gold);" id="checkout-total">0 ₽</span>
+            </div>
+            <div id="delivery-price-info" style="font-size:12px;color:var(--text2);margin-top:4px;"></div>
+        </div>
+        
+        <!-- Кэшбэк -->
+        <div id="checkout-cashback" style="font-size:12px;color:var(--success);margin-bottom:12px;text-align:center;"></div>
+        
+        <!-- Кнопка -->
+        <button class="btn btn-pulse" onclick="confirmCheckout()" id="confirm-order-btn">
+            ✅ ПОДТВЕРДИТЬ ЗАКАЗ
+        </button>
     </div>
+</div>
 
     <!-- НАВИГАЦИЯ -->
 
@@ -366,7 +402,7 @@
 
 <script>
     const tg = window.Telegram.WebApp;
-    const BASE_URL = 'https://theater-space-architects-ads.trycloudflare.com';
+    const BASE_URL = 'https://mercy-globe-blanket-hwy.trycloudflare.com';
 
     const LEVELS = {
         'newbie': {name:'🌱 Новичок', min_xp:0, discount:0, cashback:1, next_xp:1000},
@@ -747,14 +783,95 @@ async function shareProduct(id) {
     function saveCartToStorage() { localStorage.setItem('cart', JSON.stringify(state.cart)); }
     function loadCartFromStorage() { state.cart = JSON.parse(localStorage.getItem('cart') || '[]'); }
 
-    function openCheckoutModal() {
-        if (!state.cart.length) { tg.showAlert('Корзина пуста'); return; }
-        const total = state.cart.reduce((s,i)=>s+(i.price||0)*(i.qty||1),0);
-        document.getElementById('checkout-total').innerText = Math.round(total*(1-state.promoDiscount/100)) + ' ₽';
-        document.getElementById('checkout-delivery').innerHTML = `<label><input type="radio" name="del" value="courier" checked onchange="state.deliveryMethod='courier'"> 🚚 Курьер</label><label><input type="radio" name="del" value="pickup" onchange="state.deliveryMethod='pickup'"> 📦 Самовывоз</label>`;
-        document.getElementById('checkout-payment').innerHTML = `<label><input type="radio" name="pay" value="card" checked onchange="state.paymentMethod='card'"> 💳 Карта</label><label><input type="radio" name="pay" value="cash" onchange="state.paymentMethod='cash'"> 💵 При получении</label><label><input type="radio" name="pay" value="balance" onchange="state.paymentMethod='balance'"> 💰 Баланс (${state.user?.balance||0} ₽)</label>`;
-        document.getElementById('checkout-modal').classList.add('active');
-    }
+function openCheckoutModal() {
+    if (!state.cart.length) { tg.showAlert('Корзина пуста'); return; }
+    
+    const total = state.cart.reduce((s,i)=>s+(i.price||0)*(i.qty||1),0);
+    const final = Math.round(total*(1-state.promoDiscount/100));
+    
+    document.getElementById('checkout-total').innerText = final + ' ₽';
+    document.getElementById('checkout-balance').innerText = `💰 Ваш баланс: ${state.user?.balance||0} ₽`;
+    
+    // Карточки доставки
+    const deliveryOptions = [
+        {
+            id: 'yandex',
+            name: '🏃 Яндекс.Доставка',
+            desc: 'По городу • 1-2 часа',
+            price: 'от 300 ₽',
+            badge: '🚀 Быстро'
+        },
+        {
+            id: 'cdek',
+            name: '📦 СДЭК',
+            desc: 'Межгород • от 1 дня',
+            price: 'от 350 ₽',
+            badge: '⭐ Популярно'
+        },
+        {
+            id: 'pochta',
+            name: '📮 Почта России',
+            desc: 'Межгород • эконом',
+            price: 'от 200 ₽',
+            badge: '💰 Эконом'
+        }
+    ];
+    
+    document.getElementById('delivery-cards').innerHTML = deliveryOptions.map(d => `
+        <div class="delivery-card ${state.deliveryMethod === d.id ? 'selected' : ''}" 
+             onclick="selectDelivery('${d.id}')" style="
+             background:var(--card); border:2px solid ${state.deliveryMethod === d.id ? 'var(--gold)' : 'var(--border)'}; 
+             border-radius:14px; padding:14px; cursor:pointer; transition:0.2s;
+             ${state.deliveryMethod === d.id ? 'box-shadow:0 0 15px rgba(212,175,55,0.3);' : ''}
+         ">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <div style="font-weight:700;font-size:15px;">${d.name}</div>
+                    <div style="color:var(--text2);font-size:12px;">${d.desc}</div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-weight:700;color:var(--gold);">${d.price}</div>
+                    <span class="tag" style="background:${state.deliveryMethod === d.id ? 'var(--gold)' : 'var(--card2)'};color:${state.deliveryMethod === d.id ? '#000' : 'var(--text2)'};">${d.badge}</span>
+                </div>
+            </div>
+            ${state.deliveryMethod === d.id ? '<div style="color:var(--gold);text-align:center;margin-top:6px;">✓ Выбрано</div>' : ''}
+        </div>
+    `).join('');
+    
+    // Карточки оплаты
+    const paymentOptions = [
+        { id: 'card', icon: '💳', name: 'Банковская карта', desc: 'Visa, MC, МИР' },
+        { id: 'cash', icon: '💵', name: 'При получении', desc: 'Наличными или картой' },
+        { id: 'balance', icon: '💰', name: 'Баланс', desc: `${state.user?.balance||0} ₽` }
+    ];
+    
+    document.getElementById('payment-cards').innerHTML = paymentOptions.map(p => `
+        <div class="payment-card ${state.paymentMethod === p.id ? 'selected' : ''}"
+             onclick="selectPayment('${p.id}')" style="
+             background:var(--card); border:2px solid ${state.paymentMethod === p.id ? 'var(--gold)' : 'var(--border)'};
+             border-radius:14px; padding:16px; cursor:pointer; text-align:center; transition:0.2s;
+             ${state.paymentMethod === p.id ? 'box-shadow:0 0 15px rgba(212,175,55,0.3);' : ''}
+         ">
+            <div style="font-size:28px;">${p.icon}</div>
+            <div style="font-weight:700;margin-top:4px;">${p.name}</div>
+            <div style="color:var(--text2);font-size:11px;">${p.desc}</div>
+            ${state.paymentMethod === p.id ? '<div style="color:var(--gold);margin-top:4px;">✓ Выбрано</div>' : ''}
+        </div>
+    `).join('');
+    
+    document.getElementById('checkout-modal').classList.add('active');
+    document.getElementById('checkout-modal').style.display = 'flex';
+}
+
+function selectDelivery(id) {
+    state.deliveryMethod = id;
+    openCheckoutModal(); // Перерисовываем
+}
+
+function selectPayment(id) {
+    state.paymentMethod = id;
+    openCheckoutModal(); // Перерисовываем
+}
 
     async function confirmCheckout() {
         if (!state.cart.length) return;
