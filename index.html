@@ -919,7 +919,10 @@ function selectPayment(id) {
             openProfileSection('orders');
         }, 1000);
     }
-}
+        } catch(e) {
+            console.log('Order error:', e);
+        }
+    }
 
     // ============ ПРОФИЛЬ ============
     function openProfileSection(s) {
