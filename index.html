@@ -690,30 +690,27 @@ function openProduct(id) {
     state.currentProduct = p;
     state.modalQty = 1;
     
-    // Отображаем все медиа (фото и видео)
-    const media = JSON.parse(p.image_url || '[]');
-    const slider = document.getElementById('product-media');
-    
-    if (media.length > 0) {
-        slider.innerHTML = media.map((src, i) => {
-            const isVideo = src.startsWith('data:video') || src.includes('video');
-            return `
-            <div class="media-slide">
-                ${isVideo 
-                    ? `<video src="${src}" controls playsinline style="width:100%;aspect-ratio:1/1;object-fit:cover;"></video>`
-                    : `<img src="${src}" alt="${p.name}" style="width:100%;aspect-ratio:1/1;object-fit:cover;" onerror="this.src='https://via.placeholder.com/400'">`
-                }
-            </div>`;
-        }).join('');
+    // Загружаем фото с сервера если ещё не загружены
+    if (!p._imagesLoaded) {
+        fetch(`${BASE_URL}/product/${id}/images`)
+            .then(r => r.json())
+            .then(data => {
+                p._images = data.images || [];
+                p._imagesLoaded = true;
+                updateProductSlider(p);
+            })
+            .catch(() => {
+                p._images = [];
+                p._imagesLoaded = true;
+                updateProductSlider(p);
+            });
     } else {
-        slider.innerHTML = '<div class="media-slide"><img src="https://via.placeholder.com/400" style="width:100%;"></div>';
+        updateProductSlider(p);
     }
     
     document.getElementById('modal-name').innerText = p.name || 'Без названия';
     document.getElementById('modal-desc').innerText = p.description || 'Описание отсутствует';
     document.getElementById('modal-price').innerText = (p.discount_price || p.price || 0) + ' ₽';
-    document.getElementById('product-modal').classList.add('active');
-document.getElementById('product-modal').style.display = 'flex';
     
     const oldPrice = document.getElementById('modal-old-price');
     if (p.discount_price) {
@@ -733,6 +730,39 @@ document.getElementById('product-modal').style.display = 'flex';
     if (shareBtn) shareBtn.onclick = () => shareProduct(id);
     
     document.getElementById('product-modal').classList.add('active');
+    document.getElementById('product-modal').style.display = 'flex';
+}
+
+function updateProductSlider(p) {
+    const slider = document.getElementById('product-media');
+    if (!slider) return;
+    
+    // Используем загруженные фото или из image_url
+    let media = [];
+    if (p._images && p._images.length > 0) {
+        media = p._images;
+    } else {
+        try {
+            media = JSON.parse(p.image_url || '[]');
+        } catch(e) {
+            media = [];
+        }
+    }
+    
+    if (media.length > 0) {
+        slider.innerHTML = media.map((src, i) => {
+            const isVideo = src.startsWith('data:video') || src.includes('video');
+            return `
+            <div class="media-slide">
+                ${isVideo 
+                    ? `<video src="${src}" controls playsinline style="width:100%;aspect-ratio:1/1;object-fit:cover;"></video>`
+                    : `<img src="${src}" alt="${p.name}" style="width:100%;aspect-ratio:1/1;object-fit:cover;" onerror="this.src='https://via.placeholder.com/400'">`
+                }
+            </div>`;
+        }).join('');
+    } else {
+        slider.innerHTML = '<div class="media-slide"><img src="https://via.placeholder.com/400" style="width:100%;"></div>';
+    }
 }
 
 async function shareProduct(id) {
