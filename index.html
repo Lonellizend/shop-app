@@ -353,20 +353,29 @@
         <div id="checkout-balance" style="font-size:14px;color:var(--gold);margin-bottom:16px;text-align:center;"></div>
         
         <!-- Прогресс-бар -->
-        <div style="display:flex;justify-content:space-between;margin-bottom:20px;position:relative;">
-            <div style="position:absolute;top:14px;left:20%;right:20%;height:2px;background:var(--border);z-index:0;"></div>
-            <div style="text-align:center;z-index:1;">
-<div style="width:28px;height:28px;border-radius:50%;background:var(--border);color:var(--text2);display:flex;align-items:center;justify-content:center;margin:0 auto;font-weight:700;font-size:14px;">1</div>
-<div style="font-size:11px;color:var(--text2);margin-top:4px;">Доставка</div>
-...
-<div style="width:28px;height:28px;border-radius:50%;background:var(--border);color:var(--text2);display:flex;align-items:center;justify-content:center;margin:0 auto;font-weight:700;font-size:14px;">2</div>
-<div style="font-size:11px;color:var(--text2);margin-top:4px;">Оплата</div>
-            </div>
-            <div style="text-align:center;z-index:1;">
-                <div style="width:28px;height:28px;border-radius:50%;background:var(--border);color:var(--text2);display:flex;align-items:center;justify-content:center;margin:0 auto;font-weight:700;font-size:14px;">3</div>
-                <div style="font-size:11px;color:var(--text2);margin-top:4px;">Готово</div>
-            </div>
+<div style="display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:24px;" id="progress-bar">
+    <div style="display:flex;align-items:center;gap:0;">
+        <!-- Шаг 1: Доставка -->
+        <div style="display:flex;align-items:center;gap:8px;" id="step-1">
+            <div id="step-1-circle" style="width:36px;height:36px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;transition:0.3s;color:var(--text2);">1</div>
+            <span id="step-1-label" style="font-size:12px;color:var(--text2);transition:0.3s;white-space:nowrap;">Доставка</span>
         </div>
+        <!-- Линия -->
+        <div id="line-1" style="width:40px;height:2px;background:var(--border);margin:0 4px;transition:0.3s;"></div>
+        <!-- Шаг 2: Оплата -->
+        <div style="display:flex;align-items:center;gap:8px;" id="step-2">
+            <div id="step-2-circle" style="width:36px;height:36px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;transition:0.3s;color:var(--text2);">2</div>
+            <span id="step-2-label" style="font-size:12px;color:var(--text2);transition:0.3s;white-space:nowrap;">Оплата</span>
+        </div>
+        <!-- Линия -->
+        <div id="line-2" style="width:40px;height:2px;background:var(--border);margin:0 4px;transition:0.3s;"></div>
+        <!-- Шаг 3: Готово -->
+        <div style="display:flex;align-items:center;gap:8px;" id="step-3">
+            <div id="step-3-circle" style="width:36px;height:36px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;transition:0.3s;color:var(--text2);">✓</div>
+            <span id="step-3-label" style="font-size:12px;color:var(--text2);transition:0.3s;white-space:nowrap;">Готово</span>
+        </div>
+    </div>
+</div>
         
         <!-- Выбор доставки -->
         <h3 style="margin-bottom:10px;">🚚 Способ доставки</h3>
@@ -887,6 +896,45 @@ function updateCartUI() {
     function saveCartToStorage() { localStorage.setItem('cart', JSON.stringify(state.cart)); }
     function loadCartFromStorage() { state.cart = JSON.parse(localStorage.getItem('cart') || '[]'); }
 
+function updateProgressBar(step) {
+    // Сбрасываем все
+    for (let i = 1; i <= 3; i++) {
+        const circle = document.getElementById(`step-${i}-circle`);
+        const label = document.getElementById(`step-${i}-label`);
+        const line = document.getElementById(`line-${i}`);
+        
+        if (i <= step) {
+            // Активный шаг
+            circle.style.background = 'var(--gold)';
+            circle.style.color = '#000';
+            label.style.color = 'var(--gold)';
+            label.style.fontWeight = '600';
+            if (i === step) {
+                circle.innerHTML = '●';
+                circle.style.boxShadow = '0 0 10px rgba(212,175,55,0.5)';
+            } else {
+                circle.innerHTML = '✓';
+                circle.style.boxShadow = 'none';
+            }
+            // Линия до этого шага
+            if (line && i < 3) {
+                line.style.background = 'var(--gold)';
+            }
+        } else {
+            // Неактивный шаг
+            circle.style.background = 'var(--border)';
+            circle.style.color = 'var(--text2)';
+            circle.innerHTML = i;
+            circle.style.boxShadow = 'none';
+            label.style.color = 'var(--text2)';
+            label.style.fontWeight = '400';
+            if (line && i < 3) {
+                line.style.background = 'var(--border)';
+            }
+        }
+    }
+}
+
 function openCheckoutModal() {
     if (!state.cart.length) { tg.showAlert('Корзина пуста'); return; }
     
@@ -895,6 +943,14 @@ function openCheckoutModal() {
     
     document.getElementById('checkout-total').innerText = final + ' ₽';
     document.getElementById('checkout-balance').innerText = `💰 Ваш баланс: ${state.user?.balance||0} ₽`;
+
+        if (state.deliveryMethod) updateProgressBar(1);
+    if (state.paymentMethod && state.deliveryMethod) updateProgressBar(2);
+    
+    updateProgressBar(0);
+    document.getElementById('checkout-modal').classList.add('active');
+    document.getElementById('checkout-modal').style.display = 'flex';
+}
     
     // Карточки доставки
     const deliveryOptions = [
@@ -947,12 +1003,14 @@ function openCheckoutModal() {
 
 function selectDelivery(id) {
     state.deliveryMethod = id;
-    openCheckoutModal(); // Перерисовываем
+    updateProgressBar(1); // Шаг 1 выполнен
+    openCheckoutModal();
 }
 
 function selectPayment(id) {
     state.paymentMethod = id;
-    openCheckoutModal(); // Перерисовываем
+    updateProgressBar(2); // Шаг 2 выполнен
+    openCheckoutModal();
 }
 
 async function confirmCheckout() {
