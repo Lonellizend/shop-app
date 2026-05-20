@@ -585,14 +585,49 @@ async function loadProductImages(start, count) {
     }
 
     // ============ КЭШБЭК, ПОТРАЧЕНО, ОПЫТ — ОКНА ============
-    function showCashbackInfo() {
-        const level = LEVELS[state.user?.level] || LEVELS.newbie;
+function showCashbackInfo() {
+    const level = LEVELS[state.user?.level] || LEVELS.newbie;
+    const message = `💎 Уровень: ${level.name}\n📊 Ставка: ${level.cashback}%\n💰 Накоплено: ${state.user?.cashback || 0} ₽\n\nКак работает:\n• С каждой покупки возвращается %\n• Чем выше уровень — тем больше %\n• Можно тратить на следующие заказы`;
+    
+    // Пробуем через showPopup, если не работает — через alert
+    try {
         tg.showPopup({
             title: '💰 Кэшбэк',
-            message: `💎 Уровень: ${level.name}\n📊 Ставка: ${level.cashback}%\n💰 Накоплено: ${state.user?.cashback || 0} ₽\n\nКак работает:\n• С каждой покупки возвращается %\n• Чем выше уровень — тем больше %\n• Можно тратить на следующие заказы`,
+            message: message,
             buttons: [{type: 'ok', text: 'Понятно'}]
         });
+    } catch(e) {
+        tg.showAlert(message);
     }
+}
+
+function showSpentInfo() {
+    const message = `Всего потрачено: ${state.user?.total_spent || 0} ₽\n\nЭто сумма всех ваших покупок в магазине.`;
+    try {
+        tg.showPopup({
+            title: '🛍 Потрачено',
+            message: message,
+            buttons: [{type: 'ok', text: 'Понятно'}]
+        });
+    } catch(e) {
+        tg.showAlert(message);
+    }
+}
+
+function showXPInfo() {
+    const xp = state.user?.xp || 0;
+    const level = LEVELS[state.user?.level] || LEVELS.newbie;
+    const message = `Текущий XP: ${xp}\nУровень: ${level.name}\n\nКак получить:\n• За покупки: 10 XP за каждые 100 ₽\n• За достижения\n• За приглашения друзей`;
+    try {
+        tg.showPopup({
+            title: '⭐ Опыт (XP)',
+            message: message,
+            buttons: [{type: 'ok', text: 'Понятно'}]
+        });
+    } catch(e) {
+        tg.showAlert(message);
+    }
+}
 
     function showSpentInfo() {
         tg.showPopup({
