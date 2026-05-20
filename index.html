@@ -890,16 +890,22 @@ function selectPayment(id) {
         try {
             const res = await fetch(`${BASE_URL}/order`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(orderData)});
             const result = await res.json();
-            if (result.status === 'ok') {
-                tg.sendData(JSON.stringify(orderData));
-                state.cart = []; saveCartToStorage(); updateCartUI();
-                closeModal('checkout-modal');
-                loadActiveOrders();
-                if (state.paymentMethod === 'balance') { state.user.balance -= final; updateProfileUI(); }
-                tg.showAlert(`✅ Заказ #${result.order_id} создан!`);
-            }
-        } catch(e) { tg.sendData(JSON.stringify(orderData)); }
+    if (result.status === 'ok') {
+        tg.sendData(JSON.stringify(orderData));
+        state.cart = []; saveCartToStorage(); updateCartUI();
+        closeModal('checkout-modal');
+        loadActiveOrders();
+        
+        // Показываем сообщение
+        tg.showAlert(`✅ Заказ #${result.order_id} создан!\n\nПроверьте бота @KodamaShopBot для оплаты.`);
+        
+        // Перекидываем в профиль
+        setTimeout(() => {
+            nav('profile', document.querySelector('.nav-item[onclick*="profile"]'));
+            openProfileSection('orders');
+        }, 1000);
     }
+}
 
     // ============ ПРОФИЛЬ ============
     function openProfileSection(s) {
