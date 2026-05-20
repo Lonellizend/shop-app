@@ -215,7 +215,7 @@
 
     <!-- МАГАЗИН -->
     <div id="shop" class="page active">
-        <h1>KODAMA <span class="gold-gradient">GOLD</span></h1>
+        <h1>Kodama <span class="gold-gradient">Shop</span></h1>
         <div class="flash-sale" id="flash-sale" style="display:none;">
             <div>🔥 <b>FLASH SALE!</b> Скидка <span id="flash-discount">30</span>%</div>
             <div class="countdown" id="flash-countdown"></div>
@@ -296,7 +296,7 @@
     <!-- АДМИН-ПАНЕЛЬ -->
     <div id="admin" class="page">
         <div id="admin-main">
-            <h1>⚙️ АДМИН-ПАНЕЛЬ</h1>
+            <h1>⚙️ Админ-Панель</h1>
             <div class="menu-list">
                 <div class="menu-item" onclick="openAdminSection('add_product')"><span class="menu-icon">➕</span><span class="menu-text">Добавить товар</span><span class="menu-arrow">→</span></div>
                 <div class="menu-item" onclick="openAdminSection('products')"><span class="menu-icon">📦</span><span class="menu-text">Список товаров</span><span class="menu-arrow">→</span></div>
@@ -690,7 +690,8 @@ function showXPInfo() {
 
 function renderProducts() {
     const list = document.getElementById('products-list');
-    if (!state.products.length) { 
+    const available = state.products.filter(p => (p.quantity || 0) > 0);
+    if (!available.length) { 
         list.innerHTML = '<div class="empty-state">🛍️ Товары не найдены</div>'; 
         return; 
     }
@@ -801,26 +802,24 @@ function updateProductSlider(p) {
 }
 
 async function shareProduct(id) {
+    const p = state.currentProduct || state.products.find(x => x.id === id);
+    if (!p) return;
+    
+    const productName = p.name || 'Товар';
+    const productPrice = p.discount_price || p.price || 0;
+    const shareText = `🛍 ${productName}\n💰 ${productPrice} ₽\n\nЗаказать в Kodama Shop: https://t.me/KodamaShopBot?start=product_${id}`;
+    
+    // Пробуем открыть список контактов Telegram
     try {
-        const res = await fetch(`${BASE_URL}/share/product/${id}`);
-        const data = await res.json();
-        if (data.status === 'ok' && data.share_text) {
-            // Копируем текст в буфер
-            navigator.clipboard.writeText(data.share_text).then(() => {
-                tg.showAlert('✅ Ссылка скопирована!\n\n' + data.share_text);
-            }).catch(() => {
-                // Если буфер не работает — показываем текст
-                tg.showPopup({
-                    title: '📤 Поделиться',
-                    message: data.share_text,
-                    buttons: [{type: 'ok', text: 'OK'}]
-                });
-            });
-        } else {
-            tg.showAlert('❌ Не удалось поделиться');
-        }
+        tg.switchInlineQuery(shareText, ['users', 'groups']);
     } catch(e) {
-        tg.showAlert('❌ Ошибка');
+        // Если не работает — копируем в буфер
+        try {
+            await navigator.clipboard.writeText(shareText);
+            tg.showAlert('✅ Ссылка скопирована!\n\nОтправьте её другу.');
+        } catch(e2) {
+            tg.showAlert('📤 Поделиться:\n\n' + shareText);
+        }
     }
 }
 
@@ -1040,10 +1039,10 @@ async function downloadReceipt(orderId) {
     }
 }
 
-    function renderFavorites(c) {
-        const fp = state.products.filter(p => state.favorites.includes(p.id));
-        c.innerHTML = fp.length ? '<div class="products-grid">' + fp.map(p => `<div class="product-card" onclick="openProduct(${p.id})"><img src="${(JSON.parse(p.image_url||'[]'))[0] || 'https://via.placeholder.com/300'}"><div class="product-info"><div class="product-price">${p.discount_price||p.price} ₽</div></div></div>`).join('') + '</div>' : '<div class="empty-state">Нет избранного</div>';
-    }
+function renderFavorites(c) {
+    const fp = state.products.filter(p => state.favorites.includes(p.id) && (p.quantity || 0) > 0);
+    c.innerHTML = fp.length ? '...' : '<div class="empty-state">Нет избранного</div>';
+}
 
     function renderSubscription(c) {
         c.innerHTML = `
