@@ -95,7 +95,12 @@
         .products-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .product-card { background: var(--card); border-radius: 16px; overflow: hidden; cursor: pointer; border: 1px solid var(--border); transition: 0.2s; position: relative; }
         .product-card:active { transform: scale(0.97); }
-        .product-card img, .product-card video { width: 100%; aspect-ratio: 1/1; object-fit: cover; }
+.product-card img, .product-card video { 
+    width: 100%; 
+    aspect-ratio: 1/1; 
+    object-fit: cover; 
+    loading: lazy;
+}
         .product-badge { position: absolute; top: 8px; left: 8px; padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; z-index: 2; }
         .badge-new { background: var(--blue); color: #fff; }
         .badge-hit { background: var(--danger); color: #fff; animation: pulse 2s infinite; }
@@ -520,21 +525,43 @@ async function init() {
     renderCategories();
 }
 
-    async function loadData() {
-        const uid = tg.initDataUnsafe.user?.id || 0;
-        try {
-            const res = await fetch(`${BASE_URL}/init?user_id=${uid}`);
-            const data = await res.json();
-            state.products = data.products || [];
-            state.user = data.user || {};
-        } catch (e) {
-            state.products = [];
-            state.user = {};
-        }
+async function loadData() {
+    const uid = tg.initDataUnsafe.user?.id || 0;
+    try {
+        const res = await fetch(`${BASE_URL}/init?user_id=${uid}`);
+        const data = await res.json();
+        state.products = data.products || [];
+        state.user = data.user || {};
+        
+        // Загружаем фото только для первых 4 товаров (остальные по мере скролла)
+        loadProductImages(0, 4);
+        
         updateProfileUI();
         renderProducts();
         loadActiveOrders();
+    } catch (e) {
+        state.products = [];
+        state.user = {};
     }
+}
+
+async function loadProductImages(start, count) {
+    const toLoad = state.products.slice(start, start + count);
+    for (const p of toLoad) {
+        if (!p._imagesLoaded) {
+            try {
+                const res = await fetch(`${BASE_URL}/product/${p.id}/images`);
+                const data = await res.json();
+                p._images = data.images || [];
+                p._imagesLoaded = true;
+            } catch(e) {
+                p._images = [];
+                p._imagesLoaded = true;
+            }
+        }
+    }
+    renderProducts(); // Перерисовываем с фото
+}
 
     function updateProfileUI() {
         const u = state.user;
@@ -634,36 +661,23 @@ function renderProducts() {
     }
     
     list.innerHTML = state.products.map(p => {
-        // Парсим фото правильно
-        let thumb = 'https://via.placeholder.com/300?text=No+Photo';
-        try {
-            let media = p.image_url;
-            // Пробуем распарсить JSON
-            if (typeof media === 'string' && media.startsWith('[')) {
-                const parsed = JSON.parse(media);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                    thumb = parsed[0];
-                }
-            } else if (typeof media === 'string' && media.length > 10) {
-                thumb = media;
-            }
-        } catch(e) {
-            console.log('Photo parse error:', e);
+        // Используем загруженные фото или плейсхолдер
+        let thumb = 'https://via.placeholder.com/300?text=📷';
+        if (p._images && p._images.length > 0) {
+            thumb = p._images[0];
+        } else if (p.image_url) {
+            try {
+                const parsed = typeof p.image_url === 'string' ? JSON.parse(p.image_url) : p.image_url;
+                if (Array.isArray(parsed) && parsed.length > 0) thumb = parsed[0];
+            } catch(e) {}
         }
         
-        const price = p.discount_price || p.price;
-        const oldPrice = p.discount_price ? `<span class="product-old-price">${p.price} ₽</span>` : '';
-        
         return `
-        <div class="product-card" onclick="openProduct(${p.id})" style="background:var(--card);border-radius:16px;overflow:hidden;cursor:pointer;border:1px solid var(--border);transition:0.2s;">
-            <div style="position:relative;">
-                <img src="${thumb}" alt="${p.name}" style="width:100%;aspect-ratio:1/1;object-fit:cover;" onerror="this.src='https://via.placeholder.com/300?text=No+Photo'">
-                ${p.badge ? `<span style="position:absolute;top:8px;left:8px;padding:4px 10px;border-radius:12px;font-size:10px;font-weight:700;background:${p.badge==='new'?'var(--blue)':p.badge==='sale'?'var(--success)':'var(--danger)'};color:#fff;">${p.badge.toUpperCase()}</span>` : ''}
-                ${state.favorites.includes(p.id) ? `<span style="position:absolute;top:8px;right:8px;background:var(--danger);color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;">❤️</span>` : ''}
-            </div>
-            <div style="padding:10px;">
-                <div style="font-size:16px;font-weight:800;color:var(--gold);">${price} ₽ ${oldPrice}</div>
-                <div style="font-size:13px;color:var(--text2);">${p.name}</div>
+        <div class="product-card" onclick="openProduct(${p.id})">
+            <img src="${thumb}" alt="${p.name}" loading="lazy" style="width:100%;aspect-ratio:1/1;object-fit:cover;" onerror="this.src='https://via.placeholder.com/300'">
+            <div class="product-info">
+                <div class="product-price">${p.discount_price || p.price} ₽</div>
+                <div class="product-name">${p.name}</div>
             </div>
         </div>`;
     }).join('');
