@@ -356,12 +356,11 @@
         <div style="display:flex;justify-content:space-between;margin-bottom:20px;position:relative;">
             <div style="position:absolute;top:14px;left:20%;right:20%;height:2px;background:var(--border);z-index:0;"></div>
             <div style="text-align:center;z-index:1;">
-                <div style="width:28px;height:28px;border-radius:50%;background:var(--gold);color:#000;display:flex;align-items:center;justify-content:center;margin:0 auto;font-weight:700;font-size:14px;">1</div>
-                <div style="font-size:11px;color:var(--gold);margin-top:4px;">Доставка</div>
-            </div>
-            <div style="text-align:center;z-index:1;">
-                <div style="width:28px;height:28px;border-radius:50%;background:var(--gold);color:#000;display:flex;align-items:center;justify-content:center;margin:0 auto;font-weight:700;font-size:14px;">2</div>
-                <div style="font-size:11px;color:var(--gold);margin-top:4px;">Оплата</div>
+<div style="width:28px;height:28px;border-radius:50%;background:var(--border);color:var(--text2);display:flex;align-items:center;justify-content:center;margin:0 auto;font-weight:700;font-size:14px;">1</div>
+<div style="font-size:11px;color:var(--text2);margin-top:4px;">Доставка</div>
+...
+<div style="width:28px;height:28px;border-radius:50%;background:var(--border);color:var(--text2);display:flex;align-items:center;justify-content:center;margin:0 auto;font-weight:700;font-size:14px;">2</div>
+<div style="font-size:11px;color:var(--text2);margin-top:4px;">Оплата</div>
             </div>
             <div style="text-align:center;z-index:1;">
                 <div style="width:28px;height:28px;border-radius:50%;background:var(--border);color:var(--text2);display:flex;align-items:center;justify-content:center;margin:0 auto;font-weight:700;font-size:14px;">3</div>
@@ -956,33 +955,62 @@ function selectPayment(id) {
     openCheckoutModal(); // Перерисовываем
 }
 
-    async function confirmCheckout() {
-        if (!state.cart.length) return;
-        const total = state.cart.reduce((s,i)=>s+(i.price||0)*(i.qty||1),0);
-        const final = Math.round(total*(1-state.promoDiscount/100));
-        if (state.paymentMethod === 'balance' && (state.user?.balance||0) < final) {
-            tg.showAlert(`❌ Недостаточно средств!`);
-            return;
+async function confirmCheckout() {
+    if (!state.cart.length) return;
+    
+    // Блокируем кнопку сразу
+    const btn = document.getElementById('confirm-order-btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+        btn.innerText = '⏳ Обработка...';
+    }
+    
+    const total = state.cart.reduce((s,i)=>s+(i.price||0)*(i.qty||1),0);
+    const final = Math.round(total*(1-state.promoDiscount/100));
+    
+    if (state.paymentMethod === 'balance' && (state.user?.balance||0) < final) {
+        tg.showAlert(`❌ Недостаточно средств!`);
+        // Разблокируем кнопку
+        if (btn) {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.innerText = '✅ Подтвердить заказ';
         }
-        const orderData = {action:'checkout',items:state.cart.map(i=>({id:i.id,qty:i.qty,name:i.name,price:i.price})),total:final,user_id:tg.initDataUnsafe.user?.id||0,delivery_method:state.deliveryMethod,payment_method:state.paymentMethod};
-        try {
-            const res = await fetch(`${BASE_URL}/order`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(orderData)});
-            const result = await res.json();
-    if (result.status === 'ok') {
+        return;
+    }
+    
+    const orderData = {action:'checkout',items:state.cart.map(i=>({id:i.id,qty:i.qty,name:i.name,price:i.price})),total:final,user_id:tg.initDataUnsafe.user?.id||0,delivery_method:state.deliveryMethod,payment_method:state.paymentMethod};
+    
+    try {
+        const res = await fetch(`${BASE_URL}/order`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(orderData)});
+        const result = await res.json();
+        
+        if (result.status === 'ok') {
+            tg.sendData(JSON.stringify(orderData));
+            state.cart = []; saveCartToStorage(); updateCartUI();
+            closeModal('checkout-modal');
+            loadActiveOrders();
+            tg.showAlert(`✅ Заказ #${result.order_id} создан!`);
+            setTimeout(() => {
+                nav('profile', document.querySelector('.nav-item[onclick*="profile"]'));
+                openProfileSection('orders');
+            }, 1000);
+        } else {
+            tg.showAlert('❌ Ошибка: ' + (result.message || 'попробуйте позже'));
+            // Разблокируем кнопку при ошибке
+            if (btn) {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.innerText = '✅ Подтвердить заказ';
+            }
+        }
+    } catch(e) {
         tg.sendData(JSON.stringify(orderData));
         state.cart = []; saveCartToStorage(); updateCartUI();
         closeModal('checkout-modal');
-        loadActiveOrders();
-        tg.showAlert(`✅ Заказ #${result.order_id} создан!\n\nПроверьте бота @KodamaShopBot для оплаты.`);
-        setTimeout(() => {
-            nav('profile', document.querySelector('.nav-item[onclick*="profile"]'));
-            openProfileSection('orders');
-        }, 1000);
     }
-        } catch(e) {
-            console.log('Order error:', e);
-        }
-    }
+}
 
     // ============ ПРОФИЛЬ ============
     function openProfileSection(s) {
