@@ -295,289 +295,6 @@
             <div id="section-content"></div>
         </div>
     </div>
-
-        // ============ ПРОДАВЕЦ ============
-    let sellerData = null;
-    let userRole = 'buyer'; // buyer | seller
-    
-    async function loadSellerData() {
-        const uid = tg.initDataUnsafe.user?.id || 0;
-        try {
-            const res = await fetch(`${BASE_URL}/seller/${uid}`);
-            const data = await res.json();
-            
-            if (data.seller) {
-                sellerData = data.seller;
-                userRole = 'seller';
-                updateSellerUI();
-                document.getElementById('seller-nav')?.style.display = 'flex';
-            } else {
-                sellerData = null;
-                userRole = 'buyer';
-            }
-        } catch(e) {}
-    }
-    
-    function updateSellerUI() {
-        if (!sellerData) return;
-        document.getElementById('seller-shop-name').innerText = sellerData.shop_name || 'Мой магазин';
-        document.getElementById('seller-shop-desc').innerText = sellerData.shop_description || '';
-        document.getElementById('seller-balance').innerText = (sellerData.balance || 0) + ' ₽';
-        document.getElementById('seller-products-count').innerText = sellerData.total_sales || 0;
-        document.getElementById('seller-sales').innerText = sellerData.total_sales || 0;
-        document.getElementById('seller-rating').innerText = '⭐ ' + (sellerData.rating || 0).toFixed(1);
-    }
-    
-    function openSellerSection(s) {
-        document.getElementById('seller-main').style.display = 'none';
-        document.getElementById('seller-section').style.display = 'block';
-        const c = document.getElementById('seller-content');
-        
-        if (s === 'products') loadSellerProducts(c);
-        else if (s === 'add_product') renderSellerAddProduct(c);
-        else if (s === 'orders') loadSellerOrders(c);
-        else if (s === 'withdraw') renderWithdraw(c);
-        else if (s === 'history') loadWithdrawHistory(c);
-    }
-    
-    function closeSellerSection() {
-        document.getElementById('seller-main').style.display = 'block';
-        document.getElementById('seller-section').style.display = 'none';
-    }
-    
-    function showRegisterModal() {
-        document.getElementById('register-seller-modal').classList.add('active');
-        document.getElementById('register-seller-modal').style.display = 'flex';
-    }
-    
-    async function registerSeller() {
-        const name = document.getElementById('reg-shop-name')?.value?.trim();
-        const desc = document.getElementById('reg-shop-desc')?.value?.trim();
-        
-        if (!name) { tg.showAlert('Введите название магазина'); return; }
-        
-        try {
-            const res = await fetch(`${BASE_URL}/register-seller`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    user_id: tg.initDataUnsafe.user?.id || 0,
-                    shop_name: name,
-                    shop_description: desc
-                })
-            });
-            const data = await res.json();
-            
-            if (data.status === 'ok') {
-                closeModal('register-seller-modal');
-                tg.showAlert('✅ Магазин создан!');
-                await loadSellerData();
-                nav('seller');
-            } else {
-                tg.showAlert('❌ ' + (data.message || 'Ошибка'));
-            }
-        } catch(e) {
-            tg.showAlert('❌ Ошибка регистрации');
-        }
-    }
-    
-    // Товары продавца
-    async function loadSellerProducts(c) {
-        const uid = tg.initDataUnsafe.user?.id || 0;
-        c.innerHTML = '<div>Загрузка...</div>';
-        
-        try {
-            const res = await fetch(`${BASE_URL}/seller/${uid}/products`);
-            const data = await res.json();
-            const products = data.products || [];
-            
-            if (!products.length) {
-                c.innerHTML = '<div class="empty-state">Нет товаров</div>';
-                return;
-            }
-            
-            c.innerHTML = '<h3>📦 Мои товары (' + products.length + ')</h3>' + products.map(p => `
-                <div class="card" style="margin-bottom:8px;">
-                    <div style="display:flex;justify-content:space-between;">
-                        <div>
-                            <b>${p.name}</b> — ${p.price} ₽
-                            <div style="font-size:12px;color:var(--text2);">Склад: ${p.quantity || 0} | Продано: ${p.sales || 0}</div>
-                        </div>
-                        <button class="btn btn-small btn-danger" onclick="deleteSellerProduct(${p.id})">🗑</button>
-                    </div>
-                </div>
-            `).join('');
-        } catch(e) {
-            c.innerHTML = '<div class="empty-state">Ошибка загрузки</div>';
-        }
-    }
-    
-    function renderSellerAddProduct(c) {
-        state.adminFiles = [];
-        c.innerHTML = `
-            <h3>➕ Добавить товар</h3>
-            <input class="input" placeholder="Название" id="ap-name">
-            <input class="input" placeholder="Цена (₽)" type="number" id="ap-price">
-            <textarea class="input" placeholder="Описание" id="ap-desc"></textarea>
-            <input class="input" placeholder="Количество" type="number" id="ap-qty" value="10">
-            <input type="file" class="input" id="ap-files" multiple accept="image/*,video/*" onchange="previewFiles(this.files)">
-            <div id="ap-preview" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"></div>
-            <button class="btn" onclick="submitSellerProduct()">💾 Сохранить</button>
-        `;
-    }
-    
-    async function submitSellerProduct() {
-        const name = document.getElementById('ap-name')?.value?.trim();
-        const price = parseInt(document.getElementById('ap-price')?.value || 0);
-        
-        if (!name || !price) { showToast('Заполните название и цену'); return; }
-        
-        const data = {
-            action: 'save_product',
-            name, price,
-            description: document.getElementById('ap-desc')?.value || '',
-            category: 'Premium',
-            quantity: parseInt(document.getElementById('ap-qty')?.value || 10),
-            images: (state.adminFiles || []).map(f => f.data),
-            seller_id: sellerData?.id  // Привязка к продавцу
-        };
-        
-        try {
-            await fetch(`${BASE_URL}/admin_action`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(data)
-            });
-            showToast('✅ Товар добавлен!');
-            openSellerSection('products');
-        } catch(e) {
-            showToast('Ошибка');
-        }
-    }
-    
-    async function deleteSellerProduct(id) {
-        if (!confirm('Удалить товар?')) return;
-        await fetch(`${BASE_URL}/admin_action`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({action: 'delete_product', product_id: id})
-        });
-        showToast('🗑 Удалено');
-        openSellerSection('products');
-    }
-    
-    // Заказы продавца
-    async function loadSellerOrders(c) {
-        const uid = tg.initDataUnsafe.user?.id || 0;
-        c.innerHTML = '<div>Загрузка...</div>';
-        
-        try {
-            const res = await fetch(`${BASE_URL}/seller/${uid}/orders`);
-            const data = await res.json();
-            const orders = data.orders || [];
-            
-            if (!orders.length) {
-                c.innerHTML = '<div class="empty-state">Нет заказов</div>';
-                return;
-            }
-            
-            c.innerHTML = '<h3>📋 Заказы (' + orders.length + ')</h3>' + orders.map(o => `
-                <div class="card" style="margin-bottom:8px;">
-                    <div style="display:flex;justify-content:space-between;">
-                        <b>Заказ #${o.id}</b>
-                        <span>${o.status}</span>
-                    </div>
-                    <div style="color:var(--text2);font-size:13px;">
-                        📦 ${o.seller_items?.map(i => `${i.name} x${i.qty}`).join(', ') || 'Товары'}
-                        <br>💰 ${o.total_amount} ₽
-                    </div>
-                </div>
-            `).join('');
-        } catch(e) {
-            c.innerHTML = '<div class="empty-state">Ошибка</div>';
-        }
-    }
-    
-    // Вывод средств
-    function renderWithdraw(c) {
-        c.innerHTML = `
-            <h3>💸 Вывести средства</h3>
-            <div class="card">
-                <p style="color:var(--text2);">Доступно: <b style="color:var(--gold);">${sellerData?.balance || 0} ₽</b></p>
-                <input class="input" placeholder="Сумма" type="number" id="withdraw-amount">
-                <select class="input" id="withdraw-method">
-                    <option value="card">💳 На карту</option>
-                    <option value="sbp">🔵 СБП</option>
-                    <option value="phone">📱 По номеру телефона</option>
-                </select>
-                <button class="btn" onclick="submitWithdraw()">💸 Вывести</button>
-            </div>
-        `;
-    }
-    
-    async function submitWithdraw() {
-        const amount = parseInt(document.getElementById('withdraw-amount')?.value || 0);
-        const method = document.getElementById('withdraw-method')?.value || 'card';
-        
-        if (!amount || amount < 100) { tg.showAlert('Минимальная сумма: 100 ₽'); return; }
-        if (amount > (sellerData?.balance || 0)) { tg.showAlert('Недостаточно средств'); return; }
-        
-        try {
-            const res = await fetch(`${BASE_URL}/withdraw`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    user_id: tg.initDataUnsafe.user?.id || 0,
-                    amount,
-                    method
-                })
-            });
-            const data = await res.json();
-            
-            if (data.status === 'ok') {
-                tg.showAlert('✅ Заявка создана! Ожидайте подтверждения.');
-                openSellerSection('history');
-            } else {
-                tg.showAlert('❌ ' + (data.message || 'Ошибка'));
-            }
-        } catch(e) {
-            tg.showAlert('❌ Ошибка');
-        }
-    }
-    
-    // История выводов
-    async function loadWithdrawHistory(c) {
-        c.innerHTML = '<div>Загрузка...</div>';
-        
-        try {
-            const res = await fetch(`${BASE_URL}/withdrawals/${sellerData?.id || 0}`);
-            const data = await res.json();
-            const withdrawals = data.withdrawals || [];
-            
-            if (!withdrawals.length) {
-                c.innerHTML = '<div class="empty-state">Нет выводов</div>';
-                return;
-            }
-            
-            const statusNames = {
-                'pending': '⏳ Ожидает',
-                'approved': '✅ Выполнено',
-                'rejected': '❌ Отклонено'
-            };
-            
-            c.innerHTML = '<h3>📜 История выводов</h3>' + withdrawals.map(w => `
-                <div class="card" style="margin-bottom:6px;">
-                    <div style="display:flex;justify-content:space-between;">
-                        <b>${w.amount} ₽</b>
-                        <span>${statusNames[w.status] || w.status}</span>
-                    </div>
-                    <div style="color:var(--text2);font-size:12px;">${w.method} | ${w.created_at?.split('T')[0] || ''}</div>
-                </div>
-            `).join('');
-        } catch(e) {
-            c.innerHTML = '<div class="empty-state">Ошибка</div>';
-        }
-    }
             
     <!-- АДМИН-ПАНЕЛЬ -->
     <div id="admin" class="page">
@@ -597,76 +314,6 @@
         <div id="admin-section" style="display:none;">
             <div class="section-back" onclick="closeAdminSection()">← Назад в админку</div>
             <div id="admin-content"></div>
-        </div>
-    </div>
-
-    <!-- ПРОДАВЕЦ -->
-    <div id="seller" class="page">
-        <div id="seller-main">
-            <h1>🏪 Магазин продавца</h1>
-            
-            <!-- Карточка продавца -->
-            <div class="card" style="text-align:center;">
-                <div style="font-size:48px;">🏪</div>
-                <h2 id="seller-shop-name">Мой магазин</h2>
-                <p style="color:var(--text2);" id="seller-shop-desc"></p>
-            </div>
-            
-            <!-- Статистика -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-value" id="seller-balance">0 ₽</div>
-                    <div class="stat-label">💰 Баланс</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="seller-products-count">0</div>
-                    <div class="stat-label">📦 Товаров</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="seller-sales">0</div>
-                    <div class="stat-label">🛍 Продано</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="seller-rating">⭐ 0</div>
-                    <div class="stat-label">Рейтинг</div>
-                </div>
-            </div>
-            
-            <!-- Меню продавца -->
-            <div class="menu-list">
-                <div class="menu-item" onclick="openSellerSection('products')">
-                    <span class="menu-icon">📦</span><span class="menu-text">Мои товары</span><span class="menu-arrow">→</span>
-                </div>
-                <div class="menu-item" onclick="openSellerSection('add_product')">
-                    <span class="menu-icon">➕</span><span class="menu-text">Добавить товар</span><span class="menu-arrow">→</span>
-                </div>
-                <div class="menu-item" onclick="openSellerSection('orders')">
-                    <span class="menu-icon">📋</span><span class="menu-text">Заказы</span><span class="menu-arrow">→</span>
-                </div>
-                <div class="menu-item" onclick="openSellerSection('withdraw')">
-                    <span class="menu-icon">💸</span><span class="menu-text">Вывести средства</span><span class="menu-arrow">→</span>
-                </div>
-                <div class="menu-item" onclick="openSellerSection('history')">
-                    <span class="menu-icon">📜</span><span class="menu-text">История выводов</span><span class="menu-arrow">→</span>
-                </div>
-            </div>
-        </div>
-        
-        <div id="seller-section" style="display:none;">
-            <div class="section-back" onclick="closeSellerSection()">← Назад</div>
-            <div id="seller-content"></div>
-        </div>
-    </div>
-
-    <!-- Регистрация продавца -->
-    <div class="modal-overlay" id="register-seller-modal">
-        <div class="modal">
-            <button class="modal-close" onclick="closeModal('register-seller-modal')">✕</button>
-            <h2>🏪 Стать продавцом</h2>
-            <p style="color:var(--text2);margin-bottom:16px;">Создайте свой магазин и начните продавать!</p>
-            <input class="input" placeholder="Название магазина" id="reg-shop-name">
-            <textarea class="input" placeholder="Описание магазина" id="reg-shop-desc"></textarea>
-            <button class="btn" onclick="registerSeller()">✅ Зарегистрироваться</button>
         </div>
     </div>
     
@@ -991,24 +638,6 @@ function showXPInfo() {
     }
 }
 
-    function showSpentInfo() {
-        tg.showPopup({
-            title: '🛍 Потрачено',
-            message: `Всего потрачено: ${state.user?.total_spent || 0} ₽\n\nЭто сумма всех ваших покупок в магазине.`,
-            buttons: [{type: 'ok', text: 'Понятно'}]
-        });
-    }
-
-    function showXPInfo() {
-        const xp = state.user?.xp || 0;
-        const level = LEVELS[state.user?.level] || LEVELS.newbie;
-        tg.showPopup({
-            title: '⭐ Опыт (XP)',
-            message: `Текущий XP: ${xp}\nУровень: ${level.name}\n\nКак получить:\n• За покупки: 10 XP за каждые 100 ₽\n• За достижения\n• За приглашения друзей`,
-            buttons: [{type: 'ok', text: 'Понятно'}]
-        });
-    }
-
     // ============ АКТИВНЫЕ ЗАКАЗЫ ============
     async function loadActiveOrders() {
         const uid = tg.initDataUnsafe.user?.id || 0;
@@ -1297,14 +926,11 @@ function openCheckoutModal() {
     
     document.getElementById('checkout-total').innerText = final + ' ₽';
     document.getElementById('checkout-balance').innerText = `💰 Ваш баланс: ${state.user?.balance||0} ₽`;
-
-        if (state.deliveryMethod) updateProgressBar(1);
-    if (state.paymentMethod && state.deliveryMethod) updateProgressBar(2);
     
+    // Обновляем прогресс-бар
     updateProgressBar(0);
-    document.getElementById('checkout-modal').classList.add('active');
-    document.getElementById('checkout-modal').style.display = 'flex';
-}
+    if (state.deliveryMethod) updateProgressBar(1);
+    if (state.paymentMethod && state.deliveryMethod) updateProgressBar(2);
     
     // Карточки доставки
     const deliveryOptions = [
@@ -1350,7 +976,6 @@ function openCheckoutModal() {
         </div>
     `).join('');
     
-    // Сбрасываем индикатор
     document.getElementById('checkout-modal').classList.add('active');
     document.getElementById('checkout-modal').style.display = 'flex';
 }
@@ -1900,6 +1525,150 @@ async function sendQuickReply(key) {
     loadAdminChatMsgs(uid);
 }
 
+    // ============ ПРОДАВЕЦ ============
+    let sellerData = null;
+    let userRole = 'buyer';
+    
+    async function loadSellerData() {
+        const uid = tg.initDataUnsafe.user?.id || 0;
+        try {
+            const res = await fetch(`${BASE_URL}/seller/${uid}`);
+            const data = await res.json();
+            if (data.seller) {
+                sellerData = data.seller;
+                userRole = 'seller';
+                updateSellerUI();
+                document.getElementById('seller-nav')?.style.display = 'flex';
+            } else {
+                sellerData = null;
+                userRole = 'buyer';
+            }
+        } catch(e) {}
+    }
+    
+    function updateSellerUI() {
+        if (!sellerData) return;
+        document.getElementById('seller-shop-name').innerText = sellerData.shop_name || 'Мой магазин';
+        document.getElementById('seller-shop-desc').innerText = sellerData.shop_description || '';
+        document.getElementById('seller-balance').innerText = (sellerData.balance || 0) + ' ₽';
+        document.getElementById('seller-products-count').innerText = sellerData.total_sales || 0;
+        document.getElementById('seller-sales').innerText = sellerData.total_sales || 0;
+        document.getElementById('seller-rating').innerText = '⭐ ' + (sellerData.rating || 0).toFixed(1);
+    }
+    
+    function openSellerSection(s) {
+        document.getElementById('seller-main').style.display = 'none';
+        document.getElementById('seller-section').style.display = 'block';
+        const c = document.getElementById('seller-content');
+        if (s === 'products') loadSellerProducts(c);
+        else if (s === 'add_product') renderSellerAddProduct(c);
+        else if (s === 'orders') loadSellerOrders(c);
+        else if (s === 'withdraw') renderWithdraw(c);
+        else if (s === 'history') loadWithdrawHistory(c);
+    }
+    
+    function closeSellerSection() {
+        document.getElementById('seller-main').style.display = 'block';
+        document.getElementById('seller-section').style.display = 'none';
+    }
+    
+    function showRegisterModal() {
+        document.getElementById('register-seller-modal').classList.add('active');
+        document.getElementById('register-seller-modal').style.display = 'flex';
+    }
+    
+    async function registerSeller() {
+        const name = document.getElementById('reg-shop-name')?.value?.trim();
+        const desc = document.getElementById('reg-shop-desc')?.value?.trim();
+        if (!name) { tg.showAlert('Введите название магазина'); return; }
+        try {
+            const res = await fetch(`${BASE_URL}/register-seller`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({user_id: tg.initDataUnsafe.user?.id || 0, shop_name: name, shop_description: desc})
+            });
+            const data = await res.json();
+            if (data.status === 'ok') {
+                closeModal('register-seller-modal');
+                tg.showAlert('✅ Магазин создан!');
+                await loadSellerData();
+                nav('seller');
+            } else { tg.showAlert('❌ ' + (data.message || 'Ошибка')); }
+        } catch(e) { tg.showAlert('❌ Ошибка регистрации'); }
+    }
+    
+    async function loadSellerProducts(c) {
+        const uid = tg.initDataUnsafe.user?.id || 0;
+        c.innerHTML = '<div>Загрузка...</div>';
+        try {
+            const res = await fetch(`${BASE_URL}/seller/${uid}/products`);
+            const data = await res.json();
+            const products = data.products || [];
+            if (!products.length) { c.innerHTML = '<div class="empty-state">Нет товаров</div>'; return; }
+            c.innerHTML = '<h3>📦 Мои товары (' + products.length + ')</h3>' + products.map(p => `
+                <div class="card" style="margin-bottom:8px;"><div style="display:flex;justify-content:space-between;"><div><b>${p.name}</b> — ${p.price} ₽<div style="font-size:12px;color:var(--text2);">Склад: ${p.quantity||0} | Продано: ${p.sales||0}</div></div><button class="btn btn-small btn-danger" onclick="deleteSellerProduct(${p.id})">🗑</button></div></div>
+            `).join('');
+        } catch(e) { c.innerHTML = '<div class="empty-state">Ошибка загрузки</div>'; }
+    }
+    
+    function renderSellerAddProduct(c) {
+        state.adminFiles = [];
+        c.innerHTML = `<h3>➕ Добавить товар</h3><input class="input" placeholder="Название" id="ap-name"><input class="input" placeholder="Цена (₽)" type="number" id="ap-price"><textarea class="input" placeholder="Описание" id="ap-desc"></textarea><input class="input" placeholder="Количество" type="number" id="ap-qty" value="10"><input type="file" class="input" id="ap-files" multiple accept="image/*,video/*" onchange="previewFiles(this.files)"><div id="ap-preview" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"></div><button class="btn" onclick="submitSellerProduct()">💾 Сохранить</button>`;
+    }
+    
+    async function submitSellerProduct() {
+        const name = document.getElementById('ap-name')?.value?.trim();
+        const price = parseInt(document.getElementById('ap-price')?.value || 0);
+        if (!name || !price) { showToast('Заполните название и цену'); return; }
+        const data = {action:'save_product',name,price,description:document.getElementById('ap-desc')?.value||'',category:'Premium',quantity:parseInt(document.getElementById('ap-qty')?.value||10),images:(state.adminFiles||[]).map(f=>f.data),seller_id:sellerData?.id};
+        try { await fetch(`${BASE_URL}/admin_action`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); showToast('✅ Товар добавлен!'); openSellerSection('products'); } catch(e) { showToast('Ошибка'); }
+    }
+    
+    async function deleteSellerProduct(id) {
+        if (!confirm('Удалить товар?')) return;
+        await fetch(`${BASE_URL}/admin_action`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete_product',product_id:id})});
+        showToast('🗑 Удалено'); openSellerSection('products');
+    }
+    
+    async function loadSellerOrders(c) {
+        const uid = tg.initDataUnsafe.user?.id || 0;
+        c.innerHTML = '<div>Загрузка...</div>';
+        try {
+            const res = await fetch(`${BASE_URL}/seller/${uid}/orders`);
+            const data = await res.json();
+            const orders = data.orders || [];
+            if (!orders.length) { c.innerHTML = '<div class="empty-state">Нет заказов</div>'; return; }
+            c.innerHTML = '<h3>📋 Заказы</h3>' + orders.map(o => `<div class="card"><b>#${o.id}</b> | ${o.status}<br>💰 ${o.total_amount} ₽</div>`).join('');
+        } catch(e) { c.innerHTML = '<div class="empty-state">Ошибка</div>'; }
+    }
+    
+    function renderWithdraw(c) {
+        c.innerHTML = `<h3>💸 Вывести средства</h3><div class="card"><p style="color:var(--text2);">Доступно: <b style="color:var(--gold);">${sellerData?.balance||0} ₽</b></p><input class="input" placeholder="Сумма" type="number" id="withdraw-amount"><select class="input" id="withdraw-method"><option value="card">💳 На карту</option><option value="sbp">🔵 СБП</option><option value="phone">📱 По номеру телефона</option></select><button class="btn" onclick="submitWithdraw()">💸 Вывести</button></div>`;
+    }
+    
+    async function submitWithdraw() {
+        const amount = parseInt(document.getElementById('withdraw-amount')?.value||0);
+        const method = document.getElementById('withdraw-method')?.value||'card';
+        if (!amount||amount<100){tg.showAlert('Минимум 100 ₽');return;}
+        if (amount>(sellerData?.balance||0)){tg.showAlert('Недостаточно средств');return;}
+        try {
+            const res = await fetch(`${BASE_URL}/withdraw`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:tg.initDataUnsafe.user?.id||0,amount,method})});
+            const data = await res.json();
+            if (data.status==='ok'){tg.showAlert('✅ Заявка создана!');openSellerSection('history');}
+            else{tg.showAlert('❌ '+(data.message||'Ошибка'));}
+        } catch(e){tg.showAlert('❌ Ошибка');}
+    }
+    
+    async function loadWithdrawHistory(c) {
+        c.innerHTML = '<div>Загрузка...</div>';
+        try {
+            const res = await fetch(`${BASE_URL}/withdrawals/${sellerData?.id||0}`);
+            const data = await res.json();
+            const withdrawals = data.withdrawals||[];
+            if(!withdrawals.length){c.innerHTML='<div class="empty-state">Нет выводов</div>';return;}
+            c.innerHTML = '<h3>📜 История выводов</h3>' + withdrawals.map(w=>`<div class="card"><b>${w.amount} ₽</b> | ${w.status} | ${w.created_at?.split('T')[0]||''}</div>`).join('');
+        } catch(e){c.innerHTML='<div class="empty-state">Ошибка</div>';}
+    }
+    
     function nav(p,el) { document.querySelectorAll('.page').forEach(x=>x.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active')); document.getElementById(p).classList.add('active'); if(el) el.classList.add('active'); }
     document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',function(e){if(e.target===this)this.classList.remove('active');}));
     window.onload = init;
