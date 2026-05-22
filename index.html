@@ -316,6 +316,50 @@
             <div id="admin-content"></div>
         </div>
     </div>
+
+        <!-- ПРОДАВЕЦ -->
+    <div id="seller" class="page">
+        <div id="seller-main">
+            <h1>🏪 Магазин продавца</h1>
+            <div class="card" style="text-align:center;">
+                <div style="font-size:48px;">🏪</div>
+                <h2 id="seller-shop-name">Мой магазин</h2>
+                <p style="color:var(--text2);" id="seller-shop-desc"></p>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card"><div class="stat-value" id="seller-balance">0 ₽</div><div class="stat-label">💰 Баланс</div></div>
+                <div class="stat-card"><div class="stat-value" id="seller-products-count">0</div><div class="stat-label">📦 Товаров</div></div>
+                <div class="stat-card"><div class="stat-value" id="seller-sales">0</div><div class="stat-label">🛍 Продано</div></div>
+                <div class="stat-card"><div class="stat-value" id="seller-rating">⭐ 0</div><div class="stat-label">Рейтинг</div></div>
+            </div>
+            <div class="menu-list">
+                <div class="menu-item" onclick="openSellerSection('products')"><span class="menu-icon">📦</span><span class="menu-text">Мои товары</span><span class="menu-arrow">→</span></div>
+                <div class="menu-item" onclick="openSellerSection('add_product')"><span class="menu-icon">➕</span><span class="menu-text">Добавить товар</span><span class="menu-arrow">→</span></div>
+                <div class="menu-item" onclick="openSellerSection('orders')"><span class="menu-icon">📋</span><span class="menu-text">Заказы</span><span class="menu-arrow">→</span></div>
+                <div class="menu-item" onclick="openSellerSection('withdraw')"><span class="menu-icon">💸</span><span class="menu-text">Вывести средства</span><span class="menu-arrow">→</span></div>
+                <div class="menu-item" onclick="openSellerSection('history')"><span class="menu-icon">📜</span><span class="menu-text">История выводов</span><span class="menu-arrow">→</span></div>
+            </div>
+        </div>
+        <div id="seller-section" style="display:none;">
+            <div class="section-back" onclick="closeSellerSection()">← Назад</div>
+            <div id="seller-content"></div>
+        </div>
+    </div>
+
+    <!-- Регистрация продавца -->
+    <div class="modal-overlay" id="register-seller-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal('register-seller-modal')">✕</button>
+            <h2>🏪 Стать продавцом</h2>
+            <p style="color:var(--text2);margin-bottom:16px;">Создайте свой магазин и начните продавать!</p>
+            <input class="input" placeholder="Название магазина" id="reg-shop-name">
+            <textarea class="input" placeholder="Описание магазина" id="reg-shop-desc"></textarea>
+            <button class="btn" onclick="registerSeller()">✅ Зарегистрироваться</button>
+        </div>
+    </div>
+
+    <!-- Товар -->
+    <div class="modal-overlay" id="product-modal">
     
     <!-- Товар -->
     <div class="modal-overlay" id="product-modal">
