@@ -1538,7 +1538,8 @@ async function sendQuickReply(key) {
                 sellerData = data.seller;
                 userRole = 'seller';
                 updateSellerUI();
-                document.getElementById('seller-nav')?.style.display = 'flex';
+                const sellerNav = document.getElementById('seller-nav');
+                if (sellerNav) sellerNav.style.display = 'flex';
             } else {
                 sellerData = null;
                 userRole = 'buyer';
