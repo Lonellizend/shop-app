@@ -309,6 +309,7 @@
                 <div class="menu-item" onclick="openAdminSection('orders')"><span class="menu-icon">📋</span><span class="menu-text">Заказы</span><span class="menu-arrow">→</span></div>
                 <div class="menu-item" onclick="openAdminSection('analytics')"><span class="menu-icon">📊</span><span class="menu-text">Аналитика</span><span class="menu-arrow">→</span></div>
                 <div class="menu-item" onclick="openAdminSection('chats')"><span class="menu-icon">💬</span><span class="menu-text">Чаты поддержки</span><span class="menu-arrow">→</span></div>
+                <div class="menu-item" onclick="openAdminSection('sellers_moderation')"><span class="menu-icon">🏪</span><span class="menu-text">Заявки продавцов</span><span class="menu-arrow">→</span>
             </div>
         </div>
         <div id="admin-section" style="display:none;">
@@ -1240,6 +1241,7 @@ function renderFavorites(c) {
         else if (s==='orders') loadAdminOrders(c);
         else if (s==='analytics') loadAnalytics(c);
         else if (s==='chats') loadChatsList(c);
+        else if (s === 'sellers_moderation') loadSellersModeration(c);
     }
 
     function closeAdminSection() { document.getElementById('admin-main').style.display='block'; document.getElementById('admin-section').style.display='none'; }
@@ -1616,6 +1618,11 @@ async function sendQuickReply(key) {
     }
     
     function showRegisterModal() {
+        // Проверяем, не отправлял ли уже заявку
+        if (sellerData) {
+            tg.showAlert('Вы уже зарегистрированы как продавец!');
+            return;
+        }
         document.getElementById('register-seller-modal').classList.add('active');
         document.getElementById('register-seller-modal').style.display = 'flex';
     }
@@ -1711,6 +1718,57 @@ async function sendQuickReply(key) {
             c.innerHTML = '<h3>📜 История выводов</h3>' + withdrawals.map(w=>`<div class="card"><b>${w.amount} ₽</b> | ${w.status} | ${w.created_at?.split('T')[0]||''}</div>`).join('');
         } catch(e){c.innerHTML='<div class="empty-state">Ошибка</div>';}
     }
+
+    async function loadSellersModeration(c) {
+    c.innerHTML = '<div>Загрузка...</div>';
+    try {
+        const res = await fetch(`${BASE_URL}/admin/pending-sellers`);
+        const data = await res.json();
+        const sellers = data.sellers || [];
+        
+        if (!sellers.length) {
+            c.innerHTML = '<h3>🏪 Заявки продавцов</h3><div class="empty-state">Нет заявок</div>';
+            return;
+        }
+        
+        c.innerHTML = '<h3>🏪 Заявки продавцов (' + sellers.length + ')</h3>' + sellers.map(s => `
+            <div class="card" style="margin-bottom:8px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                        <b>${s.shop_name}</b>
+                        <div style="color:var(--text2);font-size:12px;">ID: ${s.user_id} | ${s.created_at?.split('T')[0] || ''}</div>
+                        <p style="color:var(--text2);font-size:12px;">${s.shop_description || ''}</p>
+                    </div>
+                    <div style="display:flex;gap:4px;">
+                        <button class="btn btn-small" style="background:var(--success);color:#fff;" onclick="approveSeller(${s.id})">✅ Одобрить</button>
+                        <button class="btn btn-small btn-danger" onclick="rejectSeller(${s.id})">❌ Отклонить</button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    } catch(e) {
+        c.innerHTML = '<h3>🏪 Заявки продавцов</h3><div class="empty-state">Ошибка загрузки</div>';
+    }
+}
+
+async function approveSeller(id) {
+    await fetch(`${BASE_URL}/admin/approve-seller`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({seller_id: id})
+    });
+    showToast('✅ Продавец одобрен!');
+    openAdminSection('sellers_moderation');
+}
+
+async function rejectSeller(id) {
+    if (!confirm('Отклонить заявку?')) return;
+    await fetch(`${BASE_URL}/admin/reject-seller`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({seller_id: id})
+    });
+    showToast('❌ Заявка отклонена');
+    openAdminSection('sellers_moderation');
+}
     
     function nav(p,el) { document.querySelectorAll('.page').forEach(x=>x.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active')); document.getElementById(p).classList.add('active'); if(el) el.classList.add('active'); }
     document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',function(e){if(e.target===this)this.classList.remove('active');}));
