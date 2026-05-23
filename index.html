@@ -460,7 +460,7 @@
 
 <script>
     const tg = window.Telegram.WebApp;
-    const BASE_URL = 'https://sixty-tools-search.loca.lt';
+    const BASE_URL = 'npx localtunnel --port 8080';
 
     const LEVELS = {
         'newbie': {name:'🌱 Новичок', min_xp:0, discount:0, cashback:1, next_xp:1000},
@@ -1573,23 +1573,25 @@ async function sendQuickReply(key) {
     let sellerData = null;
     let userRole = 'buyer';
     
-    async function loadSellerData() {
-        const uid = tg.initDataUnsafe.user?.id || 0;
-        try {
-            const res = await fetch(`${BASE_URL}/seller/${uid}`);
-            const data = await res.json();
-            if (data.seller) {
-                sellerData = data.seller;
-                userRole = 'seller';
-                updateSellerUI();
-                const sellerNav = document.getElementById('seller-nav');
-                if (sellerNav) sellerNav.style.display = 'flex';
-            } else {
-                sellerData = null;
-                userRole = 'buyer';
-            }
-        } catch(e) {}
-    }
+async function loadSellerData() {
+    const uid = tg.initDataUnsafe.user?.id || 0;
+    try {
+        const res = await fetch(`${BASE_URL}/seller/${uid}`);
+        const data = await res.json();
+        if (data.seller) {
+            sellerData = data.seller;
+            userRole = 'seller';
+            updateSellerUI();
+            const sellerNav = document.getElementById('seller-nav');
+            if (sellerNav) sellerNav.style.display = 'flex';
+        } else {
+            sellerData = null;
+            userRole = 'buyer';
+            const sellerNav = document.getElementById('seller-nav');
+            if (sellerNav) sellerNav.style.display = 'none';
+        }
+    } catch(e) {}
+}
     
     function updateSellerUI() {
         if (!sellerData) return;
@@ -1627,24 +1629,25 @@ async function sendQuickReply(key) {
         document.getElementById('register-seller-modal').style.display = 'flex';
     }
     
-    async function registerSeller() {
-        const name = document.getElementById('reg-shop-name')?.value?.trim();
-        const desc = document.getElementById('reg-shop-desc')?.value?.trim();
-        if (!name) { tg.showAlert('Введите название магазина'); return; }
-        try {
-            const res = await fetch(`${BASE_URL}/register-seller`, {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({user_id: tg.initDataUnsafe.user?.id || 0, shop_name: name, shop_description: desc})
-            });
-            const data = await res.json();
-            if (data.status === 'ok') {
-                closeModal('register-seller-modal');
-                tg.showAlert('✅ Магазин создан!');
-                await loadSellerData();
-                nav('seller');
-            } else { tg.showAlert('❌ ' + (data.message || 'Ошибка')); }
-        } catch(e) { tg.showAlert('❌ Ошибка регистрации'); }
-    }
+async function registerSeller() {
+    const name = document.getElementById('reg-shop-name')?.value?.trim();
+    const desc = document.getElementById('reg-shop-desc')?.value?.trim();
+    if (!name) { tg.showAlert('Введите название магазина'); return; }
+    try {
+        const res = await fetch(`${BASE_URL}/register-seller`, {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({user_id: tg.initDataUnsafe.user?.id || 0, shop_name: name, shop_description: desc})
+        });
+        const data = await res.json();
+        if (data.status === 'ok') {
+            closeModal('register-seller-modal');
+            tg.showAlert(data.message || '✅ Заявка отправлена на модерацию!');
+            // НЕ переходим в магазин — ждём одобрения
+        } else { 
+            tg.showAlert('❌ ' + (data.message || 'Ошибка')); 
+        }
+    } catch(e) { tg.showAlert('❌ Ошибка регистрации'); }
+}
     
     async function loadSellerProducts(c) {
         const uid = tg.initDataUnsafe.user?.id || 0;
