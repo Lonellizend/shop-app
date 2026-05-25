@@ -1688,19 +1688,40 @@ async function loadSellerData() {
     try {
         const res = await fetch(`${BASE_URL}/seller/${uid}`);
         const data = await res.json();
+        
+        const sellerNav = document.getElementById('seller-nav');
+        const becomeBtn = document.getElementById('become-seller-btn');
+        
         if (data.seller) {
+            // Активный продавец — показываем кнопку Магазин
             sellerData = data.seller;
             userRole = 'seller';
             updateSellerUI();
-            const sellerNav = document.getElementById('seller-nav');
             if (sellerNav) sellerNav.style.display = 'flex';
-        } else {
+            if (becomeBtn) becomeBtn.style.display = 'none'; // Скрываем "Стать продавцом"
+        } else if (data.message && data.message.includes('рассмотрении')) {
+            // Заявка на рассмотрении — не показываем магазин
             sellerData = null;
             userRole = 'buyer';
-            const sellerNav = document.getElementById('seller-nav');
             if (sellerNav) sellerNav.style.display = 'none';
+            // Меняем кнопку "Стать продавцом" на статус
+            if (becomeBtn) {
+                becomeBtn.innerHTML = '<span class="menu-icon">⏳</span><span class="menu-text" style="color:var(--text2);">Заявка на рассмотрении</span>';
+                becomeBtn.onclick = () => tg.showAlert('⏳ Ваша заявка на рассмотрении. Ожидайте подтверждения администратора.');
+            }
+        } else {
+            // Нет заявки — показываем "Стать продавцом"
+            sellerData = null;
+            userRole = 'buyer';
+            if (sellerNav) sellerNav.style.display = 'none';
+            if (becomeBtn) {
+                becomeBtn.innerHTML = '<span class="menu-icon">🏪</span><span class="menu-text">Стать продавцом</span><span class="menu-arrow">→</span>';
+                becomeBtn.onclick = () => showRegisterModal();
+            }
         }
-    } catch(e) {}
+    } catch(e) {
+        if (sellerNav) sellerNav.style.display = 'none';
+    }
 }
     
 function updateSellerUI() {
