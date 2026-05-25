@@ -1703,15 +1703,22 @@ async function loadSellerData() {
     } catch(e) {}
 }
     
-    function updateSellerUI() {
-        if (!sellerData) return;
-        document.getElementById('seller-shop-name').innerText = sellerData.shop_name || 'Мой магазин';
-        document.getElementById('seller-shop-desc').innerText = sellerData.shop_description || '';
-        document.getElementById('seller-balance').innerText = (sellerData.balance || 0) + ' ₽';
-        document.getElementById('seller-products-count').innerText = sellerData.total_sales || 0;
-        document.getElementById('seller-sales').innerText = sellerData.total_sales || 0;
+function updateSellerUI() {
+    if (!sellerData) return;
+    document.getElementById('seller-shop-name').innerText = sellerData.shop_name || 'Мой магазин';
+    document.getElementById('seller-shop-desc').innerText = sellerData.shop_description || '';
+    document.getElementById('seller-balance').innerText = (sellerData.balance || 0) + ' ₽';
+    
+    // Загружаем актуальные данные с сервера
+    const uid = tg.initDataUnsafe.user?.id || 0;
+    fetch(`${BASE_URL}/seller/${uid}/products`).then(r=>r.json()).then(d=>{
+        document.getElementById('seller-products-count').innerText = d.products?.length || 0;
+    });
+    fetch(`${BASE_URL}/seller/${uid}/orders`).then(r=>r.json()).then(d=>{
+        document.getElementById('seller-sales').innerText = d.orders?.length || 0;
         document.getElementById('seller-rating').innerText = '⭐ ' + (sellerData.rating || 0).toFixed(1);
-    }
+    });
+}
     
     function openSellerSection(s) {
         document.getElementById('seller-main').style.display = 'none';
@@ -1792,17 +1799,58 @@ async function registerSeller() {
         showToast('🗑 Удалено'); openSellerSection('products');
     }
     
-    async function loadSellerOrders(c) {
-        const uid = tg.initDataUnsafe.user?.id || 0;
-        c.innerHTML = '<div>Загрузка...</div>';
-        try {
-            const res = await fetch(`${BASE_URL}/seller/${uid}/orders`);
-            const data = await res.json();
-            const orders = data.orders || [];
-            if (!orders.length) { c.innerHTML = '<div class="empty-state">Нет заказов</div>'; return; }
-            c.innerHTML = '<h3>📋 Заказы</h3>' + orders.map(o => `<div class="card"><b>#${o.id}</b> | ${o.status}<br>💰 ${o.total_amount} ₽</div>`).join('');
-        } catch(e) { c.innerHTML = '<div class="empty-state">Ошибка</div>'; }
-    }
+async function loadSellerOrders(c) {
+    const uid = tg.initDataUnsafe.user?.id || 0;
+    c.innerHTML = '<div>Загрузка...</div>';
+    try {
+        const res = await fetch(`${BASE_URL}/seller/${uid}/orders`);
+        const data = await res.json();
+        const orders = data.orders || [];
+        if (!orders.length) { c.innerHTML = '<div class="empty-state">Нет заказов</div>'; return; }
+        
+        const statusNames = {
+            'pending':'⏳ Ожидает','paid':'✅ Оплачен','processing':'📦 Собирается',
+            'shipped':'🚚 Отправлен','delivered':'🎉 Доставлен','cancelled':'❌ Отменён'
+        };
+        
+        c.innerHTML = '<h3>📋 Заказы (' + orders.length + ')</h3>' + orders.map(o => {
+            const items = typeof o.items === 'string' ? JSON.parse(o.items||'[]') : (o.items||[]);
+            const sellerItems = items.filter(i => i.seller_id === sellerData?.id);
+            const totalEarned = sellerItems.reduce((s, i) => s + (i.price||0)*(i.qty||1), 0);
+            const commission = Math.round(totalEarned * (sellerData?.commission_rate || 10) / 100);
+            
+            return `
+            <div class="card" style="margin-bottom:8px;">
+                <div style="display:flex;justify-content:space-between;">
+                    <b>Заказ #${o.id}</b>
+                    <span style="color:var(--gold);">${statusNames[o.status] || o.status}</span>
+                </div>
+                <div style="color:var(--text2);font-size:13px;">
+                    📦 ${sellerItems.map(i => `${i.name} x${i.qty}`).join(', ')}
+                    <br>💰 Заработано: <b>${totalEarned - commission} ₽</b>
+                    <br>💸 Комиссия: ${commission} ₽ (${sellerData?.commission_rate || 10}%)
+                    <br>📅 ${o.created_at?.split('T')[0] || ''}
+                </div>
+                <div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap;">
+                    <button class="btn btn-small" onclick="updateOrderStatus(${o.id},'processing',${sellerData?.id})">📦 Собирается</button>
+                    <button class="btn btn-small" onclick="updateOrderStatus(${o.id},'shipped',${sellerData?.id})">🚚 Отправлен</button>
+                    <button class="btn btn-small" onclick="updateOrderStatus(${o.id},'delivered',${sellerData?.id})">🎉 Доставлен</button>
+                </div>
+            </div>`;
+        }).join('');
+    } catch(e) { c.innerHTML = '<div class="empty-state">Ошибка загрузки</div>'; }
+}
+
+async function updateOrderStatus(oid, status, sellerId = null) {
+    const body = {action:'update_order_status', order_id: oid, status};
+    if (sellerId) body.seller_id = sellerId;
+    await fetch(`${BASE_URL}/admin_action`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(body)
+    });
+    showToast('✅ Обновлено!');
+    loadSellerOrders(document.getElementById('seller-content'));
+}
     
     function renderWithdraw(c) {
         c.innerHTML = `<h3>💸 Вывести средства</h3><div class="card"><p style="color:var(--text2);">Доступно: <b style="color:var(--gold);">${sellerData?.balance||0} ₽</b></p><input class="input" placeholder="Сумма" type="number" id="withdraw-amount"><select class="input" id="withdraw-method"><option value="card">💳 На карту</option><option value="sbp">🔵 СБП</option><option value="phone">📱 По номеру телефона</option></select><button class="btn" onclick="submitWithdraw()">💸 Вывести</button></div>`;
