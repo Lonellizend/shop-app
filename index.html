@@ -969,11 +969,36 @@ function openCheckoutModal() {
     
     document.getElementById('checkout-total').innerText = final + ' ₽';
     document.getElementById('checkout-balance').innerText = `💰 Ваш баланс: ${state.user?.balance||0} ₽`;
+
+    // Показываем кэшбэк
+const cashbackAvailable = state.user?.cashback || 0;
+const level = LEVELS[state.user?.level] || LEVELS.newbie;
+const cashbackRate = level.cashback;
+const willEarn = Math.round(final * cashbackRate / 100);
+
+document.getElementById('checkout-cashback').innerHTML = `
+    💎 Доступно кэшбэка: <b style="color:var(--gold);">${cashbackAvailable} ₽</b> | 
+    🎯 С этого заказа: <b style="color:var(--success);">+${willEarn} ₽</b> (${cashbackRate}%)
+    <br><button class="btn btn-small" onclick="applyCashback(${cashbackAvailable}, ${final})" style="margin-top:4px;">
+        💰 Списать кэшбэк (${Math.min(cashbackAvailable, final)} ₽)
+    </button>
+`;
     
     // Обновляем прогресс-бар
     updateProgressBar(0);
     if (state.deliveryMethod) updateProgressBar(1);
     if (state.paymentMethod && state.deliveryMethod) updateProgressBar(2);
+
+function applyCashback(available, total) {
+    if (available <= 0) return;
+    const toApply = Math.min(available, total);
+    state.cashbackApplied = toApply;
+    const newTotal = total - toApply;
+    document.getElementById('checkout-total').innerText = newTotal + ' ₽';
+    document.getElementById('checkout-cashback').innerHTML += 
+        '<br><span style="color:var(--success);">✅ Кэшбэк ' + toApply + ' ₽ применён!</span>';
+    tg.showAlert('✅ Кэшбэк ' + toApply + ' ₽ будет списан при оформлении!');
+}
     
     // Карточки доставки
     const deliveryOptions = [
@@ -1404,7 +1429,92 @@ async function submitProduct() {
     }
     function renderUsersList(users) { document.getElementById('users-list').innerHTML=users.length?users.slice(0,30).map(u=>`<div class="card" style="cursor:pointer;" onclick="openUserProfile(${u.user_id})"><b>@${u.username||'нет'}</b> (ID:${u.user_id}) | 💰 ${u.balance||0} ₽ | 🛍 ${u.total_spent||0} ₽</div>`).join(''):'<div style="color:var(--text2);">Не найдены</div>'; }
     function filterUsers(q) { renderUsersList(state.allUsers.filter(u=>String(u.user_id).includes(q)||(u.username||'').toLowerCase().includes(q))); }
-    function openUserProfile(uid) { const u=state.allUsers.find(x=>x.user_id===uid); if(!u) return; const c=document.getElementById('admin-content'); c.innerHTML=`<div class="section-back" onclick="openAdminSection('users')">← Назад</div><div class="card"><h2>@${u.username||'нет'}</h2><p>ID: ${u.user_id} | Уровень: ${u.level||'Новичок'}</p></div><div class="card"><h4>💰 Баланс: ${u.balance||0} ₽</h4><input class="input" type="number" id="ub-balance" value="${u.balance||0}"><button class="btn btn-small" onclick="updateBalance(${uid})">💾 Сохранить</button></div><div class="card"><h4>👥 Рефералы</h4><p>Перешло: ${u.invited_count||0} | Купили: ${u.invited_bought_count||0}</p></div>`; }
+function openUserProfile(uid) {
+    const u = state.allUsers.find(x => x.user_id === uid);
+    if (!u) return;
+    const c = document.getElementById('admin-content');
+    
+    // Собираем расширенную информацию
+    const totalSpent = u.total_spent || 0;
+    const ordersCount = u.total_orders || 0;
+    const avgCheck = ordersCount > 0 ? Math.round(totalSpent / ordersCount) : 0;
+    const refIncome = u.balance || 0;
+    const refCount = u.invited_count || 0;
+    const refConversion = refCount > 0 ? Math.round((u.invited_bought_count || 0) / refCount * 100) : 0;
+    
+    c.innerHTML = `
+        <div class="section-back" onclick="openAdminSection('users')">← Назад</div>
+        
+        <div class="card" style="text-align:center;">
+            <div style="font-size:64px;">👤</div>
+            <h2>@${u.username || 'нет'}</h2>
+            <p style="color:var(--text2);">ID: ${u.user_id}</p>
+            <span class="tag tag-gold">${u.level || 'Новичок'}</span>
+            ${u.is_premium ? '<span class="tag tag-green">💎 Premium</span>' : ''}
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">${totalSpent} ₽</div>
+                <div class="stat-label">💰 Потрачено всего</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">${ordersCount}</div>
+                <div class="stat-label">🛍 Заказов</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">${avgCheck} ₽</div>
+                <div class="stat-label">📊 Средний чек</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">${u.xp || 0} XP</div>
+                <div class="stat-label">⭐ Опыт</div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h4>💰 Изменить баланс</h4>
+            <div style="display:flex;gap:8px;">
+                <input class="input" type="number" id="ub-balance" value="${u.balance || 0}">
+                <button class="btn btn-small" onclick="updateBalance(${uid})">💾 Сохранить</button>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h4>👥 Реферальная статистика</h4>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value">${refCount}</div>
+                    <div class="stat-label">👥 Приглашено</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${u.invited_bought_count || 0}</div>
+                    <div class="stat-label">🛍 Купили</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${refConversion}%</div>
+                    <div class="stat-label">📈 Конверсия</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${refIncome} ₽</div>
+                    <div class="stat-label">💰 Доход от рефералов</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h4>📋 Детальная информация</h4>
+            <p style="color:var(--text2);">
+                📅 Регистрация: ${u.join_date || 'неизвестно'}<br>
+                💎 Кэшбэк: ${u.cashback || 0} ₽<br>
+                ⭐ Premium: ${u.is_premium ? 'Да (до ' + (u.premium_until || '?') + ')' : 'Нет'}<br>
+                🏪 Продавец: ${u.is_seller ? 'Да' : 'Нет'}<br>
+                📱 ID: ${u.user_id}
+            </p>
+        </div>
+    `;
+}
+    
     async function updateBalance(uid) { const b=parseInt(document.getElementById('ub-balance')?.value||0); await fetch(`${BASE_URL}/admin_action`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'update_balance',user_id:uid,balance:b})}); showToast('✅ Обновлено!'); }
 
     // Заказы в админке — РУССКИЕ кнопки
