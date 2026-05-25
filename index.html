@@ -1806,13 +1806,52 @@ async function registerSeller() {
         c.innerHTML = `<h3>➕ Добавить товар</h3><input class="input" placeholder="Название" id="ap-name"><input class="input" placeholder="Цена (₽)" type="number" id="ap-price"><textarea class="input" placeholder="Описание" id="ap-desc"></textarea><input class="input" placeholder="Количество" type="number" id="ap-qty" value="10"><input type="file" class="input" id="ap-files" multiple accept="image/*,video/*" onchange="previewFiles(this.files)"><div id="ap-preview" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"></div><button class="btn" onclick="submitSellerProduct()">💾 Сохранить</button>`;
     }
     
-    async function submitSellerProduct() {
-        const name = document.getElementById('ap-name')?.value?.trim();
-        const price = parseInt(document.getElementById('ap-price')?.value || 0);
-        if (!name || !price) { showToast('Заполните название и цену'); return; }
-        const data = {action:'save_product',name,price,description:document.getElementById('ap-desc')?.value||'',category:'Premium',quantity:parseInt(document.getElementById('ap-qty')?.value||10),images:(state.adminFiles||[]).map(f=>f.data),seller_id:sellerData?.id};
-        try { await fetch(`${BASE_URL}/admin_action`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); showToast('✅ Товар добавлен!'); openSellerSection('products'); } catch(e) { showToast('Ошибка'); }
+async function submitSellerProduct() {
+    const name = document.getElementById('ap-name')?.value?.trim();
+    const price = parseInt(document.getElementById('ap-price')?.value || 0);
+    if (!name || !price) { showToast('Заполните название и цену'); return; }
+    
+    // Получаем seller_id напрямую с сервера
+    const uid = tg.initDataUnsafe.user?.id || 0;
+    let sellerId = sellerData?.id;
+    
+    if (!sellerId) {
+        const sellerRes = await fetch(`${BASE_URL}/seller/${uid}`);
+        const sellerInfo = await sellerRes.json();
+        if (sellerInfo.seller) {
+            sellerId = sellerInfo.seller.id;
+        } else {
+            showToast('❌ Вы не авторизованы как продавец');
+            return;
+        }
     }
+    
+    const data = {
+        action: 'save_product',
+        name, price,
+        description: document.getElementById('ap-desc')?.value || '',
+        category: 'Premium',
+        quantity: parseInt(document.getElementById('ap-qty')?.value || 10),
+        images: (state.adminFiles || []).map(f => f.data),
+        seller_id: sellerId
+    };
+    
+    try {
+        const res = await fetch(`${BASE_URL}/admin_action`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        if (result.status === 'ok') {
+            showToast('✅ Товар добавлен!');
+            openSellerSection('products');
+            await loadData(); // Обновляем товары в шопе
+        } else {
+            showToast('❌ ' + (result.message || 'Ошибка'));
+        }
+    } catch(e) { showToast('Ошибка'); }
+}
     
     async function deleteSellerProduct(id) {
         if (!confirm('Удалить товар?')) return;
