@@ -220,6 +220,12 @@
             <div>🔥 <b>FLASH SALE!</b> Скидка <span id="flash-discount">30</span>%</div>
             <div class="countdown" id="flash-countdown"></div>
         </div>
+        <div id="promo-banner" style="background:linear-gradient(135deg, #1a1a2e, #16213e);border-radius:16px;padding:20px;margin-bottom:16px;text-align:center;position:relative;overflow:hidden;">
+            <div style="position:absolute;top:-20px;right:-20px;font-size:80px;opacity:0.1;">🛍️</div>
+            <h3 style="color:var(--gold);position:relative;">💎 Премиум-подписка</h3>
+            <p style="color:#fff;font-size:13px;position:relative;">Скидка 15%, бесплатная доставка, удвоенный кэшбэк</p>
+            <button class="btn btn-small" onclick="nav('profile', document.querySelector('.nav-item[onclick*=\"profile\"]'));openProfileSection('subscription');" style="margin-top:8px;position:relative;">Подробнее</button>
+        </div>
         <div class="search-container">
             <input class="input" placeholder="🔍 Поиск товаров..." id="search-input" oninput="handleSearch(this.value)" autocomplete="off">
             <div class="search-suggestions" id="search-suggestions"></div>
@@ -279,6 +285,7 @@
             
             <div class="menu-list">
                 <div class="menu-item" onclick="openProfileSection('orders')"><span class="menu-icon">📋</span><span class="menu-text">Мои заказы</span><span class="menu-arrow">→</span></div>
+                <div class="menu-item" onclick="openProfileSection('notifications')"><span class="menu-icon">🔔</span><span class="menu-text">Уведомления</span><span class="menu-arrow">→</span></div>
                 <div class="menu-item" onclick="openProfileSection('favorites')"><span class="menu-icon">❤️</span><span class="menu-text">Избранное</span><span class="menu-arrow">→</span></div>
                 <div class="menu-item" onclick="openProfileSection('subscription')"><span class="menu-icon">💎</span><span class="menu-text">Подписка</span><span class="menu-arrow">→</span></div>
                 <div class="menu-item" onclick="openProfileSection('referral')"><span class="menu-icon">👥</span><span class="menu-text">Реферальная система</span><span class="menu-arrow">→</span></div>
@@ -288,10 +295,7 @@
                 <div class="menu-item" onclick="showRegisterModal()" id="become-seller-btn">
     <span class="menu-icon">🏪</span><span class="menu-text">Стать продавцом</span><span class="menu-arrow">→</span>
                 </div>
-                <div class="menu-item" onclick="showDoc('terms-modal')"><span class="menu-icon">📋</span><span class="menu-text">Пользовательское соглашение</span><span class="menu-arrow">→</span></div>
-                <div class="menu-item" onclick="showDoc('privacy-modal')"><span class="menu-icon">🔒</span><span class="menu-text">Политика конфиденциальности</span><span class="menu-arrow">→</span></div>
-                <div class="menu-item" onclick="showDoc('refund-modal')"><span class="menu-icon">🔄</span><span class="menu-text">Политика возврата</span><span class="menu-arrow">→</span></div>
-                <div class="menu-item" onclick="showDoc('seller-agreement-modal')"><span class="menu-icon">🏪</span><span class="menu-text">Договор для продавцов</span><span class="menu-arrow">→</span></div>
+                <div class="menu-item" onclick="openProfileSection('documents')"><span class="menu-icon">📄</span><span class="menu-text">Документы</span><span class="menu-arrow">→</span></div>
             </div>
         </div>
         <div id="profile-section" style="display:none;">
@@ -305,6 +309,7 @@
         <div id="admin-main">
             <h1>⚙️ Админ-Панель</h1>
             <div class="menu-list">
+                <div class="menu-item" onclick="openAdminSection('dashboard')"><span class="menu-icon">📊</span><span class="menu-text">Дашборд</span><span class="menu-arrow">→</span></div>
                 <div class="menu-item" onclick="openAdminSection('add_product')"><span class="menu-icon">➕</span><span class="menu-text">Добавить товар</span><span class="menu-arrow">→</span></div>
                 <div class="menu-item" onclick="openAdminSection('products')"><span class="menu-icon">📦</span><span class="menu-text">Список товаров</span><span class="menu-arrow">→</span></div>
                 <div class="menu-item" onclick="openAdminSection('promos')"><span class="menu-icon">🎫</span><span class="menu-text">Промокоды</span><span class="menu-arrow">→</span></div>
@@ -338,6 +343,7 @@
                 <div class="stat-card"><div class="stat-value" id="seller-rating">⭐ 0</div><div class="stat-label">Рейтинг</div></div>
             </div>
             <div class="menu-list">
+                <div class="menu-item" onclick="openSellerSection('dashboard')"><span class="menu-icon">📊</span><span class="menu-text">Дашборд</span><span class="menu-arrow">→</span></div>
                 <div class="menu-item" onclick="openSellerSection('products')"><span class="menu-icon">📦</span><span class="menu-text">Мои товары</span><span class="menu-arrow">→</span></div>
                 <div class="menu-item" onclick="openSellerSection('add_product')"><span class="menu-icon">➕</span><span class="menu-text">Добавить товар</span><span class="menu-arrow">→</span></div>
                 <div class="menu-item" onclick="openSellerSection('orders')"><span class="menu-icon">📋</span><span class="menu-text">Заказы</span><span class="menu-arrow">→</span></div>
@@ -387,6 +393,7 @@
                 <span id="fav-btn-text">❤️ В избранное</span>
             </button>
             <button class="btn btn-outline" id="share-product-btn" style="margin-top:8px;">📤 Поделиться</button>
+            <div id="product-reviews" style="margin-top:12px;"></div>
         </div>
     </div>
 
@@ -791,7 +798,8 @@
         adminFiles: [], allUsers: [], editingProductId: null,
         flashSale: { active: false, discount: 30, endTime: null },
         activeOrders: [], ordersHistory: [],
-        onboardingShown: localStorage.getItem('onboarding') === 'true'
+        onboardingShown: localStorage.getItem('onboarding') === 'true',
+        notifications: []
     };
 
     // ============ УТИЛИТЫ ============
@@ -883,6 +891,59 @@ if (!localStorage.getItem('cookies_accepted')) {
     loadFavoritesFromStorage();
     updateCartUI();
     renderCategories();
+    loadNotifications();
+}
+
+    async function loadNotifications() {
+    const uid = tg.initDataUnsafe.user?.id || 0;
+    try {
+        const res = await fetch(`${BASE_URL}/notifications/${uid}`);
+        const notifications = await res.json();
+        state.notifications = notifications || [];
+        updateNotificationBadge();
+    } catch(e) {
+        state.notifications = [];
+    }
+}
+
+function updateNotificationBadge() {
+    const unread = state.notifications.filter(n => !n.is_read).length;
+    const badge = document.getElementById('notif-badge');
+    const profileNav = document.querySelector('.nav-item[onclick*="profile"]');
+    
+    if (unread > 0) {
+        if (!badge) {
+            const b = document.createElement('div');
+            b.id = 'notif-badge';
+            b.className = 'nav-badge';
+            b.innerText = unread > 9 ? '9+' : unread;
+            profileNav.appendChild(b);
+        } else {
+            badge.innerText = unread > 9 ? '9+' : unread;
+            badge.style.display = 'flex';
+        }
+    } else {
+        if (badge) badge.style.display = 'none';
+    }
+}
+
+function renderNotifications(c) {
+    if (!state.notifications || !state.notifications.length) {
+        c.innerHTML = '<div class="empty-state"><div class="empty-icon">🔔</div><p>Уведомлений пока нет</p></div>';
+        return;
+    }
+    c.innerHTML = '<h3>🔔 Уведомления</h3>' + state.notifications.map(n => `
+        <div class="card" style="opacity:${n.is_read ? '0.6' : '1'};border-left:4px solid ${n.is_read ? 'var(--border)' : 'var(--gold)'};">
+            <div style="display:flex;justify-content:space-between;align-items:start;">
+                <div>
+                    <div style="font-weight:600;font-size:14px;">${n.title || ''}</div>
+                    <div style="color:var(--text2);font-size:12px;">${n.message || ''}</div>
+                </div>
+                ${!n.is_read ? '<span class="tag" style="background:var(--gold);color:#000;">Новое</span>' : ''}
+            </div>
+            <div style="font-size:10px;color:var(--text2);margin-top:4px;">${n.created_at?.split('T')[0] || ''}</div>
+        </div>
+    `).join('');
 }
 
 async function loadData() {
@@ -1101,6 +1162,8 @@ function openProduct(id) {
     document.getElementById('modal-badge').innerHTML = p.badge ? `<span class="tag tag-gold">${p.badge}</span>` : '';
     document.getElementById('modal-qty').innerText = '1';
     document.getElementById('modal-stock').innerText = `В наличии: ${p.quantity || 0} шт.`;
+    // Загрузка отзывов
+loadProductReviews(p.id);
     document.getElementById('fav-btn-text').innerText = state.favorites.includes(p.id) ? '❤️ В избранном' : '🤍 В избранное';
     
     // Кнопка "Поделиться"
@@ -1109,6 +1172,32 @@ function openProduct(id) {
     
     document.getElementById('product-modal').classList.add('active');
     document.getElementById('product-modal').style.display = 'flex';
+}
+
+    async function loadProductReviews(productId) {
+    const container = document.getElementById('product-reviews');
+    if (!container) return;
+    try {
+        const res = await fetch(`${BASE_URL}/reviews/${productId}`);
+        const data = await res.json();
+        const reviews = data.reviews || [];
+        const avg = reviews.length > 0 ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1) : 0;
+        
+        container.innerHTML = `
+            <h4 style="margin-top:16px;">⭐ Отзывы (${reviews.length}) ${avg > 0 ? '— ' + avg : ''}</h4>
+            ${reviews.length > 0 ? reviews.map(r => `
+                <div class="card" style="padding:12px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-weight:600;">${'⭐'.repeat(r.rating)}</span>
+                        <span style="font-size:11px;color:var(--text2);">${r.created_at?.split('T')[0] || ''}</span>
+                    </div>
+                    ${r.text ? `<p style="color:var(--text2);font-size:13px;margin-top:4px;">${r.text}</p>` : ''}
+                </div>
+            `).join('') : '<p style="color:var(--text2);font-size:13px;">Пока нет отзывов. Будьте первым!</p>'}
+        `;
+    } catch(e) {
+        container.innerHTML = '';
+    }
 }
 
 function updateProductSlider(p) {
@@ -1438,6 +1527,8 @@ async function confirmCheckout() {
         else if (s==='chat') renderChat(c,uid);
         else if (s==='faq') renderFAQ(c);
         else if (s==='topup') renderTopup(c);
+        else if (s==='documents') renderDocuments(c);
+        else if (s==='notifications') renderNotifications(c);
     }
 
     function closeProfileSection() { document.getElementById('profile-main').style.display='block'; document.getElementById('profile-section').style.display='none'; }
@@ -1450,8 +1541,24 @@ function showOrdersHistory(c) {
             <b>#${o.id}</b> — ${o.total_amount} ₽
             <br><span style="color:var(--text2);">${items.map(i=>`${i.name} x${i.qty}`).join(', ')}</span>
             <br><button class="btn btn-small" onclick="downloadReceipt(${o.id})" style="margin-top:4px;">🧾 Чек</button>
+            ${o.status === 'delivered' ? `<button class="btn btn-small btn-outline" onclick="requestRefund(${o.id})" style="margin-top:4px;color:var(--danger);border-color:var(--danger);">🔄 Оформить возврат</button>` : ''}
         </div>`;
     }).join('');
+}
+
+    function requestRefund(orderId) {
+    tg.showPopup({
+        title: '🔄 Возврат товара',
+        message: `Вы хотите оформить возврат по заказу #${orderId}?\n\nНапишите причину в чат поддержки, и мы поможем оформить возврат.`,
+        buttons: [
+            {type: 'default', text: '💬 Чат поддержки'},
+            {type: 'cancel', text: 'Отмена'}
+        ]
+    }, (btn) => {
+        if (btn === 'default') {
+            openProfileSection('chat');
+        }
+    });
 }
 
 async function downloadReceipt(orderId) {
@@ -1482,49 +1589,207 @@ async function downloadReceipt(orderId) {
 
 function renderFavorites(c) {
     const fp = state.products.filter(p => state.favorites.includes(p.id) && (p.quantity || 0) > 0);
-    c.innerHTML = fp.length ? '...' : '<div class="empty-state">Нет избранного</div>';
+    if (!fp.length) { 
+        c.innerHTML = '<div class="empty-state"><div class="empty-icon">❤️</div><p>В избранном пока ничего нет</p><p style="color:var(--text2);font-size:13px;">Нажимайте 🤍 на карточках товаров, чтобы добавить</p></div>'; 
+        return; 
+    }
+    c.innerHTML = '<h3>❤️ Избранное (' + fp.length + ')</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' + fp.map(p => {
+        let thumb = 'https://via.placeholder.com/300?text=📷';
+        if (p._images && p._images.length > 0) thumb = p._images[0];
+        else if (p.image_url) {
+            try {
+                const parsed = typeof p.image_url === 'string' ? JSON.parse(p.image_url) : p.image_url;
+                if (Array.isArray(parsed) && parsed.length > 0) thumb = parsed[0];
+            } catch(e) {}
+        }
+        return `
+        <div class="product-card" style="position:relative;" onclick="openProduct(${p.id})">
+            <img src="${thumb}" alt="${p.name}" style="width:100%;aspect-ratio:1/1;object-fit:cover;" onerror="this.src='https://via.placeholder.com/300'">
+            <button class="wishlist-btn active" onclick="event.stopPropagation();quickToggleFav(${p.id})" style="position:absolute;top:8px;right:8px;">❤️</button>
+            <div class="product-info">
+                <div class="product-price">${p.discount_price || p.price} ₽</div>
+                <div class="product-name">${p.name}</div>
+            </div>
+        </div>`;
+    }).join('') + '</div>';
 }
 
-    function renderSubscription(c) {
-        c.innerHTML = `
-            <h3>💎 Подписка Kodama Shop</h3>
-            <div class="card"><h4>🟡 Basic — 299 ₽/мес</h4>
-                <ul style="color:var(--text2);padding-left:20px;">
-                    <li>✅ Скидка 5% на все товары</li>
-                    <li>✅ Ранний доступ к новинкам (за 24 часа)</li>
-                    <li>✅ Бесплатная доставка при заказе от 3000 ₽</li>
-                    <li>✅ Персональный менеджер</li>
-                </ul>
-                <button class="btn btn-small" onclick="subscribePlan('basic')">Подписаться за 299 ₽</button>
+function renderSubscription(c) {
+    c.innerHTML = `
+        <h3>💎 Подписка Kodama Shop</h3>
+        
+        <div class="card" style="text-align:center;background:linear-gradient(135deg, rgba(212,175,55,0.15) 0%, transparent 100%);">
+            <div style="font-size:48px;margin-bottom:8px;">💎</div>
+            <h4>Получите максимум выгоды</h4>
+            <p style="color:var(--text2);font-size:13px;">Подписка открывает доступ к скидкам, бесплатной доставке и эксклюзивным товарам.</p>
+        </div>
+        
+        <div class="card" style="border:2px solid var(--border);">
+            <div style="display:flex;justify-content:space-between;align-items:start;">
+                <div>
+                    <h4>🟡 Basic</h4>
+                    <div style="font-size:24px;font-weight:800;color:var(--gold);">299 ₽<span style="font-size:14px;color:var(--text2);">/мес</span></div>
+                </div>
+                <span class="tag">Базовый</span>
             </div>
-            <div class="card" style="border-color:var(--gold);"><h4>💎 Premium — 999 ₽/мес</h4>
-                <ul style="color:var(--text2);padding-left:20px;">
-                    <li>✅ Скидка 15% на все товары</li>
-                    <li>✅ Бесплатная доставка на любой заказ</li>
-                    <li>✅ Эксклюзивные товары только для Premium</li>
-                    <li>✅ Приоритетная поддержка 24/7</li>
-                    <li>✅ Подарок каждый месяц</li>
-                    <li>✅ Удвоенный кэшбэк</li>
-                </ul>
-                <button class="btn btn-small" onclick="subscribePlan('premium')">Подписаться за 999 ₽</button>
-            </div>`;
-    }
+            <div style="margin:12px 0;font-size:13px;color:var(--text2);line-height:1.8;">
+                ✅ Скидка <b>5%</b> на все товары<br>
+                ✅ Ранний доступ к новинкам (за 24 часа)<br>
+                ✅ Бесплатная доставка при заказе от 3 000 ₽<br>
+                ✅ Персональный менеджер в чате
+            </div>
+            <button class="btn btn-small btn-outline" onclick="subscribePlan('basic')" style="width:100%;">Выбрать Basic</button>
+        </div>
+        
+        <div class="card" style="border:2px solid var(--gold);background:linear-gradient(135deg, rgba(212,175,55,0.1) 0%, transparent 100%);position:relative;overflow:hidden;">
+            <div style="position:absolute;top:12px;right:-30px;background:var(--gold);color:#000;padding:4px 40px;font-size:10px;font-weight:700;transform:rotate(45deg);">TOP</div>
+            <div style="display:flex;justify-content:space-between;align-items:start;">
+                <div>
+                    <h4 style="color:var(--gold);">👑 Premium</h4>
+                    <div style="font-size:24px;font-weight:800;color:var(--gold);">999 ₽<span style="font-size:14px;color:var(--text2);">/мес</span></div>
+                </div>
+                <span class="tag tag-gold">Рекомендуем</span>
+            </div>
+            <div style="margin:12px 0;font-size:13px;color:var(--text2);line-height:1.8;">
+                ✅ Скидка <b>15%</b> на все товары<br>
+                ✅ <b>Бесплатная доставка</b> на любой заказ<br>
+                ✅ Эксклюзивные товары только для Premium<br>
+                ✅ Приоритетная поддержка <b>24/7</b><br>
+                ✅ <b>Подарок</b> каждый месяц<br>
+                ✅ <b>Удвоенный кэшбэк</b>
+            </div>
+            <button class="btn" onclick="subscribePlan('premium')" style="width:100%;">Выбрать Premium</button>
+        </div>
+        
+        <div class="card" style="background:var(--bg);">
+            <h4 style="margin-bottom:8px;">📊 Сравнение</h4>
+            <div style="overflow-x:auto;">
+                <table style="width:100%;font-size:11px;color:var(--text2);border-collapse:collapse;">
+                    <tr style="border-bottom:1px solid var(--border);">
+                        <td style="padding:8px;">Скидка</td>
+                        <td style="text-align:center;">0%</td>
+                        <td style="text-align:center;color:var(--gold);">5%</td>
+                        <td style="text-align:center;color:var(--gold);">15%</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid var(--border);">
+                        <td style="padding:8px;">Доставка</td>
+                        <td style="text-align:center;">—</td>
+                        <td style="text-align:center;">от 3 000 ₽</td>
+                        <td style="text-align:center;color:var(--success);">Бесплатно</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid var(--border);">
+                        <td style="padding:8px;">Кэшбэк</td>
+                        <td style="text-align:center;">×1</td>
+                        <td style="text-align:center;">×1</td>
+                        <td style="text-align:center;color:var(--success);">×2</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:8px;">Поддержка</td>
+                        <td style="text-align:center;">24ч</td>
+                        <td style="text-align:center;">24ч</td>
+                        <td style="text-align:center;color:var(--success);">Приоритет</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    `;
+}
 
     function subscribePlan(p) { tg.sendData(JSON.stringify({action:'subscribe',plan:p})); tg.showAlert('Заявка отправлена!'); }
 
-    function renderReferral(c,uid) {
-        const l = `https://t.me/KodamaShopBot?start=${uid}`;
-        c.innerHTML = `<div class="card"><h3>🔗 Ваша ссылка</h3><div style="background:var(--bg);padding:14px;border-radius:10px;word-break:break-all;">${l}</div><button class="btn btn-small" onclick="copyText('${l}')">📋 Копировать</button></div><div class="card"><h3>💰 10% от покупок друзей</h3><p style="color:var(--text2);">Друг купил на 5000₽ → вы получили 500₽ на баланс</p></div>`;
-    }
+function renderReferral(c, uid) {
+    const refLink = `https://t.me/KodamaShopBot?start=${uid}`;
+    c.innerHTML = `
+        <h3>👥 Реферальная система</h3>
+        
+        <div class="card" style="text-align:center;border:2px solid var(--gold);">
+            <div style="font-size:48px;margin-bottom:8px;">💰</div>
+            <h4 style="color:var(--gold);">Зарабатывайте 10% с покупок друзей</h4>
+            <p style="color:var(--text2);font-size:13px;line-height:1.6;">
+                Приглашайте друзей по вашей уникальной ссылке. 
+                Когда друг совершит покупку — вы получите <b style="color:var(--gold);">10%</b> от суммы заказа на свой баланс.
+            </p>
+        </div>
+        
+        <div class="card">
+            <h4>🔗 Ваша персональная ссылка</h4>
+            <div style="background:var(--bg);padding:14px;border-radius:10px;word-break:break-all;font-size:13px;margin:8px 0;border:1px solid var(--border);">${refLink}</div>
+            <button class="btn btn-small" onclick="copyText('${refLink}')">📋 Копировать ссылку</button>
+            <button class="btn btn-small btn-outline" onclick="shareReferralLink('${refLink}')" style="margin-top:4px;">📤 Поделиться</button>
+        </div>
+        
+        <div class="card">
+            <h4>📊 Пример заработка</h4>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;margin-top:8px;">
+                <div style="padding:12px;background:var(--bg);border-radius:10px;">
+                    <div style="font-size:20px;">👤</div>
+                    <div style="font-size:11px;color:var(--text2);">1 друг</div>
+                    <div style="font-size:11px;color:var(--text2);">купил на 3 000 ₽</div>
+                    <div style="color:var(--gold);font-weight:700;margin-top:4px;">+300 ₽</div>
+                </div>
+                <div style="padding:12px;background:var(--bg);border-radius:10px;">
+                    <div style="font-size:20px;">👥</div>
+                    <div style="font-size:11px;color:var(--text2);">5 друзей</div>
+                    <div style="font-size:11px;color:var(--text2);">по 3 000 ₽</div>
+                    <div style="color:var(--gold);font-weight:700;margin-top:4px;">+1 500 ₽</div>
+                </div>
+                <div style="padding:12px;background:var(--bg);border-radius:10px;">
+                    <div style="font-size:20px;">👥👥</div>
+                    <div style="font-size:11px;color:var(--text2);">10 друзей</div>
+                    <div style="font-size:11px;color:var(--text2);">по 5 000 ₽</div>
+                    <div style="color:var(--gold);font-weight:700;margin-top:4px;">+5 000 ₽</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card" style="background:var(--bg);border-left:4px solid var(--blue);">
+            <p style="font-size:12px;color:var(--text2);line-height:1.5;">
+                💡 <b>Совет:</b> Отправьте ссылку друзьям в Telegram — бот сам покажет им магазин. Деньги зачисляются автоматически после каждой покупки.
+            </p>
+        </div>
+    `;
+}
+
+function shareReferralLink(link) {
+    tg.showAlert('📤 Отправьте другу:\n\n' + link);
+}
 
     function copyText(t) { navigator.clipboard.writeText(t).then(()=>showToast('✅ Скопировано!')); }
 
-    function renderAchievements(c) {
-        fetch(`${BASE_URL}/achievements/${tg.initDataUnsafe.user?.id||0}`).then(r=>r.json()).then(data => {
-            const ach = Object.keys(data).length ? data : ACHIEVEMENTS_INFO;
-            c.innerHTML = '<h3>🏆 Достижения</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' + Object.entries(ach).map(([id,a]) => `<div class="card" style="text-align:center;cursor:pointer;opacity:${a.unlocked?'1':'0.5'}" onclick="showAchievementInfo('${id}')"><div style="font-size:36px;">${a.icon}</div><div>${a.name}</div><div style="font-size:12px;">+${a.xp} XP</div>${a.unlocked?'<span class="tag tag-green">✅</span>':'<span class="tag">🔒</span>'}</div>`).join('') + '</div>';
-        }).catch(() => { c.innerHTML = '<div class="empty-state">Загрузка...</div>'; });
-    }
+function renderAchievements(c) {
+    fetch(`${BASE_URL}/achievements/${tg.initDataUnsafe.user?.id||0}`).then(r=>r.json()).then(data => {
+        const ach = Object.keys(data).length ? data : ACHIEVEMENTS_INFO;
+        const unlocked = Object.values(ach).filter(a => a.unlocked).length;
+        const total = Object.keys(ach).length;
+        const progress = Math.round((unlocked / total) * 100);
+        
+        c.innerHTML = `
+            <h3>🏆 Достижения</h3>
+            
+            <div class="card" style="text-align:center;background:linear-gradient(135deg, rgba(212,175,55,0.1) 0%, transparent 100%);">
+                <div style="font-size:36px;">🏆</div>
+                <div style="font-size:14px;color:var(--text2);">Разблокировано</div>
+                <div style="font-size:32px;font-weight:800;color:var(--gold);">${unlocked} <span style="font-size:16px;color:var(--text2);">/ ${total}</span></div>
+                <div class="level-bar" style="margin-top:8px;"><div class="level-fill" style="width:${progress}%;background:linear-gradient(90deg, var(--gold), var(--success));"></div></div>
+                <div style="font-size:11px;color:var(--text2);margin-top:4px;">Прогресс: ${progress}%</div>
+            </div>
+            
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;">
+                ${Object.entries(ach).map(([id, a]) => `
+                    <div class="card" style="text-align:center;cursor:pointer;opacity:${a.unlocked ? '1' : '0.6'};transition:0.2s;${a.unlocked ? 'border-color:var(--gold);' : ''}" onclick="showAchievementInfo('${id}')">
+                        <div style="font-size:36px;${a.unlocked ? '' : 'filter:grayscale(100%);'}">${a.icon}</div>
+                        <div style="font-weight:600;font-size:13px;">${a.name}</div>
+                        <div style="font-size:11px;color:var(--text2);margin:4px 0;">${a.desc}</div>
+                        <div style="font-size:12px;color:var(--gold);">+${a.xp} XP</div>
+                        ${a.unlocked 
+                            ? '<span class="tag tag-green" style="margin-top:4px;">✅ Получено</span>' 
+                            : '<span class="tag" style="margin-top:4px;opacity:0.5;">🔒 Закрыто</span>'}
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }).catch(() => { c.innerHTML = '<div class="empty-state">Загрузка...</div>'; });
+}
 
     function showAchievementInfo(id) {
         const a = ACHIEVEMENTS_INFO[id];
@@ -1532,14 +1797,135 @@ function renderFavorites(c) {
         tg.showPopup({title: a.icon + ' ' + a.name, message: `📝 ${a.desc}\n⭐ Награда: +${a.xp} XP`, buttons: [{type:'ok', text:'Понятно'}]});
     }
 
-    function renderFAQ(c) {
-        c.innerHTML = `<h3>❓ FAQ</h3>
-            <div class="card"><h4>Как оформить заказ?</h4><p style="color:var(--text2);">Корзина → Оформить → Доставка → Оплата</p></div>
-            <div class="card"><h4>Способы оплаты</h4><p style="color:var(--text2);">💳 Карта, 💵 При получении, 💰 Баланс</p></div>
-            <div class="card"><h4>Доставка</h4><p style="color:var(--text2);">🚚 Курьер (1-3 дня) или 📦 Самовывоз</p></div>
-            <div class="card"><h4>Кэшбэк</h4><p style="color:var(--text2);">1-10% с покупок в зависимости от уровня</p></div>
-            <div class="card"><h4>Рефералы</h4><p style="color:var(--text2);">10% от покупок приглашённых друзей</p></div>`;
+function renderFAQ(c) {
+    c.innerHTML = `
+        <h3>❓ Часто задаваемые вопросы</h3>
+        <div class="card" style="cursor:pointer;" onclick="toggleFAQ(this)">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:600;">🛒 Как оформить заказ?</span>
+                <span class="faq-arrow" style="font-size:14px;transition:0.3s;">▼</span>
+            </div>
+            <div class="faq-answer" style="display:none;margin-top:12px;color:var(--text2);font-size:13px;line-height:1.6;">
+                <p><b>1.</b> Выберите товар в каталоге и нажмите на него</p>
+                <p><b>2.</b> Укажите количество и нажмите «В корзину»</p>
+                <p><b>3.</b> Перейдите в корзину и нажмите «Оформить заказ»</p>
+                <p><b>4.</b> Выберите способ доставки (курьер, СДЭК, Почта России)</p>
+                <p><b>5.</b> Выберите способ оплаты и подтвердите заказ</p>
+            </div>
+        </div>
+        
+        <div class="card" style="cursor:pointer;" onclick="toggleFAQ(this)">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:600;">💳 Какие способы оплаты?</span>
+                <span class="faq-arrow" style="font-size:14px;transition:0.3s;">▼</span>
+            </div>
+            <div class="faq-answer" style="display:none;margin-top:12px;color:var(--text2);font-size:13px;line-height:1.6;">
+                <p><b>💳 Карта</b> — Visa, Mastercard, МИР через Telegram Payments</p>
+                <p><b>💰 Баланс</b> — внутренний кошелёк Kodama Shop</p>
+                <p><b>💵 При получении</b> — наличные или карта курьеру</p>
+                <p style="color:var(--gold);margin-top:8px;">💡 Пополнить баланс можно в разделе «Профиль» → «Пополнить баланс»</p>
+            </div>
+        </div>
+        
+        <div class="card" style="cursor:pointer;" onclick="toggleFAQ(this)">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:600;">🚚 Доставка — сроки и стоимость</span>
+                <span class="faq-arrow" style="font-size:14px;transition:0.3s;">▼</span>
+            </div>
+            <div class="faq-answer" style="display:none;margin-top:12px;color:var(--text2);font-size:13px;line-height:1.6;">
+                <p><b>🏃 Яндекс.Доставка</b> — от 300 ₽, 1-2 часа по городу</p>
+                <p><b>📦 СДЭК</b> — от 350 ₽, 1-3 дня по РФ</p>
+                <p><b>📮 Почта России</b> — от 200 ₽, 3-7 дней (эконом)</p>
+                <p style="margin-top:8px;">Точная стоимость рассчитывается при оформлении заказа.</p>
+            </div>
+        </div>
+        
+        <div class="card" style="cursor:pointer;" onclick="toggleFAQ(this)">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:600;">💎 Как работает кэшбэк?</span>
+                <span class="faq-arrow" style="font-size:14px;transition:0.3s;">▼</span>
+            </div>
+            <div class="faq-answer" style="display:none;margin-top:12px;color:var(--text2);font-size:13px;line-height:1.6;">
+                <p>С каждой покупки возвращается % от суммы:</p>
+                <p>🌱 Новичок — <b>1%</b></p>
+                <p>🥉 Бронза — <b>2%</b></p>
+                <p>🥈 Серебро — <b>3%</b></p>
+                <p>🥇 Золото — <b>5%</b></p>
+                <p>💎 Бриллиант — <b>7%</b></p>
+                <p>👑 Легенда — <b>10%</b></p>
+                <p style="margin-top:8px;">Кэшбэк можно потратить на следующие заказы — списать при оформлении.</p>
+            </div>
+        </div>
+        
+        <div class="card" style="cursor:pointer;" onclick="toggleFAQ(this)">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:600;">👥 Реферальная программа</span>
+                <span class="faq-arrow" style="font-size:14px;transition:0.3s;">▼</span>
+            </div>
+            <div class="faq-answer" style="display:none;margin-top:12px;color:var(--text2);font-size:13px;line-height:1.6;">
+                <p>Приглашайте друзей по вашей персональной ссылке и получайте <b>10%</b> от каждой их покупки на свой баланс.</p>
+                <p style="margin-top:8px;"><b>Пример:</b> друг купил на 5 000 ₽ → вы получили <b style="color:var(--gold);">500 ₽</b> на баланс.</p>
+                <p style="margin-top:8px;">Ссылку найдёте в разделе «Реферальная система».</p>
+            </div>
+        </div>
+        
+        <div class="card" style="cursor:pointer;" onclick="toggleFAQ(this)">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:600;">🔄 Как вернуть товар?</span>
+                <span class="faq-arrow" style="font-size:14px;transition:0.3s;">▼</span>
+            </div>
+            <div class="faq-answer" style="display:none;margin-top:12px;color:var(--text2);font-size:13px;line-height:1.6;">
+                <p><b>Новые товары:</b> 14 дней на возврат</p>
+                <p><b>Б/у товары:</b> 7 дней на возврат</p>
+                <p style="margin-top:8px;">Напишите в чат поддержки или оформите возврат в разделе «Мои заказы». Подробнее — в <a href="#" onclick="event.preventDefault();showDoc('refund-modal')" style="color:var(--gold);">политике возврата</a>.</p>
+            </div>
+        </div>
+        
+        <div class="card" style="cursor:pointer;" onclick="toggleFAQ(this)">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:600;">⭐ Уровни и опыт (XP)</span>
+                <span class="faq-arrow" style="font-size:14px;transition:0.3s;">▼</span>
+            </div>
+            <div class="faq-answer" style="display:none;margin-top:12px;color:var(--text2);font-size:13px;line-height:1.6;">
+                <p>За каждые 100 ₽ покупок — <b>10 XP</b>. Также XP даётся за достижения и приглашения друзей. Чем выше уровень — тем больше скидка и кэшбэк.</p>
+            </div>
+        </div>
+        
+        <div class="card" style="cursor:pointer;" onclick="toggleFAQ(this)">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:600;">🏪 Как стать продавцом?</span>
+                <span class="faq-arrow" style="font-size:14px;transition:0.3s;">▼</span>
+            </div>
+            <div class="faq-answer" style="display:none;margin-top:12px;color:var(--text2);font-size:13px;line-height:1.6;">
+                <p>Нажмите «Стать продавцом» в профиле, заполните заявку и дождитесь одобрения (обычно до 24 часов). После одобрения вы сможете добавлять товары и отслеживать заказы.</p>
+            </div>
+        </div>
+    `;
+}
+
+    function toggleFAQ(card) {
+    const answer = card.querySelector('.faq-answer');
+    const arrow = card.querySelector('.faq-arrow');
+    if (answer.style.display === 'none') {
+        answer.style.display = 'block';
+        arrow.style.transform = 'rotate(180deg)';
+    } else {
+        answer.style.display = 'none';
+        arrow.style.transform = 'rotate(0deg)';
     }
+}
+
+    function renderDocuments(c) {
+    c.innerHTML = `
+        <h3>📄 Документы</h3>
+        <div class="menu-list">
+            <div class="menu-item" onclick="showDoc('terms-modal')"><span class="menu-icon">📋</span><span class="menu-text">Пользовательское соглашение</span><span class="menu-arrow">→</span></div>
+            <div class="menu-item" onclick="showDoc('privacy-modal')"><span class="menu-icon">🔒</span><span class="menu-text">Политика конфиденциальности</span><span class="menu-arrow">→</span></div>
+            <div class="menu-item" onclick="showDoc('refund-modal')"><span class="menu-icon">🔄</span><span class="menu-text">Политика возврата</span><span class="menu-arrow">→</span></div>
+            <div class="menu-item" onclick="showDoc('seller-agreement-modal')"><span class="menu-icon">🏪</span><span class="menu-text">Договор для продавцов</span><span class="menu-arrow">→</span></div>
+        </div>
+    `;
+}
 
     function renderTopup(c) {
         const amounts = [500, 1000, 2000, 5000, 10000];
@@ -1562,20 +1948,117 @@ function renderFavorites(c) {
     async function sendChat() { const inp=document.getElementById('chat-input'); if(!inp) return; const t=inp.value.trim(); if(!t) return; await fetch(`${BASE_URL}/messages`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:tg.initDataUnsafe.user?.id||0,text:t,is_from_user:true})}); inp.value=''; loadChatMsgs(tg.initDataUnsafe.user?.id||0); }
 
     // ============ АДМИН-ПАНЕЛЬ ============
-    function openAdminSection(s) {
-        document.getElementById('admin-main').style.display='none';
-        document.getElementById('admin-section').style.display='block';
-        const c = document.getElementById('admin-content');
-        if (s==='add_product') renderAddProduct(c);
-        else if (s==='products') loadAdminProducts(c);
-        else if (s==='promos') loadAdminPromos(c);
-        else if (s==='flash_sale') renderFlashSale(c);
-        else if (s==='users') loadAdminUsers(c);
-        else if (s==='orders') loadAdminOrders(c);
-        else if (s==='analytics') loadAnalytics(c);
-        else if (s==='chats') loadChatsList(c);
-        else if (s === 'sellers_moderation') loadSellersModeration(c);
+function openAdminSection(s) {
+    document.getElementById('admin-main').style.display='none';
+    document.getElementById('admin-section').style.display='block';
+    const c = document.getElementById('admin-content');
+    if (s==='add_product') renderAddProduct(c);
+    else if (s==='products') loadAdminProducts(c);
+    else if (s==='promos') loadAdminPromos(c);
+    else if (s==='flash_sale') renderFlashSale(c);
+    else if (s==='users') loadAdminUsers(c);
+    else if (s==='orders') loadAdminOrders(c);
+    else if (s==='analytics') loadAnalytics(c);
+    else if (s==='chats') loadChatsList(c);
+    else if (s==='sellers_moderation') loadSellersModeration(c);
+    else if (s==='dashboard') renderAdminDashboard(c);
+}
+
+    async function renderAdminDashboard(c) {
+    c.innerHTML = '<div style="text-align:center;padding:20px;">⏳ Загрузка...</div>';
+    try {
+        const res = await fetch(`${BASE_URL}/admin_data`);
+        const d = await res.json();
+        const orders = d.orders || [];
+        const users = d.users || [];
+        const products = d.products || [];
+        const pendingSellers = d.pending_sellers || [];
+        const analytics = d.analytics || [];
+        
+        // Считаем метрики
+        const today = new Date().toISOString().split('T')[0];
+        const todayOrders = orders.filter(o => (o.created_at || '').startsWith(today));
+        const todayRevenue = todayOrders.reduce((s, o) => s + (o.total_amount || 0), 0);
+        const pendingOrders = orders.filter(o => o.status === 'pending').length;
+        const totalRevenue = orders.reduce((s, o) => s + (o.total_amount || 0), 0);
+        const activeProducts = products.filter(p => p.quantity > 0).length;
+        
+        c.innerHTML = `
+            <h3>📊 Дашборд</h3>
+            
+            <div class="stats-grid">
+                <div class="stat-card" style="cursor:pointer;" onclick="openAdminSection('orders')">
+                    <div class="stat-value">${todayOrders.length}</div>
+                    <div class="stat-label">📦 Заказов сегодня</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${todayRevenue} ₽</div>
+                    <div class="stat-label">💰 Выручка сегодня</div>
+                </div>
+                <div class="stat-card" style="cursor:pointer;" onclick="openAdminSection('orders')">
+                    <div class="stat-value" style="color:${pendingOrders > 0 ? 'var(--danger)' : 'var(--gold)'};">${pendingOrders}</div>
+                    <div class="stat-label">⏳ Ожидают обработки</div>
+                </div>
+                <div class="stat-card" style="cursor:pointer;" onclick="openAdminSection('users')">
+                    <div class="stat-value">${users.length}</div>
+                    <div class="stat-label">👥 Пользователей</div>
+                </div>
+            </div>
+            
+            <div class="stats-grid" style="margin-top:8px;">
+                <div class="stat-card">
+                    <div class="stat-value">${activeProducts}</div>
+                    <div class="stat-label">📦 Активных товаров</div>
+                </div>
+                <div class="stat-card" style="cursor:pointer;" onclick="openAdminSection('sellers_moderation')">
+                    <div class="stat-value" style="color:${pendingSellers.length > 0 ? 'var(--danger)' : 'var(--gold)'};">${pendingSellers.length}</div>
+                    <div class="stat-label">🏪 Заявок продавцов</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${totalRevenue} ₽</div>
+                    <div class="stat-label">💵 Общая выручка</div>
+                </div>
+                <div class="stat-card" style="cursor:pointer;" onclick="openAdminSection('analytics')">
+                    <div class="stat-value">📈</div>
+                    <div class="stat-label">Аналитика</div>
+                </div>
+            </div>
+            
+            ${pendingOrders > 0 ? `
+            <div class="card" style="border-left:4px solid var(--danger);margin-top:12px;">
+                <h4 style="color:var(--danger);">⚠️ Требуют внимания</h4>
+                <p style="color:var(--text2);font-size:13px;">
+                    ${pendingOrders > 0 ? `• ${pendingOrders} заказ(ов) ожидают обработки<br>` : ''}
+                    ${pendingSellers.length > 0 ? `• ${pendingSellers.length} заявок от продавцов<br>` : ''}
+                </p>
+            </div>
+            ` : ''}
+            
+            <h4 style="margin-top:16px;">⚡ Быстрые действия</h4>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                <button class="btn btn-small" onclick="openAdminSection('add_product')">➕ Товар</button>
+                <button class="btn btn-small" onclick="openAdminSection('promos')">🎫 Промокод</button>
+                <button class="btn btn-small" onclick="openAdminSection('flash_sale')">🔥 Flash Sale</button>
+                <button class="btn btn-small" onclick="openAdminSection('chats')">💬 Чаты</button>
+            </div>
+            
+            <h4 style="margin-top:16px;">📋 Последние заказы</h4>
+            <div style="max-height:300px;overflow-y:auto;">
+                ${orders.slice(0, 5).map(o => {
+                    const statusNames = {'pending':'⏳','paid':'✅','processing':'📦','shipped':'🚚','delivered':'🎉','cancelled':'❌'};
+                    return `<div class="card" style="padding:12px;cursor:pointer;" onclick="openAdminSection('orders')">
+                        <div style="display:flex;justify-content:space-between;font-size:13px;">
+                            <span><b>#${o.id}</b> ${statusNames[o.status] || '?'}</span>
+                            <span style="color:var(--gold);">${o.total_amount} ₽</span>
+                        </div>
+                    </div>`;
+                }).join('')}
+            </div>
+        `;
+    } catch(e) {
+        c.innerHTML = '<div class="empty-state">Ошибка загрузки</div>';
     }
+}
 
     function closeAdminSection() { document.getElementById('admin-main').style.display='block'; document.getElementById('admin-section').style.display='none'; }
 
@@ -1675,7 +2158,8 @@ async function submitProduct() {
         category: document.getElementById('ap-category')?.value || 'Premium',
         badge: document.getElementById('ap-badge')?.value || null,
         quantity: parseInt(document.getElementById('ap-qty')?.value || 10),
-        images: images  // Массив base64 строк (фото и видео)
+        images: images,  // Массив base64 строк (фото и видео)
+        seller_id: null
     };
     
     if (status) status.innerHTML = '<span style="color:var(--blue);">⏳ Сохраняем...</span>';
@@ -1857,7 +2341,75 @@ function openUserProfile(uid) {
     }
     async function updateOrderStatus(oid,status) { await fetch(`${BASE_URL}/admin_action`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'update_order_status',order_id:oid,status})}); showToast('✅ Обновлено!'); loadAdminOrders(document.getElementById('admin-content')); }
 
-    function loadAnalytics(c) { c.innerHTML='<h3>📊 Аналитика</h3><div id="analytics-content">Загрузка...</div>'; fetch(`${BASE_URL}/admin_data`).then(r=>r.json()).then(d=>{ const a=d.analytics||[]; const rev=a.reduce((s,x)=>s+(x.revenue||0),0); const ord=a.reduce((s,x)=>s+(x.orders_count||0),0); const vis=a.reduce((s,x)=>s+(x.visits||0),0); document.getElementById('analytics-content').innerHTML=`<div class="stats-grid"><div class="stat-card"><div class="stat-value">${d.users?.length||0}</div><div class="stat-label">👥 Пользователей</div></div><div class="stat-card"><div class="stat-value">${vis}</div><div class="stat-label">👁 Посетителей</div></div><div class="stat-card"><div class="stat-value">${ord}</div><div class="stat-label">🛍 Заказов</div></div><div class="stat-card"><div class="stat-value">${rev} ₽</div><div class="stat-label">💰 Выручка</div></div></div>`; }); }
+function loadAnalytics(c) {
+    c.innerHTML = '<div>Загрузка...</div>';
+    Promise.all([
+        fetch(`${BASE_URL}/admin_data`).then(r => r.json()),
+        fetch(`${BASE_URL}/admin/forecast`).then(r => r.json()),
+        fetch(`${BASE_URL}/admin/client-analytics`).then(r => r.json())
+    ]).then(([d, forecast, clients]) => {
+        const a = d.analytics || [];
+        const rev = a.reduce((s, x) => s + (x.revenue || 0), 0);
+        const ord = a.reduce((s, x) => s + (x.orders_count || 0), 0);
+        const vis = a.reduce((s, x) => s + (x.visits || 0), 0);
+        
+        c.innerHTML = `
+            <h3>📊 Аналитика</h3>
+            
+            <div class="stats-grid">
+                <div class="stat-card"><div class="stat-value">${d.users?.length || 0}</div><div class="stat-label">👥 Пользователей</div></div>
+                <div class="stat-card"><div class="stat-value">${vis}</div><div class="stat-label">👁 Посетителей</div></div>
+                <div class="stat-card"><div class="stat-value">${ord}</div><div class="stat-label">🛍 Заказов</div></div>
+                <div class="stat-card"><div class="stat-value">${rev} ₽</div><div class="stat-label">💰 Выручка</div></div>
+            </div>
+            
+            ${forecast.forecast ? `
+            <div class="card" style="margin-top:12px;">
+                <h4>📈 Прогноз на 7 дней</h4>
+                <p style="color:var(--text2);font-size:12px;">Средняя дневная выручка: <b style="color:var(--gold);">${forecast.avg_daily_revenue} ₽</b></p>
+                <div style="display:flex;gap:4px;margin-top:8px;overflow-x:auto;">
+                    ${forecast.forecast.map(f => `
+                        <div style="min-width:60px;text-align:center;padding:8px;background:var(--bg);border-radius:8px;">
+                            <div style="font-size:11px;color:var(--text2);">День ${f.day}</div>
+                            <div style="font-weight:700;color:var(--gold);font-size:13px;">${f.predicted_revenue} ₽</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+            ` : ''}
+            
+            ${clients.top_buyers ? `
+            <div class="card" style="margin-top:12px;">
+                <h4>🏆 Топ покупателей</h4>
+                ${clients.top_buyers.slice(0, 5).map((b, i) => `
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;">
+                        <span>${['🥇','🥈','🥉','4','5'][i]} @${b.username}</span>
+                        <span style="color:var(--gold);">${b.total_spent} ₽ (${b.orders_count} зак.)</span>
+                    </div>
+                `).join('')}
+            </div>
+            ` : ''}
+            
+            <div class="card" style="margin-top:12px;">
+                <h4>📊 Показатели</h4>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:14px;">
+                    <span>Средний чек</span>
+                    <span style="color:var(--gold);">${clients.avg_check || 0} ₽</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:14px;">
+                    <span>Активных пользователей</span>
+                    <span style="color:var(--gold);">${clients.active_users || 0}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:14px;">
+                    <span>Конверсия</span>
+                    <span style="color:var(--gold);">${vis > 0 ? Math.round((ord / vis) * 100) : 0}%</span>
+                </div>
+            </div>
+        `;
+    }).catch(() => {
+        c.innerHTML = '<div class="empty-state">Ошибка загрузки</div>';
+    });
+}
 
 function loadChatsList(c) {
     c.innerHTML = '<h3>💬 Чаты поддержки</h3><div id="chats-content">Загрузка...</div>';
@@ -2054,16 +2606,114 @@ function updateSellerUI() {
     });
 }
     
-    function openSellerSection(s) {
-        document.getElementById('seller-main').style.display = 'none';
-        document.getElementById('seller-section').style.display = 'block';
-        const c = document.getElementById('seller-content');
-        if (s === 'products') loadSellerProducts(c);
-        else if (s === 'add_product') renderSellerAddProduct(c);
-        else if (s === 'orders') loadSellerOrders(c);
-        else if (s === 'withdraw') renderWithdraw(c);
-        else if (s === 'history') loadWithdrawHistory(c);
+function openSellerSection(s) {
+    document.getElementById('seller-main').style.display = 'none';
+    document.getElementById('seller-section').style.display = 'block';
+    const c = document.getElementById('seller-content');
+    if (s === 'products') loadSellerProducts(c);
+    else if (s === 'add_product') renderSellerAddProduct(c);
+    else if (s === 'orders') loadSellerOrders(c);
+    else if (s === 'withdraw') renderWithdraw(c);
+    else if (s === 'history') loadWithdrawHistory(c);
+    else if (s === 'dashboard') renderSellerDashboard(c);
+}
+
+    async function renderSellerDashboard(c) {
+    c.innerHTML = '<div style="text-align:center;padding:20px;">⏳ Загрузка...</div>';
+    const uid = tg.initDataUnsafe.user?.id || 0;
+    try {
+        const [productsRes, ordersRes] = await Promise.all([
+            fetch(`${BASE_URL}/seller/${uid}/products`),
+            fetch(`${BASE_URL}/seller/${uid}/orders`)
+        ]);
+        const productsData = await productsRes.json();
+        const ordersData = await ordersRes.json();
+        
+        const products = productsData.products || [];
+        const orders = ordersData.orders || [];
+        
+        const activeProducts = products.filter(p => p.quantity > 0).length;
+        const totalSales = orders.length;
+        const pendingOrders = orders.filter(o => ['pending', 'paid'].includes(o.status)).length;
+        const totalEarned = orders.reduce((s, o) => {
+            const items = typeof o.items === 'string' ? JSON.parse(o.items || '[]') : (o.items || []);
+            return s + items.filter(i => i.seller_id === sellerData?.id).reduce((sum, i) => sum + (i.price || 0) * (i.qty || 1), 0);
+        }, 0);
+        const commission = Math.round(totalEarned * (sellerData?.commission_rate || 10) / 100);
+        
+        c.innerHTML = `
+            <h3>📊 Дашборд</h3>
+            
+            <div class="card" style="text-align:center;background:linear-gradient(135deg, rgba(212,175,55,0.1) 0%, transparent 100%);">
+                <div style="font-size:48px;">🏪</div>
+                <h4>${sellerData?.shop_name || 'Мой магазин'}</h4>
+                <div style="display:flex;justify-content:center;gap:4px;margin-top:4px;">
+                    <span class="tag tag-gold">Рейтинг: ${(sellerData?.rating || 0).toFixed(1)} ⭐</span>
+                </div>
+            </div>
+            
+            <div class="stats-grid" style="margin-top:12px;">
+                <div class="stat-card" style="cursor:pointer;" onclick="openSellerSection('products')">
+                    <div class="stat-value">${activeProducts}</div>
+                    <div class="stat-label">📦 Активных товаров</div>
+                </div>
+                <div class="stat-card" style="cursor:pointer;" onclick="openSellerSection('orders')">
+                    <div class="stat-value" style="color:${pendingOrders > 0 ? 'var(--danger)' : 'var(--gold)'};">${pendingOrders}</div>
+                    <div class="stat-label">⏳ Новых заказов</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${totalSales}</div>
+                    <div class="stat-label">🛍 Всего продаж</div>
+                </div>
+                <div class="stat-card" style="cursor:pointer;" onclick="openSellerSection('withdraw')">
+                    <div class="stat-value">${sellerData?.balance || 0} ₽</div>
+                    <div class="stat-label">💰 Доступно к выводу</div>
+                </div>
+            </div>
+            
+            <div class="card" style="margin-top:12px;">
+                <h4>💰 Финансы</h4>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:14px;">
+                    <span>Заработано всего</span>
+                    <span style="color:var(--gold);">${totalEarned} ₽</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:14px;">
+                    <span>Комиссия (${sellerData?.commission_rate || 10}%)</span>
+                    <span style="color:var(--danger);">-${commission} ₽</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:14px;font-weight:700;">
+                    <span>Чистый доход</span>
+                    <span style="color:var(--success);">${totalEarned - commission} ₽</span>
+                </div>
+            </div>
+            
+            ${pendingOrders > 0 ? `
+            <div class="card" style="border-left:4px solid var(--gold);margin-top:12px;">
+                <h4>📦 Новые заказы</h4>
+                ${orders.filter(o => ['pending', 'paid'].includes(o.status)).slice(0, 3).map(o => {
+                    const items = typeof o.items === 'string' ? JSON.parse(o.items || '[]') : (o.items || []);
+                    const sellerItems = items.filter(i => i.seller_id === sellerData?.id);
+                    return `<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;">
+                        <b>#${o.id}</b> — ${sellerItems.map(i => i.name).join(', ')}
+                        <span style="color:var(--gold);float:right;">${o.total_amount} ₽</span>
+                    </div>`;
+                }).join('')}
+                <button class="btn btn-small" onclick="openSellerSection('orders')" style="margin-top:8px;">📋 Все заказы</button>
+            </div>
+            ` : ''}
+            
+            <h4 style="margin-top:16px;">⚡ Быстрые действия</h4>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                <button class="btn btn-small" onclick="openSellerSection('add_product')">➕ Добавить товар</button>
+                <button class="btn btn-small" onclick="openSellerSection('orders')">📋 Заказы</button>
+                <button class="btn btn-small" onclick="openSellerSection('withdraw')">💸 Вывести</button>
+                <button class="btn btn-small" onclick="openSellerSection('products')">📦 Товары</button>
+            </div>
+        `;
+    } catch(e) {
+        c.innerHTML = '<div class="empty-state">Ошибка загрузки</div>';
     }
+}
     
     function closeSellerSection() {
         document.getElementById('seller-main').style.display = 'block';
@@ -2084,30 +2734,74 @@ function showRegisterModal() {
         }
         
         document.getElementById('register-seller-modal').innerHTML = `
-            <div class="modal">
+            <div class="modal" style="max-width:550px;">
                 <button class="modal-close" onclick="closeModal('register-seller-modal')">✕</button>
                 <h2>🏪 Стать продавцом</h2>
-                <input class="input" placeholder="Название магазина *" id="reg-shop-name">
-                <textarea class="input" placeholder="Описание магазина" id="reg-shop-desc"></textarea>
-                <div style="font-size:13px;color:var(--text2);margin:12px 0;">
-                    <p style="color:var(--gold);margin-bottom:8px;">⚠️ Внимание! Запрещено продавать:</p>
-                    <p>🚫 Алкоголь, табак, оружие, наркотики, лекарства, контрафакт, животных, интим-товары, краденые вещи.</p>
+                
+                <div class="card" style="background:var(--bg);border-left:4px solid var(--gold);margin-bottom:16px;">
+                    <p style="font-size:13px;color:var(--text2);">
+                        📋 <b>Как это работает:</b><br>
+                        1. Заполните заявку<br>
+                        2. Ожидайте одобрения (до 24 часов)<br>
+                        3. Добавляйте товары<br>
+                        4. Получайте оплату на баланс<br>
+                        5. Выводите средства удобным способом
+                    </p>
                 </div>
-                <label style="display:flex;align-items:flex-start;gap:8px;margin:8px 0;cursor:pointer;font-size:13px;">
-                    <input type="checkbox" id="agree-terms" style="margin-top:3px;">
-                    <span>Я принимаю <a href="#" onclick="event.preventDefault();showDoc('seller-agreement-modal')" style="color:var(--gold);">агентский договор</a> и обязуюсь соблюдать правила площадки *</span>
+                
+                <label style="font-size:13px;color:var(--text2);margin-bottom:4px;display:block;">🏷 Название магазина <span style="color:var(--danger);">*</span></label>
+                <input class="input" placeholder="Например: «Модный шкаф Анны»" id="reg-shop-name">
+                
+                <label style="font-size:13px;color:var(--text2);margin-bottom:4px;display:block;">📝 Описание магазина</label>
+                <textarea class="input" placeholder="Расскажите, что продаёте: одежда, обувь, аксессуары..." id="reg-shop-desc"></textarea>
+                
+                <div class="card" style="border:1px solid var(--danger);background:rgba(255,68,68,0.05);margin:16px 0;">
+                    <h4 style="color:var(--danger);margin-bottom:8px;">⚠️ Запрещено продавать:</h4>
+                    <p style="font-size:12px;color:var(--text2);line-height:1.6;">
+                        🚫 Алкоголь и табачные изделия<br>
+                        🚫 Оружие, боеприпасы, взрывчатка<br>
+                        🚫 Наркотики и психотропные вещества<br>
+                        🚫 Лекарства и БАДы<br>
+                        🚫 Контрафакт (подделки брендов)<br>
+                        🚫 Животные и охраняемые растения<br>
+                        🚫 Интим-товары и порнография<br>
+                        🚫 Краденые вещи<br>
+                        🚫 Персональные данные третьих лиц
+                    </p>
+                </div>
+                
+                <div class="card" style="background:var(--bg);margin-bottom:16px;">
+                    <h4 style="color:var(--gold);margin-bottom:8px;">💰 Условия сотрудничества:</h4>
+                    <p style="font-size:12px;color:var(--text2);line-height:1.6;">
+                        • Комиссия площадки: <b>10%</b> от стоимости товара<br>
+                        • Вывод средств: от 100 ₽, до 3 рабочих дней<br>
+                        • Отправка товара: в течение 2 рабочих дней<br>
+                        • Налоги: вы платите самостоятельно (НПД, УСН, НДФЛ)
+                    </p>
+                </div>
+                
+                <label style="display:flex;align-items:flex-start;gap:8px;margin:12px 0;cursor:pointer;font-size:13px;padding:8px;border-radius:8px;background:var(--bg);">
+                    <input type="checkbox" id="agree-terms" style="margin-top:3px;min-width:18px;min-height:18px;">
+                    <span>Я принимаю <a href="#" onclick="event.preventDefault();showDoc('seller-agreement-modal')" style="color:var(--gold;">агентский договор</a> и обязуюсь соблюдать правила площадки <span style="color:var(--danger);">*</span></span>
                 </label>
-                <label style="display:flex;align-items:flex-start;gap:8px;margin:8px 0;cursor:pointer;font-size:13px;">
-                    <input type="checkbox" id="agree-tax" style="margin-top:3px;">
-                    <span>Я обязуюсь самостоятельно уплачивать налоги с полученного дохода *</span>
+                
+                <label style="display:flex;align-items:flex-start;gap:8px;margin:12px 0;cursor:pointer;font-size:13px;padding:8px;border-radius:8px;background:var(--bg);">
+                    <input type="checkbox" id="agree-tax" style="margin-top:3px;min-width:18px;min-height:18px;">
+                    <span>Я обязуюсь самостоятельно уплачивать налоги с полученного дохода <span style="color:var(--danger);">*</span></span>
                 </label>
-                <label style="display:flex;align-items:flex-start;gap:8px;margin:8px 0;cursor:pointer;font-size:13px;">
-                    <input type="checkbox" id="agree-quality" style="margin-top:3px;">
-                    <span>Я гарантирую качество и соответствие товара описанию и фотографиям *</span>
+                
+                <label style="display:flex;align-items:flex-start;gap:8px;margin:12px 0;cursor:pointer;font-size:13px;padding:8px;border-radius:8px;background:var(--bg);">
+                    <input type="checkbox" id="agree-quality" style="margin-top:3px;min-width:18px;min-height:18px;">
+                    <span>Я гарантирую качество и соответствие товара описанию и фотографиям <span style="color:var(--danger);">*</span></span>
                 </label>
-                <button class="btn" onclick="registerSeller()" id="reg-seller-btn">✅ Зарегистрироваться</button>
-                <p style="font-size:11px;color:var(--text2);margin-top:8px;text-align:center;">
-                    Регистрируясь, вы соглашаетесь с <a href="#" onclick="event.preventDefault();showDoc('terms-modal')" style="color:var(--gold);">пользовательским соглашением</a>, <a href="#" onclick="event.preventDefault();showDoc('privacy-modal')" style="color:var(--gold);">политикой конфиденциальности</a> и <a href="#" onclick="event.preventDefault();showDoc('refund-modal')" style="color:var(--gold);">политикой возврата</a>
+                
+                <button class="btn" onclick="registerSeller()" id="reg-seller-btn">✅ Отправить заявку</button>
+                
+                <p style="font-size:11px;color:var(--text2);margin-top:12px;text-align:center;line-height:1.5;">
+                    Отправляя заявку, вы соглашаетесь с:<br>
+                    <a href="#" onclick="event.preventDefault();showDoc('terms-modal')" style="color:var(--gold);">пользовательским соглашением</a>, 
+                    <a href="#" onclick="event.preventDefault();showDoc('privacy-modal')" style="color:var(--gold);">политикой конфиденциальности</a> и 
+                    <a href="#" onclick="event.preventDefault();showDoc('refund-modal')" style="color:var(--gold);">политикой возврата</a>
                 </p>
             </div>
         `;
