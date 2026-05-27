@@ -198,6 +198,7 @@
         
         .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--card); color: var(--text); padding: 14px 24px; border-radius: 14px; z-index: 300; font-weight: 600; border: 1px solid var(--border); animation: slideDown 0.3s; }
         @keyframes slideDown { from { transform: translateX(-50%) translateY(-100px); opacity: 0; } to { transform: translateX(-50%) translateY(0); opacity: 1; } }
+        @keyframes spin { to { transform: rotate(360deg); } }
         
         .empty-state { text-align: center; padding: 40px; color: var(--text2); }
         .empty-icon { font-size: 48px; margin-bottom: 12px; }
@@ -316,6 +317,7 @@
                 <div class="menu-item" onclick="openAdminSection('banners')"><span class="menu-icon">🎯</span><span class="menu-text">Рекламные баннеры</span><span class="menu-arrow">→</span></div>
                 <div class="menu-item" onclick="openAdminSection('withdrawals')"><span class="menu-icon">💸</span><span class="menu-text">Выводы средств</span><span class="menu-arrow">→</span></div>
                 <div class="menu-item" onclick="openAdminSection('sellers_moderation')"><span class="menu-icon">🏪</span><span class="menu-text">Заявки продавцов</span><span class="menu-arrow">→</span></div>
+                <button class="btn btn-small" onclick="exportCSV()" style="margin-top:8px;width:100%;">📥 Экспорт заказов CSV</button>
             </div>
         </div>
         <div id="admin-section" style="display:none;">
@@ -391,6 +393,18 @@
             </button>
             <button class="btn btn-outline" id="share-product-btn" style="margin-top:8px;">📤 Поделиться</button>
             <div id="product-reviews" style="margin-top:12px;"></div>
+            <div id="review-form" style="margin-top:12px;display:none;">
+                <h4>✍️ Оставить отзыв</h4>
+                <div style="display:flex;gap:4px;margin:8px 0;" id="star-rating">
+                    <span style="font-size:24px;cursor:pointer;" onclick="setRating(1)">☆</span>
+                    <span style="font-size:24px;cursor:pointer;" onclick="setRating(2)">☆</span>
+                    <span style="font-size:24px;cursor:pointer;" onclick="setRating(3)">☆</span>
+                    <span style="font-size:24px;cursor:pointer;" onclick="setRating(4)">☆</span>
+                    <span style="font-size:24px;cursor:pointer;" onclick="setRating(5)">☆</span>
+                </div>
+                <textarea class="input" placeholder="Ваш отзыв (необязательно)" id="review-text"></textarea>
+                <button class="btn btn-small" onclick="submitReview()">✅ Отправить</button>
+            </div>
         </div>
     </div>
 
@@ -431,6 +445,13 @@
         <!-- Выбор доставки -->
         <h3 style="margin-bottom:10px;">🚚 Способ доставки</h3>
         <div id="delivery-cards" style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;"></div>
+        
+        <div id="delivery-address-container" style="display:none;margin-bottom:12px;">
+            <h3 style="margin-bottom:8px;">📍 Адрес доставки</h3>
+            <input class="input" placeholder="Город, улица, дом, квартира" id="delivery-address">
+            <input class="input" placeholder="Индекс (для Почты России)" id="delivery-zip" style="display:none;">
+            <input class="input" placeholder="Контактный телефон" id="delivery-phone">
+        </div>
         
         <!-- Выбор оплаты -->
         <h3 style="margin-bottom:10px;">💳 Способ оплаты</h3>
@@ -796,7 +817,8 @@
         flashSale: { active: false, discount: 30, endTime: null },
         activeOrders: [], ordersHistory: [],
         onboardingShown: localStorage.getItem('onboarding') === 'true',
-        notifications: []
+        notifications: [],
+        offlineMode: false
     };
 
     // ============ УТИЛИТЫ ============
@@ -805,6 +827,18 @@
         const t = document.createElement('div'); t.className = 'toast'; t.innerText = msg;
         document.body.appendChild(t); setTimeout(() => t.remove(), 2500);
     }
+
+function showLoading(containerId) {
+    const container = document.getElementById(containerId);
+    if (container) {
+        container.innerHTML = `
+            <div style="text-align:center;padding:40px;">
+                <div style="width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 12px;"></div>
+                <p style="color:var(--text2);">Загрузка...</p>
+            </div>
+        `;
+    }
+}
 
 function closeModal(id) {
     const modal = document.getElementById(id);
@@ -857,20 +891,56 @@ function closeModal(id) {
 async function init() {
     tg.ready(); tg.expand();
     
+    // Проверка соединения
+    try {
+        await fetch(`${BASE_URL}/init?user_id=0`);
+    } catch(e) {
+        state.offlineMode = true;
+        showToast('⚠️ Сервер недоступен. Работаем офлайн.');
+    }
+    
     document.querySelectorAll('.modal-overlay').forEach(m => {
         m.classList.remove('active');
         m.style.display = 'none';
     });
     
     applyTheme(state.theme);
+    
+    // Загружаем сохранённый адрес
+    const savedAddress = localStorage.getItem('delivery_address');
+    const savedPhone = localStorage.getItem('delivery_phone');
+    if (savedAddress) state.deliveryAddress = savedAddress;
+    if (savedPhone) state.deliveryPhone = savedPhone;
+    
     showOnboarding();
+    
     // Проверка cookie
-if (!localStorage.getItem('cookies_accepted')) {
-    setTimeout(() => {
-        document.getElementById('cookie-modal').classList.add('active');
-        document.getElementById('cookie-modal').style.display = 'flex';
-    }, 2000);
-}
+    if (!localStorage.getItem('cookies_accepted')) {
+        setTimeout(() => {
+            document.getElementById('cookie-modal').classList.add('active');
+            document.getElementById('cookie-modal').style.display = 'flex';
+        }, 2000);
+    }
+    
+    // Согласие на ПД
+    if (!localStorage.getItem('pd_agreed')) {
+        setTimeout(() => {
+            tg.showPopup({
+                title: '🔒 Обработка данных',
+                message: 'Мы обрабатываем ваши персональные данные (имя, username, ID Telegram, историю заказов) в соответствии с ФЗ-152 «О персональных данных». Продолжая использовать сервис, вы даёте согласие на обработку.',
+                buttons: [
+                    {type: 'default', text: '✅ Принимаю'},
+                    {type: 'cancel', text: '📄 Политика'}
+                ]
+            }, (btn) => {
+                if (btn === 'default') {
+                    localStorage.setItem('pd_agreed', 'true');
+                } else {
+                    showDoc('privacy-modal');
+                }
+            });
+        }, 4000);
+    }
 
     const user = tg.initDataUnsafe.user;
     if (user) {
@@ -885,11 +955,28 @@ if (!localStorage.getItem('cookies_accepted')) {
     await loadData();
     await loadSellerData();
     loadCartFromStorage();
+    syncCartWithServer();
     loadFavoritesFromStorage();
     updateCartUI();
     renderCategories();
     loadBanners();
     loadNotifications();
+}
+
+    async function syncCartWithServer() {
+    const uid = tg.initDataUnsafe.user?.id || 0;
+    if (!uid || !state.cart.length) return;
+    try {
+        // Сохраняем корзину на сервере
+        await fetch(`${BASE_URL}/cart/sync`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                user_id: uid,
+                cart: state.cart.map(i => ({id: i.id, qty: i.qty, name: i.name, price: i.price}))
+            })
+        });
+    } catch(e) {}
 }
 
     async function loadNotifications() {
@@ -991,6 +1078,16 @@ function handleBannerClick(bannerId, linkType, linkValue) {
 }
 
 async function loadData() {
+        if (state.offlineMode) {
+        // Грузим из localStorage
+        state.products = JSON.parse(localStorage.getItem('cached_products') || '[]');
+        renderProducts();
+        return;
+    }
+    // ... обычная загрузка
+    // После успешной загрузки кэшируем:
+    localStorage.setItem('cached_products', JSON.stringify(data.products));
+}
     const uid = tg.initDataUnsafe.user?.id || 0;
     try {
         const res = await fetch(`${BASE_URL}/init?user_id=${uid}`);
@@ -1135,20 +1232,69 @@ function showXPInfo() {
         renderProducts();
     }
 
+    function handleSearch(value) {
+    const query = value.trim();
+    const suggestions = document.getElementById('search-suggestions');
+    
+    if (query.length < 2) {
+        suggestions.classList.remove('active');
+        return;
+    }
+    
+    fetch(`${BASE_URL}/search/suggestions?q=${encodeURIComponent(query)}`)
+        .then(r => r.json())
+        .then(data => {
+            if (!data.length) {
+                suggestions.classList.remove('active');
+                return;
+            }
+            suggestions.innerHTML = data.map(p => `
+                <div class="search-item" onclick="openProduct(${p.id})">
+                    <span>${p.name}</span>
+                    <span style="color:var(--gold);float:right;">${p.price} ₽</span>
+                </div>
+            `).join('');
+            suggestions.classList.add('active');
+        })
+        .catch(() => {
+            suggestions.classList.remove('active');
+        });
+}
+
+// Закрытие подсказок при клике вне
+document.addEventListener('click', function(e) {
+    const suggestions = document.getElementById('search-suggestions');
+    const searchInput = document.getElementById('search-input');
+    if (suggestions && searchInput && e.target !== searchInput) {
+        suggestions.classList.remove('active');
+    }
+});
+
+let currentPage = 1;
+let totalPages = 1;
+
 function renderProducts() {
     const list = document.getElementById('products-list');
-    const available = state.products.filter(p => (p.quantity || 0) > 0);
-    if (!available.length) { 
+    const perPage = 10;
+    const start = (currentPage - 1) * perPage;
+    const pageProducts = state.products.slice(start, start + perPage);
+    totalPages = Math.ceil(state.products.length / perPage);
+    
+    if (!pageProducts.length && currentPage > 1) {
+        currentPage--;
+        renderProducts();
+        return;
+    }
+    
+    if (!state.products.length) { 
         list.innerHTML = '<div class="empty-state">🛍️ Товары не найдены</div>'; 
         return; 
     }
     
-    list.innerHTML = state.products.map(p => {
-        // Используем загруженные фото или плейсхолдер
+    list.innerHTML = pageProducts.map(p => {
         let thumb = 'https://via.placeholder.com/300?text=📷';
-        if (p._images && p._images.length > 0) {
-            thumb = p._images[0];
-        } else if (p.image_url) {
+        if (p._images && p._images.length > 0) thumb = p._images[0];
+        else if (p.image_url) {
             try {
                 const parsed = typeof p.image_url === 'string' ? JSON.parse(p.image_url) : p.image_url;
                 if (Array.isArray(parsed) && parsed.length > 0) thumb = parsed[0];
@@ -1158,12 +1304,27 @@ function renderProducts() {
         return `
         <div class="product-card" onclick="openProduct(${p.id})">
             <img src="${thumb}" alt="${p.name}" loading="lazy" style="width:100%;aspect-ratio:1/1;object-fit:cover;" onerror="this.src='https://via.placeholder.com/300'">
+            <button class="wishlist-btn ${state.favorites.includes(p.id) ? 'active' : ''}" onclick="event.stopPropagation();quickToggleFav(${p.id})">${state.favorites.includes(p.id) ? '❤️' : '🤍'}</button>
+            ${p.badge ? `<div class="product-badge badge-${p.badge}">${p.badge === 'new' ? '🆕' : p.badge === 'hit' ? '🔥' : p.badge === 'sale' ? '🎉' : '💎'}</div>` : ''}
             <div class="product-info">
                 <div class="product-price">${p.discount_price || p.price} ₽</div>
+                ${p.discount_price ? `<div class="product-old-price">${p.price} ₽</div>` : ''}
                 <div class="product-name">${p.name}</div>
             </div>
         </div>`;
-    }).join('');
+    }).join('') + `
+        <div style="grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px;">
+            <button class="btn btn-small btn-outline" onclick="changePage(-1)" ${currentPage <= 1 ? 'disabled style="opacity:0.5;"' : ''}>← Назад</button>
+            <span style="font-size:13px;color:var(--text2);">${currentPage} / ${totalPages}</span>
+            <button class="btn btn-small btn-outline" onclick="changePage(1)" ${currentPage >= totalPages ? 'disabled style="opacity:0.5;"' : ''}>Вперёд →</button>
+        </div>
+    `;
+}
+
+function changePage(delta) {
+    currentPage = Math.max(1, Math.min(totalPages, currentPage + delta));
+    renderProducts();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function openProduct(id) {
@@ -1207,7 +1368,10 @@ function openProduct(id) {
     document.getElementById('modal-qty').innerText = '1';
     document.getElementById('modal-stock').innerText = `В наличии: ${p.quantity || 0} шт.`;
     // Загрузка отзывов
+    // Загрузка отзывов
 loadProductReviews(p.id);
+    document.getElementById('review-form').style.display = 'block';
+    document.getElementById('fav-btn-text').innerText = ...
     document.getElementById('fav-btn-text').innerText = state.favorites.includes(p.id) ? '❤️ В избранном' : '🤍 В избранное';
     
     // Кнопка "Поделиться"
@@ -1242,6 +1406,43 @@ loadProductReviews(p.id);
     } catch(e) {
         container.innerHTML = '';
     }
+}
+
+    function setRating(r) {
+    reviewRating = r;
+    document.querySelectorAll('#star-rating span').forEach((s, i) => {
+        s.innerText = i < r ? '⭐' : '☆';
+    });
+}
+
+async function submitReview() {
+    if (!state.currentProduct) return;
+    const text = document.getElementById('review-text')?.value || '';
+    
+    try {
+        const res = await fetch(`${BASE_URL}/review`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                user_id: tg.initDataUnsafe.user?.id || 0,
+                product_id: state.currentProduct.id,
+                rating: reviewRating,
+                text: text
+            })
+        });
+        const data = await res.json();
+        if (data.status === 'ok') {
+            showToast('✅ Отзыв отправлен на модерацию!');
+            document.getElementById('review-form').style.display = 'none';
+            loadProductReviews(state.currentProduct.id);
+        }
+    } catch(e) {
+        tg.showAlert('❌ Ошибка');
+    }
+}
+
+function showReviewForm() {
+    document.getElementById('review-form').style.display = 'block';
 }
 
 function updateProductSlider(p) {
@@ -1313,6 +1514,13 @@ async function shareProduct(id) {
         showToast('🛒 Добавлено');
     }
 
+    function modalToggleFav() {
+        if (!state.currentProduct) return;
+        quickToggleFav(state.currentProduct.id);
+        document.getElementById('fav-btn-text').innerText = 
+            state.favorites.includes(state.currentProduct.id) ? '❤️ В избранном' : '🤍 В избранное';
+    }
+
     function quickToggleFav(id) {
         const idx = state.favorites.indexOf(id);
         idx > -1 ? state.favorites.splice(idx, 1) : state.favorites.push(id);
@@ -1331,7 +1539,26 @@ async function shareProduct(id) {
         saveCartToStorage(); updateCartUI();
     }
 
-    function removeFromCart(idx) { state.cart.splice(idx, 1); saveCartToStorage(); updateCartUI(); }
+function removeFromCart(idx) {
+    const item = state.cart[idx];
+    if (!item) return;
+    
+    tg.showPopup({
+        title: 'Удалить товар?',
+        message: `Убрать «${item.name}» из корзины?`,
+        buttons: [
+            {type: 'default', text: '🗑 Удалить'},
+            {type: 'cancel', text: 'Отмена'}
+        ]
+    }, (btn) => {
+        if (btn === 'default') {
+            state.cart.splice(idx, 1);
+            saveCartToStorage();
+            updateCartUI();
+            showToast('🗑 Удалено из корзины');
+        }
+    });
+}
 
 function updateCartUI() {
     const c = document.getElementById('cart-items');
@@ -1362,6 +1589,39 @@ function updateCartUI() {
 
     function saveCartToStorage() { localStorage.setItem('cart', JSON.stringify(state.cart)); }
     function loadCartFromStorage() { state.cart = JSON.parse(localStorage.getItem('cart') || '[]'); }
+
+    async function applyPromo() {
+    const code = document.getElementById('promo')?.value?.trim()?.toUpperCase();
+    if (!code) {
+        tg.showAlert('Введите промокод');
+        return;
+    }
+    
+    const total = state.cart.reduce((s, i) => s + (i.price || 0) * (i.qty || 1), 0);
+    
+    try {
+        const res = await fetch(`${BASE_URL}/check_promo`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code, order_amount: total })
+        });
+        const data = await res.json();
+        
+        if (data.status === 'ok') {
+            state.promoDiscount = data.discount;
+            state.promoCode = code;
+            document.getElementById('promo-msg').innerHTML = 
+                `<span style="color:var(--success);">✅ Промокод применён! Скидка ${data.discount}%</span>`;
+            updateCartUI();
+        } else {
+            document.getElementById('promo-msg').innerHTML = 
+                '<span style="color:var(--danger);">❌ Промокод не найден или недействителен</span>';
+        }
+    } catch(e) {
+        document.getElementById('promo-msg').innerHTML = 
+            '<span style="color:var(--danger);">❌ Ошибка проверки промокода</span>';
+    }
+}
 
 function updateProgressBar(step) {
     // Сбрасываем все
@@ -1410,25 +1670,117 @@ function openCheckoutModal() {
     
     document.getElementById('checkout-total').innerText = final + ' ₽';
     document.getElementById('checkout-balance').innerText = `💰 Ваш баланс: ${state.user?.balance||0} ₽`;
-
-    // Показываем кэшбэк
-const cashbackAvailable = state.user?.cashback || 0;
-const level = LEVELS[state.user?.level] || LEVELS.newbie;
-const cashbackRate = level.cashback;
-const willEarn = Math.round(final * cashbackRate / 100);
-
-document.getElementById('checkout-cashback').innerHTML = `
-    💎 Доступно кэшбэка: <b style="color:var(--gold);">${cashbackAvailable} ₽</b> | 
-    🎯 С этого заказа: <b style="color:var(--success);">+${willEarn} ₽</b> (${cashbackRate}%)
-    <br><button class="btn btn-small" onclick="applyCashback(${cashbackAvailable}, ${final})" style="margin-top:4px;">
-        💰 Списать кэшбэк (${Math.min(cashbackAvailable, final)} ₽)
-    </button>
-`;
     
-    // Обновляем прогресс-бар
+    // Группируем товары по продавцам
+    const sellerGroups = {};
+    state.cart.forEach(item => {
+        const sellerId = item.seller_id || 'default';
+        if (!sellerGroups[sellerId]) sellerGroups[sellerId] = [];
+        sellerGroups[sellerId].push(item);
+    });
+    const sellerCount = Object.keys(sellerGroups).length;
+    
+    // Кэшбэк
+    const cashbackAvailable = state.user?.cashback || 0;
+    const level = LEVELS[state.user?.level] || LEVELS.newbie;
+    const cashbackRate = level.cashback;
+    const willEarn = Math.round(final * cashbackRate / 100);
+    
+    document.getElementById('checkout-cashback').innerHTML = `
+        💎 Кэшбэк: <b style="color:var(--gold);">${cashbackAvailable} ₽</b> | 
+        С заказа: <b style="color:var(--success);">+${willEarn} ₽</b> (${cashbackRate}%)
+        ${cashbackAvailable > 0 ? `<br><button class="btn btn-small" onclick="applyCashback(${cashbackAvailable}, ${final})" style="margin-top:4px;">💰 Списать кэшбэк (${Math.min(cashbackAvailable, final)} ₽)</button>` : ''}
+    `;
+    
     updateProgressBar(0);
     if (state.deliveryMethod) updateProgressBar(1);
     if (state.paymentMethod && state.deliveryMethod) updateProgressBar(2);
+    
+    // Карточки доставки
+    const deliveryOptions = [
+        {id:'yandex', name:'🏃 Яндекс.Доставка', desc:'По городу • 1-2 часа', price: 300, time:'1-2 часа'},
+        {id:'cdek', name:'📦 СДЭК', desc:'До пункта выдачи • от 1 дня', price: 350, time:'1-3 дня'},
+        {id:'cdek_courier', name:'🚚 СДЭК Курьер', desc:'До двери • от 1 дня', price: 450, time:'1-3 дня'},
+        {id:'pochta', name:'📮 Почта России', desc:'До отделения • от 3 дней', price: 200, time:'3-7 дней'},
+        {id:'pickup', name:'🏪 Самовывоз', desc:'Из магазина • бесплатно', price: 0, time:'Сегодня'},
+    ];
+    
+    document.getElementById('delivery-cards').innerHTML = deliveryOptions.map(d => {
+        const deliveryPrice = d.price * sellerCount;
+        const totalWithDelivery = final + deliveryPrice;
+        return `
+        <div onclick="selectDelivery('${d.id}')" style="
+            background:var(--card); border:2px solid ${state.deliveryMethod===d.id?'var(--gold)':'var(--border)'}; 
+            border-radius:12px; padding:14px; cursor:pointer; width:100%; box-sizing:border-box;
+        ">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <div style="font-weight:600;font-size:14px;">${d.name}</div>
+                    <div style="color:var(--text2);font-size:11px;">${d.desc} • ${d.time}</div>
+                    ${sellerCount > 1 ? `<div style="color:var(--text2);font-size:10px;">📦 ${sellerCount} продавца • доставка за каждого</div>` : ''}
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-weight:700;color:var(--gold);">${deliveryPrice > 0 ? deliveryPrice + ' ₽' : 'Бесплатно'}</div>
+                    <div style="font-size:10px;color:var(--text2);">Итого: ${totalWithDelivery} ₽</div>
+                    ${state.deliveryMethod===d.id ? '<div style="color:var(--gold);font-size:11px;">✓ Выбрано</div>' : ''}
+                </div>
+            </div>
+        </div>
+        `;
+    }).join('');
+    
+    // Поле адреса для курьерской доставки
+    const needsAddress = ['yandex', 'cdek_courier'].includes(state.deliveryMethod);
+    document.getElementById('delivery-address-container').style.display = needsAddress ? 'block' : 'none';
+    
+    // Карточки оплаты
+    const paymentOptions = [
+        {id:'card', icon:'💳', name:'Карта', desc:'Visa, MC, МИР', available: true},
+        {id:'cash', icon:'💵', name:'При получении', desc:'Наличные или карта', available: state.deliveryMethod !== 'pickup'},
+        {id:'balance', icon:'💰', name:'Баланс', desc:`${state.user?.balance||0} ₽`, available: (state.user?.balance||0) >= final},
+        {id:'split', icon:'🔄', name:'Частичная', desc:'Баланс + карта', available: (state.user?.balance||0) > 0 && (state.user?.balance||0) < final},
+    ];
+    
+    document.getElementById('payment-cards').innerHTML = paymentOptions
+        .filter(p => p.available)
+        .map(p => `
+        <div onclick="selectPayment('${p.id}')" style="
+            background:var(--card); border:2px solid ${state.paymentMethod===p.id?'var(--gold)':'var(--border)'}; 
+            border-radius:12px; padding:14px; cursor:pointer; text-align:center;
+            ${!p.available ? 'opacity:0.5;pointer-events:none;' : ''}
+        ">
+            <div style="font-size:28px;">${p.icon}</div>
+            <div style="font-weight:600;font-size:13px;margin-top:4px;">${p.name}</div>
+            <div style="color:var(--text2);font-size:10px;">${p.desc}</div>
+            ${state.paymentMethod===p.id ? '<div style="color:var(--gold);font-size:11px;margin-top:2px;">✓</div>' : ''}
+        </div>
+    `).join('');
+    
+    // Обновляем итого с доставкой
+    updateCheckoutTotal(final);
+    
+    document.getElementById('checkout-modal').classList.add('active');
+    document.getElementById('checkout-modal').style.display = 'flex';
+}
+
+function updateCheckoutTotal(itemsTotal) {
+    const sellerCount = Object.keys(state.cart.reduce((acc, item) => {
+        acc[item.seller_id || 'default'] = true;
+        return acc;
+    }, {})).length;
+    
+    const deliveryPrices = {
+        'yandex': 300, 'cdek': 350, 'cdek_courier': 450, 'pochta': 200, 'pickup': 0
+    };
+    const deliveryPrice = (deliveryPrices[state.deliveryMethod] || 300) * sellerCount;
+    const final = itemsTotal + deliveryPrice - (state.cashbackApplied || 0);
+    
+    document.getElementById('checkout-total').innerText = final + ' ₽';
+    document.getElementById('delivery-price-info').innerHTML = `
+        Товары: ${itemsTotal} ₽ + Доставка: ${deliveryPrice} ₽
+        ${state.cashbackApplied ? ` − Кэшбэк: ${state.cashbackApplied} ₽` : ''}
+    `;
+}
 
 function applyCashback(available, total) {
     if (available <= 0) return;
@@ -1491,8 +1843,20 @@ function applyCashback(available, total) {
 
 function selectDelivery(id) {
     state.deliveryMethod = id;
-    updateProgressBar(1); // Шаг 1 выполнен
-    openCheckoutModal();
+    
+    const addrContainer = document.getElementById('delivery-address-container');
+    const zipField = document.getElementById('delivery-zip');
+    
+    const needsAddress = ['yandex', 'cdek_courier'].includes(id);
+    const needsZip = id === 'pochta';
+    
+    if (addrContainer) addrContainer.style.display = needsAddress || needsZip ? 'block' : 'none';
+    if (zipField) zipField.style.display = needsZip ? 'block' : 'none';
+    
+    updateProgressBar(1);
+    updateCheckoutTotal(
+        state.cart.reduce((s,i)=>s+(i.price||0)*(i.qty||1),0) * (1-state.promoDiscount/100)
+    );
 }
 
 function selectPayment(id) {
@@ -1503,6 +1867,16 @@ function selectPayment(id) {
 
 async function confirmCheckout() {
     if (!state.cart.length) return;
+    
+    // Валидация
+    if (state.deliveryMethod === 'courier') {
+        const address = document.getElementById('delivery-address')?.value?.trim();
+        if (!address) {
+            tg.showAlert('❌ Укажите адрес доставки');
+            return;
+        }
+        state.deliveryAddress = address;
+    }
     
     // Блокируем кнопку сразу
     const btn = document.getElementById('confirm-order-btn');
@@ -1517,7 +1891,6 @@ async function confirmCheckout() {
     
     if (state.paymentMethod === 'balance' && (state.user?.balance||0) < final) {
         tg.showAlert(`❌ Недостаточно средств!`);
-        // Разблокируем кнопку
         if (btn) {
             btn.disabled = false;
             btn.style.opacity = '1';
@@ -1526,7 +1899,28 @@ async function confirmCheckout() {
         return;
     }
     
-    const orderData = {action:'checkout',items:state.cart.map(i=>({id:i.id,qty:i.qty,name:i.name,price:i.price})),total:final,user_id:tg.initDataUnsafe.user?.id||0,delivery_method:state.deliveryMethod,payment_method:state.paymentMethod};
+    // Частичная оплата: баланс + карта
+    if (state.paymentMethod === 'split') {
+        const balance = state.user?.balance || 0;
+        if (balance >= final) {
+            state.paymentMethod = 'balance';
+        } else {
+            state.cashbackApplied = balance;
+            state.paymentMethod = 'card';
+        }
+    }
+    
+    const orderData = {
+        action:'checkout',
+        items:state.cart.map(i=>({id:i.id,qty:i.qty,name:i.name,price:i.price})),
+        total:final,
+        user_id:tg.initDataUnsafe.user?.id||0,
+        delivery_method:state.deliveryMethod,
+        payment_method:state.paymentMethod,
+        promo_code: state.promoCode,
+        cashback_applied: state.cashbackApplied || 0,
+        delivery_address: state.deliveryAddress || ''
+    };
     
     try {
         const res = await fetch(`${BASE_URL}/order`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(orderData)});
@@ -1534,6 +1928,11 @@ async function confirmCheckout() {
         
         if (result.status === 'ok') {
             tg.sendData(JSON.stringify(orderData));
+            
+            // Сохраняем адрес для будущих заказов
+            if (state.deliveryAddress) localStorage.setItem('delivery_address', state.deliveryAddress);
+            if (state.deliveryPhone) localStorage.setItem('delivery_phone', state.deliveryPhone);
+            
             state.cart = []; saveCartToStorage(); updateCartUI();
             closeModal('checkout-modal');
             loadActiveOrders();
@@ -1578,16 +1977,73 @@ async function confirmCheckout() {
     function closeProfileSection() { document.getElementById('profile-main').style.display='block'; document.getElementById('profile-section').style.display='none'; }
 
 function showOrdersHistory(c) {
-    if (!state.ordersHistory.length) { c.innerHTML = '<div class="empty-state">Нет завершённых заказов</div>'; return; }
-    c.innerHTML = '<h3>📋 История заказов</h3>' + state.ordersHistory.map(o => {
+    const allOrders = [...state.activeOrders, ...state.ordersHistory];
+    if (!allOrders.length) { c.innerHTML = '<div class="empty-state">Нет заказов</div>'; return; }
+    
+    const statusNames = {
+        'pending':'⏳ Ожидает','paid':'✅ Оплачен','processing':'📦 Собирается',
+        'shipped':'🚚 Отправлен','delivered':'🎉 Доставлен','ready':'📦 Готов к выдаче','cancelled':'❌ Отменён'
+    };
+    
+    c.innerHTML = '<h3>📋 Все заказы</h3>' + allOrders.map(o => {
         const items = typeof o.items === 'string' ? JSON.parse(o.items||'[]') : (o.items||[]);
-        return `<div class="card">
-            <b>#${o.id}</b> — ${o.total_amount} ₽
-            <br><span style="color:var(--text2);">${items.map(i=>`${i.name} x${i.qty}`).join(', ')}</span>
-            <br><button class="btn btn-small" onclick="downloadReceipt(${o.id})" style="margin-top:4px;">🧾 Чек</button>
-            ${o.status === 'delivered' ? `<button class="btn btn-small btn-outline" onclick="requestRefund(${o.id})" style="margin-top:4px;color:var(--danger);border-color:var(--danger);">🔄 Оформить возврат</button>` : ''}
+        return `<div class="card" style="border-left:4px solid ${o.status === 'cancelled' ? 'var(--danger)' : o.status === 'delivered' ? 'var(--success)' : 'var(--gold)'};">
+            <div style="display:flex;justify-content:space-between;">
+                <b>#${o.id}</b>
+                <span class="tag ${o.status === 'delivered' ? 'tag-green' : o.status === 'cancelled' ? '' : 'tag-gold'}">${statusNames[o.status] || o.status}</span>
+            </div>
+            <div style="color:var(--text2);font-size:13px;">
+                📦 ${items.map(i=>`${i.name} x${i.qty}`).join(', ')}
+                <br>💰 ${o.total_amount} ₽ | 📅 ${o.created_at?.split('T')[0] || ''}
+                ${o.delivery_method ? `<br>🚚 ${o.delivery_method === 'courier' ? 'Курьер' : o.delivery_method === 'pickup' ? 'Самовывоз' : o.delivery_method}` : ''}
+                ${o.delivery_address ? `<br>📍 ${o.delivery_address}` : ''}
+                ${o.tracking_number ? `<br>📮 Трек: ${o.tracking_number}` : ''}
+            </div>
+            <div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap;">
+                <button class="btn btn-small" onclick="downloadReceipt(${o.id})">🧾 Чек</button>
+                ${o.status === 'shipped' ? `<button class="btn btn-small" style="background:var(--success);color:#fff;" onclick="confirmDelivery(${o.id})">✅ Подтвердить получение</button>` : ''}
+                ${o.status === 'delivered' ? `<button class="btn btn-small btn-outline" style="color:var(--danger);border-color:var(--danger);" onclick="requestRefund(${o.id})">🔄 Возврат</button>` : ''}
+                ${o.tracking_number ? `<button class="btn btn-small" onclick="trackOrder('${o.tracking_number}', '${o.delivery_method}')">📍 Отследить</button>` : ''}
+            </div>
         </div>`;
     }).join('');
+}
+
+async function confirmDelivery(orderId) {
+    if (!confirm('Подтвердить получение заказа? Деньги поступят продавцу.')) return;
+    try {
+        const res = await fetch(`${BASE_URL}/admin_action`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({action: 'update_order_status', order_id: orderId, status: 'delivered'})
+        });
+        const result = await res.json();
+        if (result.status === 'ok') {
+            showToast('✅ Спасибо за покупку!');
+            await loadActiveOrders();
+            closeProfileSection();
+            openProfileSection('orders');
+        } else {
+            tg.showAlert('❌ Ошибка');
+        }
+    } catch(e) {
+        tg.showAlert('❌ Ошибка');
+    }
+}
+
+    function trackOrder(trackingNumber, method) {
+    let url = '';
+    if (method === 'pochta') {
+        url = `https://www.pochta.ru/tracking#${trackingNumber}`;
+    } else if (method === 'cdek' || method === 'cdek_courier') {
+        url = `https://www.cdek.ru/ru/tracking?order_id=${trackingNumber}`;
+    }
+    
+    if (url) {
+        tg.openLink(url);
+    } else {
+        tg.showAlert(`📮 Трек-номер: ${trackingNumber}\n\nОтслеживайте на сайте службы доставки.`);
+    }
 }
 
     function requestRefund(orderId) {
@@ -1632,7 +2088,7 @@ async function downloadReceipt(orderId) {
 }
 
 function renderFavorites(c) {
-    const fp = state.products.filter(p => state.favorites.includes(p.id) && (p.quantity || 0) > 0);
+    const fp = state.products.filter(p => state.favorites.includes(p.id));
     if (!fp.length) { 
         c.innerHTML = '<div class="empty-state"><div class="empty-icon">❤️</div><p>В избранном пока ничего нет</p><p style="color:var(--text2);font-size:13px;">Нажимайте 🤍 на карточках товаров, чтобы добавить</p></div>'; 
         return; 
@@ -1649,9 +2105,11 @@ function renderFavorites(c) {
         return `
         <div class="product-card" style="position:relative;" onclick="openProduct(${p.id})">
             <img src="${thumb}" alt="${p.name}" style="width:100%;aspect-ratio:1/1;object-fit:cover;" onerror="this.src='https://via.placeholder.com/300'">
-            <button class="wishlist-btn active" onclick="event.stopPropagation();quickToggleFav(${p.id})" style="position:absolute;top:8px;right:8px;">❤️</button>
+            <button class="wishlist-btn active" onclick="event.stopPropagation();quickToggleFav(${p.id})">❤️</button>
+            ${p.discount_price ? `<div class="product-badge badge-sale">🎉</div>` : ''}
             <div class="product-info">
                 <div class="product-price">${p.discount_price || p.price} ₽</div>
+                ${p.discount_price ? `<div class="product-old-price">${p.price} ₽</div>` : ''}
                 <div class="product-name">${p.name}</div>
             </div>
         </div>`;
@@ -1739,7 +2197,20 @@ function renderSubscription(c) {
     `;
 }
 
-    function subscribePlan(p) { tg.sendData(JSON.stringify({action:'subscribe',plan:p})); tg.showAlert('Заявка отправлена!'); }
+function subscribePlan(plan) {
+    const uid = tg.initDataUnsafe.user?.id || 0;
+    fetch(`${BASE_URL}/subscribe`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({user_id: uid, plan: plan})
+    }).then(r => r.json()).then(d => {
+        if (d.status === 'ok') {
+            tg.showAlert('💰 Счёт на подписку отправлен! Оплатите его в чате с ботом.');
+        } else {
+            tg.showAlert('❌ Ошибка');
+        }
+    }).catch(() => tg.showAlert('❌ Ошибка'));
+}
 
 function renderReferral(c, uid) {
     const refLink = `https://t.me/KodamaShopBot?start=${uid}`;
@@ -2433,8 +2904,33 @@ async function submitProduct() {
     function deletePromo(code) { fetch(`${BASE_URL}/admin_action`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete_promo',code})}); showToast('🗑 Удалено'); loadAdminPromos(document.getElementById('admin-content')); }
 
     function renderFlashSale(c) { c.innerHTML=`<h3>🔥 Flash Sale</h3><label style="font-size:13px;">💸 Скидка (%)</label><input class="input" type="number" id="fs-discount" value="30"><label style="font-size:13px;">⏱ Длительность (часы)</label><input class="input" type="number" id="fs-hours" value="2"><button class="btn" onclick="startFlashSale()">🚀 Запустить</button><button class="btn btn-danger" onclick="stopFlashSale()" style="margin-top:8px;">⏹ Остановить</button>`; }
-    function startFlashSale() { state.flashSale={active:true,discount:parseInt(document.getElementById('fs-discount')?.value||30)}; showToast('🔥 Запущена!'); }
-    function stopFlashSale() { state.flashSale={active:false}; showToast('Остановлена'); }
+async function startFlashSale() {
+    const discount = parseInt(document.getElementById('fs-discount')?.value || 30);
+    state.flashSale = { active: true, discount: discount };
+    
+    state.products.forEach(p => {
+        if (!p._originalPrice) p._originalPrice = p.price;
+        p.discount_price = Math.round(p.price * (1 - discount / 100));
+    });
+    
+    showToast(`🔥 Flash Sale запущена! Скидка ${discount}%`);
+    renderProducts();
+}
+
+function stopFlashSale() {
+    state.flashSale = { active: false };
+    
+    state.products.forEach(p => {
+        if (p._originalPrice) {
+            p.price = p._originalPrice;
+            p.discount_price = null;
+            delete p._originalPrice;
+        }
+    });
+    
+    showToast('Flash Sale остановлена');
+    renderProducts();
+}
 
     function loadAdminUsers(c) {
         c.innerHTML='<h3>👥 Пользователи</h3><input class="input" placeholder="🔍 Поиск..." oninput="filterUsers(this.value)"><div id="users-list"></div>';
@@ -2532,6 +3028,7 @@ function openUserProfile(uid) {
 
     // Заказы в админке — РУССКИЕ кнопки
     function loadAdminOrders(c) {
+        showLoading('admin-content');
         c.innerHTML='<div>Загрузка...</div>';
         fetch(`${BASE_URL}/admin_data`).then(r=>r.json()).then(d=>{
             const orders=d.orders||[];
@@ -2545,6 +3042,7 @@ function openUserProfile(uid) {
                     <div style="color:var(--text2);">📦 ${items.map(i=>`${i.name} x${i.qty}`).join(', ')}<br>💰 ${o.total_amount} ₽ | 👤 ${o.user_id}<br>${delivery} | 💳 ${o.payment_method}</div>
                     <div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap;">
                         <button class="btn btn-small" onclick="updateOrderStatus(${o.id},'paid')">✅ Оплачен</button>
+                        <button class="btn btn-small" onclick="addTrackingNumber(${o.id})" style="margin-top:4px;">📮 Трек-номер</button>
                         <button class="btn btn-small" onclick="updateOrderStatus(${o.id},'processing')">📦 Собирается</button>
                         <button class="btn btn-small" onclick="updateOrderStatus(${o.id},'shipped')">🚚 Отправлен</button>
                         <button class="btn btn-small" onclick="updateOrderStatus(${o.id},'delivered')">🎉 Доставлен</button>
@@ -2556,6 +3054,34 @@ function openUserProfile(uid) {
         });
     }
     async function updateOrderStatus(oid,status) { await fetch(`${BASE_URL}/admin_action`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'update_order_status',order_id:oid,status})}); showToast('✅ Обновлено!'); loadAdminOrders(document.getElementById('admin-content')); }
+
+    function addTrackingNumber(orderId) {
+        tg.showPopup({
+            title: '📮 Трек-номер',
+            message: 'Введите трек-номер для отслеживания:',
+            buttons: [
+                {type: 'default', text: '💾 Сохранить'},
+                {type: 'cancel', text: 'Отмена'}
+            ]
+        }, async (btn) => {
+            if (btn === 'default') {
+                const tracking = prompt('Введите трек-номер:');
+                if (tracking) {
+                    await fetch(`${BASE_URL}/admin_action`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            action: 'add_tracking',
+                            order_id: orderId,
+                            tracking_number: tracking
+                        })
+                    });
+                    showToast('✅ Трек-номер сохранён');
+                    loadAdminOrders(document.getElementById('admin-content'));
+                }
+            }
+        });
+    }
 
 function loadAnalytics(c) {
     c.innerHTML = '<div>Загрузка...</div>';
@@ -2625,6 +3151,10 @@ function loadAnalytics(c) {
     }).catch(() => {
         c.innerHTML = '<div class="empty-state">Ошибка загрузки</div>';
     });
+}
+
+function exportCSV() {
+    window.open(`${BASE_URL}/admin/export/orders`, '_blank');
 }
 
 function loadChatsList(c) {
@@ -3138,45 +3668,69 @@ async function submitSellerProduct() {
         showToast('🗑 Удалено'); openSellerSection('products');
     }
     
+let sellerOrderFilter = 'all';
+
 async function loadSellerOrders(c) {
     const uid = tg.initDataUnsafe.user?.id || 0;
     c.innerHTML = '<div>Загрузка...</div>';
     try {
         const res = await fetch(`${BASE_URL}/seller/${uid}/orders`);
         const data = await res.json();
-        const orders = data.orders || [];
-        if (!orders.length) { c.innerHTML = '<div class="empty-state">Нет заказов</div>'; return; }
+        const allOrders = data.orders || [];
+        
+        const filtered = sellerOrderFilter === 'all' 
+            ? allOrders 
+            : allOrders.filter(o => o.status === sellerOrderFilter);
+        
+        const counts = {
+            all: allOrders.length,
+            pending: allOrders.filter(o => ['pending', 'paid'].includes(o.status)).length,
+            processing: allOrders.filter(o => o.status === 'processing').length,
+            shipped: allOrders.filter(o => o.status === 'shipped').length,
+            delivered: allOrders.filter(o => o.status === 'delivered').length,
+        };
         
         const statusNames = {
             'pending':'⏳ Ожидает','paid':'✅ Оплачен','processing':'📦 Собирается',
             'shipped':'🚚 Отправлен','delivered':'🎉 Доставлен','cancelled':'❌ Отменён'
         };
         
-        c.innerHTML = '<h3>📋 Заказы (' + orders.length + ')</h3>' + orders.map(o => {
-            const items = typeof o.items === 'string' ? JSON.parse(o.items||'[]') : (o.items||[]);
-            const sellerItems = items.filter(i => i.seller_id === sellerData?.id);
-            const totalEarned = sellerItems.reduce((s, i) => s + (i.price||0)*(i.qty||1), 0);
-            const commission = Math.round(totalEarned * (sellerData?.commission_rate || 10) / 100);
+        c.innerHTML = `
+            <h3>📋 Заказы (${filtered.length})</h3>
             
-            return `
-            <div class="card" style="margin-bottom:8px;">
-                <div style="display:flex;justify-content:space-between;">
-                    <b>Заказ #${o.id}</b>
-                    <span style="color:var(--gold);">${statusNames[o.status] || o.status}</span>
-                </div>
-                <div style="color:var(--text2);font-size:13px;">
-                    📦 ${sellerItems.map(i => `${i.name} x${i.qty}`).join(', ')}
-                    <br>💰 Заработано: <b>${totalEarned - commission} ₽</b>
-                    <br>💸 Комиссия: ${commission} ₽ (${sellerData?.commission_rate || 10}%)
-                    <br>📅 ${o.created_at?.split('T')[0] || ''}
-                </div>
-                <div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap;">
-                    <button class="btn btn-small" onclick="updateOrderStatus(${o.id},'processing',${sellerData?.id})">📦 Собирается</button>
-                    <button class="btn btn-small" onclick="updateOrderStatus(${o.id},'shipped',${sellerData?.id})">🚚 Отправлен</button>
-                    <button class="btn btn-small" onclick="updateOrderStatus(${o.id},'delivered',${sellerData?.id})">🎉 Доставлен</button>
-                </div>
-            </div>`;
-        }).join('');
+            <div style="display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;flex-wrap:wrap;">
+                <span class="tag ${sellerOrderFilter === 'all' ? 'tag-gold' : ''}" style="cursor:pointer;" onclick="sellerOrderFilter='all';loadSellerOrders(document.getElementById('seller-content'));">Все (${counts.all})</span>
+                <span class="tag ${sellerOrderFilter === 'pending' ? 'tag-gold' : ''}" style="cursor:pointer;" onclick="sellerOrderFilter='pending';loadSellerOrders(document.getElementById('seller-content'));">Новые (${counts.pending})</span>
+                <span class="tag ${sellerOrderFilter === 'processing' ? 'tag-gold' : ''}" style="cursor:pointer;" onclick="sellerOrderFilter='processing';loadSellerOrders(document.getElementById('seller-content'));">В сборке (${counts.processing})</span>
+                <span class="tag ${sellerOrderFilter === 'shipped' ? 'tag-gold' : ''}" style="cursor:pointer;" onclick="sellerOrderFilter='shipped';loadSellerOrders(document.getElementById('seller-content'));">Отправлено (${counts.shipped})</span>
+                <span class="tag ${sellerOrderFilter === 'delivered' ? 'tag-gold' : ''}" style="cursor:pointer;" onclick="sellerOrderFilter='delivered';loadSellerOrders(document.getElementById('seller-content'));">Завершено (${counts.delivered})</span>
+            </div>
+            
+            ${!filtered.length ? '<div class="empty-state">Нет заказов</div>' : filtered.map(o => {
+                const items = typeof o.items === 'string' ? JSON.parse(o.items||'[]') : (o.items||[]);
+                const sellerItems = items.filter(i => i.seller_id === sellerData?.id);
+                const totalEarned = sellerItems.reduce((s, i) => s + (i.price||0)*(i.qty||1), 0);
+                const commission = Math.round(totalEarned * (sellerData?.commission_rate || 10) / 100);
+                
+                return `
+                <div class="card" style="margin-bottom:8px;">
+                    <div style="display:flex;justify-content:space-between;">
+                        <b>Заказ #${o.id}</b>
+                        <span style="color:var(--gold);">${statusNames[o.status] || o.status}</span>
+                    </div>
+                    <div style="color:var(--text2);font-size:13px;">
+                        📦 ${sellerItems.map(i => `${i.name} x${i.qty}`).join(', ')}
+                        <br>💰 Заработано: <b>${totalEarned - commission} ₽</b>
+                        <br>💸 Комиссия: ${commission} ₽
+                        <br>📅 ${o.created_at?.split('T')[0] || ''}
+                    </div>
+                    <div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap;">
+                        ${o.status === 'paid' ? `<button class="btn btn-small" onclick="updateOrderStatus(${o.id},'processing',${sellerData?.id})">📦 В сборку</button>` : ''}
+                        ${o.status === 'processing' ? `<button class="btn btn-small" onclick="updateOrderStatus(${o.id},'shipped',${sellerData?.id})">🚚 Отправил</button>` : ''}
+                    </div>
+                </div>`;
+            }).join('')}
+        `;
     } catch(e) { c.innerHTML = '<div class="empty-state">Ошибка загрузки</div>'; }
 }
 
