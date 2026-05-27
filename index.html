@@ -220,12 +220,7 @@
             <div>🔥 <b>FLASH SALE!</b> Скидка <span id="flash-discount">30</span>%</div>
             <div class="countdown" id="flash-countdown"></div>
         </div>
-        <div id="promo-banner" style="background:linear-gradient(135deg, #1a1a2e, #16213e);border-radius:16px;padding:20px;margin-bottom:16px;text-align:center;position:relative;overflow:hidden;">
-            <div style="position:absolute;top:-20px;right:-20px;font-size:80px;opacity:0.1;">🛍️</div>
-            <h3 style="color:var(--gold);position:relative;">💎 Премиум-подписка</h3>
-            <p style="color:#fff;font-size:13px;position:relative;">Скидка 15%, бесплатная доставка, удвоенный кэшбэк</p>
-            <button class="btn btn-small" onclick="nav('profile', document.querySelector('.nav-item[onclick*=\"profile\"]'));openProfileSection('subscription');" style="margin-top:8px;position:relative;">Подробнее</button>
-        </div>
+        <div id="promo-banner-container"></div>
         <div class="search-container">
             <input class="input" placeholder="🔍 Поиск товаров..." id="search-input" oninput="handleSearch(this.value)" autocomplete="off">
             <div class="search-suggestions" id="search-suggestions"></div>
@@ -318,6 +313,8 @@
                 <div class="menu-item" onclick="openAdminSection('orders')"><span class="menu-icon">📋</span><span class="menu-text">Заказы</span><span class="menu-arrow">→</span></div>
                 <div class="menu-item" onclick="openAdminSection('analytics')"><span class="menu-icon">📊</span><span class="menu-text">Аналитика</span><span class="menu-arrow">→</span></div>
                 <div class="menu-item" onclick="openAdminSection('chats')"><span class="menu-icon">💬</span><span class="menu-text">Чаты поддержки</span><span class="menu-arrow">→</span></div>
+                <div class="menu-item" onclick="openAdminSection('banners')"><span class="menu-icon">🎯</span><span class="menu-text">Рекламные баннеры</span><span class="menu-arrow">→</span></div>
+                <div class="menu-item" onclick="openAdminSection('withdrawals')"><span class="menu-icon">💸</span><span class="menu-text">Выводы средств</span><span class="menu-arrow">→</span></div>
                 <div class="menu-item" onclick="openAdminSection('sellers_moderation')"><span class="menu-icon">🏪</span><span class="menu-text">Заявки продавцов</span><span class="menu-arrow">→</span></div>
             </div>
         </div>
@@ -891,6 +888,7 @@ if (!localStorage.getItem('cookies_accepted')) {
     loadFavoritesFromStorage();
     updateCartUI();
     renderCategories();
+    loadBanners();
     loadNotifications();
 }
 
@@ -944,6 +942,52 @@ function renderNotifications(c) {
             <div style="font-size:10px;color:var(--text2);margin-top:4px;">${n.created_at?.split('T')[0] || ''}</div>
         </div>
     `).join('');
+}
+
+    async function loadBanners() {
+    try {
+        const res = await fetch(`${BASE_URL}/banners?type=promo`);
+        const data = await res.json();
+        const banners = data.banners || [];
+        const container = document.getElementById('promo-banner-container');
+        if (!container || !banners.length) return;
+        
+        const banner = banners[0]; // Показываем самый приоритетный
+        
+        container.innerHTML = `
+            <div id="promo-banner" style="${banner.bg_color};border-radius:16px;padding:20px;margin-bottom:16px;text-align:center;position:relative;overflow:hidden;cursor:pointer;" onclick="handleBannerClick(${banner.id}, '${banner.link_type}', '${banner.link_value || ''}')">
+                <div style="position:absolute;top:-20px;right:-20px;font-size:80px;opacity:0.1;">🛍️</div>
+                <h3 style="color:${banner.text_color || 'var(--gold)'};position:relative;">${banner.title}</h3>
+                ${banner.subtitle ? `<p style="color:#fff;font-size:13px;position:relative;">${banner.subtitle}</p>` : ''}
+                <button class="btn btn-small" style="margin-top:8px;position:relative;">${banner.button_text || 'Подробнее'}</button>
+            </div>
+        `;
+    } catch(e) {}
+}
+
+function handleBannerClick(bannerId, linkType, linkValue) {
+    // Трекаем клик
+    fetch(`${BASE_URL}/banner/click`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            banner_id: bannerId,
+            user_id: tg.initDataUnsafe.user?.id || 0
+        })
+    }).catch(() => {});
+    
+    // Обрабатываем действие
+    if (linkType === 'subscription') {
+        nav('profile', document.querySelector('.nav-item[onclick*="profile"]'));
+        openProfileSection('subscription');
+    } else if (linkType === 'product') {
+        openProduct(parseInt(linkValue));
+    } else if (linkType === 'url') {
+        tg.openLink(linkValue);
+    } else if (linkType === 'profile_section') {
+        nav('profile', document.querySelector('.nav-item[onclick*="profile"]'));
+        if (linkValue) openProfileSection(linkValue);
+    }
 }
 
 async function loadData() {
@@ -1962,6 +2006,178 @@ function openAdminSection(s) {
     else if (s==='chats') loadChatsList(c);
     else if (s==='sellers_moderation') loadSellersModeration(c);
     else if (s==='dashboard') renderAdminDashboard(c);
+    else if (s==='withdrawals') loadWithdrawals(c);
+    else if (s==='banners') loadAdminBanners(c);
+}
+
+    function loadAdminBanners(c) {
+    c.innerHTML = '<div>Загрузка...</div>';
+    fetch(`${BASE_URL}/banners?type=&active_only=false`).then(r => r.json()).then(async d => {
+        // Убираем фильтр, получаем все баннеры
+        const allRes = await fetch(`${BASE_URL}/banners`);
+        const allData = await allRes.json();
+        const banners = allData.banners || [];
+        
+        c.innerHTML = `
+            <h3>🎯 Рекламные баннеры</h3>
+            <button class="btn btn-small" onclick="showAddBannerForm()" style="margin-bottom:12px;">➕ Новый баннер</button>
+            <div id="banners-list">
+                ${banners.length ? banners.map(b => `
+                    <div class="card" style="opacity:${b.is_active ? '1' : '0.5'}">
+                        <div style="display:flex;justify-content:space-between;align-items:start;">
+                            <div>
+                                <b>${b.title || 'Без названия'}</b>
+                                <span class="tag">${b.type}</span>
+                                ${b.is_active ? '<span class="tag tag-green">Активен</span>' : '<span class="tag">Неактивен</span>'}
+                                <div style="color:var(--text2);font-size:12px;">${b.subtitle || ''}</div>
+                            </div>
+                            <div style="display:flex;gap:4px;">
+                                <button class="btn btn-small" onclick="editBanner(${b.id})">✏️</button>
+                                <button class="btn btn-small btn-danger" onclick="deleteBanner(${b.id})">🗑</button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('') : '<div class="empty-state">Нет баннеров</div>'}
+            </div>
+        `;
+    });
+}
+
+function showAddBannerForm() {
+    const c = document.getElementById('admin-content');
+    c.innerHTML = `
+        <h3>➕ Новый баннер</h3>
+        ${getBannerFormHTML()}
+        <button class="btn" onclick="saveBanner()">💾 Сохранить</button>
+        <button class="btn btn-small" onclick="loadAdminBanners(document.getElementById('admin-content'))" style="margin-top:4px;">Отмена</button>
+    `;
+}
+
+function getBannerFormHTML(banner = {}) {
+    return `
+        <input class="input" placeholder="Заголовок" id="bn-title" value="${banner.title || ''}">
+        <input class="input" placeholder="Подзаголовок" id="bn-subtitle" value="${banner.subtitle || ''}">
+        <select class="input" id="bn-type">
+            <option value="promo" ${banner.type === 'promo' ? 'selected' : ''}>Промо-баннер</option>
+            <option value="cart" ${banner.type === 'cart' ? 'selected' : ''}>Баннер в корзине</option>
+            <option value="popup" ${banner.type === 'popup' ? 'selected' : ''}>Всплывающая акция</option>
+        </select>
+        <select class="input" id="bn-link-type">
+            <option value="none" ${banner.link_type === 'none' ? 'selected' : ''}>Без действия</option>
+            <option value="subscription" ${banner.link_type === 'subscription' ? 'selected' : ''}>Подписка</option>
+            <option value="product" ${banner.link_type === 'product' ? 'selected' : ''}>Товар</option>
+            <option value="url" ${banner.link_type === 'url' ? 'selected' : ''}>Внешняя ссылка</option>
+            <option value="profile_section" ${banner.link_type === 'profile_section' ? 'selected' : ''}>Раздел профиля</option>
+        </select>
+        <input class="input" placeholder="ID товара или URL" id="bn-link-value" value="${banner.link_value || ''}">
+        <input class="input" placeholder="Текст кнопки" id="bn-button" value="${banner.button_text || 'Подробнее'}">
+        <input class="input" placeholder="Цвет фона (CSS)" id="bn-bg" value="${banner.bg_color || 'linear-gradient(135deg, #1a1a2e, #16213e)'}">
+        <input class="input" placeholder="Цвет текста" id="bn-color" value="${banner.text_color || '#fff'}">
+        <input class="input" placeholder="Приоритет (0-100)" type="number" id="bn-priority" value="${banner.priority || 0}">
+        <label style="display:flex;align-items:center;gap:8px;margin:8px 0;">
+            <input type="checkbox" id="bn-active" ${banner.is_active !== 0 ? 'checked' : ''}> Активен
+        </label>
+        <input type="hidden" id="bn-id" value="${banner.id || ''}">
+    `;
+}
+
+async function saveBanner() {
+    const data = {
+        action: 'save_banner',
+        id: document.getElementById('bn-id')?.value || null,
+        type: document.getElementById('bn-type')?.value || 'promo',
+        title: document.getElementById('bn-title')?.value || '',
+        subtitle: document.getElementById('bn-subtitle')?.value || '',
+        link_type: document.getElementById('bn-link-type')?.value || 'none',
+        link_value: document.getElementById('bn-link-value')?.value || '',
+        button_text: document.getElementById('bn-button')?.value || 'Подробнее',
+        bg_color: document.getElementById('bn-bg')?.value || '',
+        text_color: document.getElementById('bn-color')?.value || '#fff',
+        priority: parseInt(document.getElementById('bn-priority')?.value || 0),
+        is_active: document.getElementById('bn-active')?.checked ? 1 : 0
+    };
+    
+    await fetch(`${BASE_URL}/admin_action`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    });
+    showToast('✅ Баннер сохранён!');
+    loadAdminBanners(document.getElementById('admin-content'));
+}
+
+function editBanner(id) {
+    fetch(`${BASE_URL}/banners?active_only=false`).then(r => r.json()).then(d => {
+        const banner = (d.banners || []).find(b => b.id === id);
+        if (!banner) return;
+        const c = document.getElementById('admin-content');
+        c.innerHTML = `
+            <h3>✏️ Редактировать баннер #${id}</h3>
+            ${getBannerFormHTML(banner)}
+            <button class="btn" onclick="saveBanner()">💾 Сохранить</button>
+            <button class="btn btn-small" onclick="loadAdminBanners(document.getElementById('admin-content'))" style="margin-top:4px;">Отмена</button>
+        `;
+    });
+}
+
+async function deleteBanner(id) {
+    if (!confirm('Удалить баннер?')) return;
+    await fetch(`${BASE_URL}/admin_action`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({action: 'delete_banner', banner_id: id})
+    });
+    showToast('🗑 Баннер удалён');
+    loadAdminBanners(document.getElementById('admin-content'));
+}
+
+    async function loadWithdrawals(c) {
+    c.innerHTML = '<div>Загрузка...</div>';
+    try {
+        const res = await fetch(`${BASE_URL}/admin/withdrawals`);
+        const data = await res.json();
+        const withdrawals = data.withdrawals || [];
+        
+        if (!withdrawals.length) {
+            c.innerHTML = '<h3>💸 Выводы средств</h3><div class="empty-state">Нет заявок</div>';
+            return;
+        }
+        
+        const statusNames = {'pending':'⏳ Ожидает', 'completed':'✅ Выполнено', 'rejected':'❌ Отклонено'};
+        
+        c.innerHTML = '<h3>💸 Заявки на вывод (' + withdrawals.length + ')</h3>' + withdrawals.map(w => `
+            <div class="card">
+                <div style="display:flex;justify-content:space-between;">
+                    <div>
+                        <b>${w.shop_name || 'Магазин'}</b>
+                        <div style="color:var(--text2);font-size:12px;">💰 ${w.amount} ₽ | 💳 ${w.method} | 📅 ${w.created_at?.split('T')[0] || ''}</div>
+                    </div>
+                    <span class="tag ${w.status === 'completed' ? 'tag-green' : w.status === 'rejected' ? '' : 'tag-gold'}">${statusNames[w.status] || w.status}</span>
+                </div>
+                ${w.status === 'pending' ? `
+                <div style="margin-top:8px;display:flex;gap:4px;">
+                    <button class="btn btn-small" style="background:var(--success);color:#fff;" onclick="processWithdrawal(${w.id}, 'completed')">✅ Выполнить</button>
+                    <button class="btn btn-small btn-danger" onclick="processWithdrawal(${w.id}, 'rejected')">❌ Отклонить</button>
+                </div>
+                ` : ''}
+            </div>
+        `).join('');
+    } catch(e) {
+        c.innerHTML = '<h3>💸 Выводы средств</h3><div class="empty-state">Ошибка загрузки</div>';
+    }
+}
+
+async function processWithdrawal(id, status) {
+    if (status === 'rejected' && !confirm('Отклонить заявку? Деньги вернутся продавцу.')) return;
+    if (status === 'completed' && !confirm('Подтвердить вывод? Средства будут списаны.')) return;
+    
+    await fetch(`${BASE_URL}/admin/withdrawal/process`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({withdrawal_id: id, status: status})
+    });
+    showToast(status === 'completed' ? '✅ Вывод одобрен!' : '❌ Заявка отклонена');
+    loadWithdrawals(document.getElementById('admin-content'));
 }
 
     async function renderAdminDashboard(c) {
