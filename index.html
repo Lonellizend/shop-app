@@ -3304,11 +3304,14 @@ async function loadSellerData() {
         const becomeBtn = document.getElementById('become-seller-btn');
         
         if (data.seller) {
-            // Активный продавец — показываем кнопку Магазин
             sellerData = data.seller;
             userRole = 'seller';
             updateSellerUI();
-            if (sellerNav) sellerNav.style.display = 'flex';
+            const uid = tg.initDataUnsafe.user?.id || 0;
+            const admins = [1733464126, 8012481749];
+            if (sellerNav && !admins.includes(uid)) {
+                sellerNav.style.display = 'flex';
+            }
             if (becomeBtn) becomeBtn.style.display = 'none'; // Скрываем "Стать продавцом"
         } else if (data.message && data.message.includes('рассмотрении')) {
             // Заявка на рассмотрении — не показываем магазин
