@@ -317,6 +317,7 @@
                 <div class="menu-item" onclick="openAdminSection('banners')"><span class="menu-icon">🎯</span><span class="menu-text">Рекламные баннеры</span><span class="menu-arrow">→</span></div>
                 <div class="menu-item" onclick="openAdminSection('withdrawals')"><span class="menu-icon">💸</span><span class="menu-text">Выводы средств</span><span class="menu-arrow">→</span></div>
                 <div class="menu-item" onclick="openAdminSection('sellers_moderation')"><span class="menu-icon">🏪</span><span class="menu-text">Заявки продавцов</span><span class="menu-arrow">→</span></div>
+                <div class="menu-item" onclick="openAdminSection('sellers_list')"><span class="menu-icon">🏪</span><span class="menu-text">Продавцы</span><span class="menu-arrow">→</span></div>
                 <button class="btn btn-small" onclick="exportCSV()" style="margin-top:8px;width:100%;">📥 Экспорт заказов CSV</button>
             </div>
         </div>
@@ -1092,6 +1093,7 @@ async function loadData() {
         const res = await fetch(`${BASE_URL}/init?user_id=${uid}`);
         const data = await res.json();
         state.products = data.products || [];
+        state.originalProducts = [...state.products];
         state.user = data.user || {};
         
         // Кэшируем товары
@@ -1220,17 +1222,52 @@ function showXPInfo() {
     }
 
     // ============ ТОВАРЫ ============
-    function renderCategories() {
-        const cats = ['Все', 'Одежда', 'Обувь', 'Аксессуары', 'Premium'];
-        const emojis = {'Все':'🏠','Одежда':'👕','Обувь':'👟','Аксессуары':'💍','Premium':'💎'};
-        document.getElementById('categories-list').innerHTML = cats.map(c => `<span class="tag ${c==='Все'?'tag-gold':''}" style="cursor:pointer;" onclick="filterByCategory('${c==='Все'?'':c}')">${emojis[c]} ${c}</span>`).join('');
-    }
+function renderCategories() {
+    const cats = [
+        {name: 'Все', emoji: '🏠', sub: []},
+        {name: 'Секонд', emoji: '🔄', sub: ['Одежда', 'Обувь', 'Аксессуары', 'Premium']},
+        {name: 'Новое', emoji: '✨', sub: ['Одежда', 'Обувь', 'Аксессуары', 'Premium', 'Электроника']}
+    ];
+    
+    let html = '';
+    cats.forEach(cat => {
+        html += `<div style="margin-bottom:8px;">
+            <span class="tag ${cat.name === 'Все' ? 'tag-gold' : ''}" style="cursor:pointer;font-weight:700;" onclick="filterByCategory('${cat.name === 'Все' ? '' : cat.name}')">
+                ${cat.emoji} ${cat.name}
+            </span>`;
+        if (cat.sub.length) {
+            html += '<div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;">';
+            cat.sub.forEach(sub => {
+                const value = `${cat.name}/${sub}`;
+                html += `<span class="tag" style="cursor:pointer;font-size:10px;padding:3px 8px;" onclick="filterByCategory('${value}')">${sub}</span>`;
+            });
+            html += '</div>';
+        }
+        html += '</div>';
+    });
+    document.getElementById('categories-list').innerHTML = html;
+}
 
-    function filterByCategory(cat) {
-        if (cat) state.products = state.products.filter(p => p.category === cat);
-        else loadData();
-        renderProducts();
+function filterByCategory(cat) {
+    currentPage = 1;
+    if (!cat) {
+        loadData();
+        return;
     }
+    
+    if (cat.includes('/')) {
+        // Подкатегория: "Б/У/Одежда"
+        const [main, sub] = cat.split('/');
+        state.products = state.originalProducts.filter(p => 
+            p.category === sub && (p.condition === main || (main === 'Б/У (Секонд-хенд)' && (p.condition === 'used' || !p.condition)))
+        );
+    } else if (cat === 'Секонд') {
+        state.products = state.originalProducts.filter(p => p.condition === 'used' || !p.condition);
+    } else if (cat === 'Новое') {
+        state.products = state.originalProducts.filter(p => p.condition === 'new');
+    }
+    renderProducts();
+}
 
     function handleSearch(value) {
     const query = value.trim();
@@ -2427,9 +2464,93 @@ function renderFAQ(c) {
     }
 
     // ============ ЧАТ ============
-    function renderChat(c,uid) { c.innerHTML=`<div class="chat-container" id="chat-messages"></div><div style="display:flex;gap:8px;"><input class="input" placeholder="Сообщение..." id="chat-input" style="flex:1;"><button class="btn btn-small" onclick="sendChat()">➤</button></div>`; loadChatMsgs(uid); }
-    async function loadChatMsgs(uid) { try { const r=await fetch(`${BASE_URL}/messages/${uid}`); const m=await r.json(); const cc=document.getElementById('chat-messages'); if(cc&&m.length) cc.innerHTML=m.map(x=>`<div class="chat-message ${x.is_from_user?'user':'admin'}"><div class="chat-bubble">${x.text}</div></div>`).join(''); } catch(e) {} }
-    async function sendChat() { const inp=document.getElementById('chat-input'); if(!inp) return; const t=inp.value.trim(); if(!t) return; await fetch(`${BASE_URL}/messages`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:tg.initDataUnsafe.user?.id||0,text:t,is_from_user:true})}); inp.value=''; loadChatMsgs(tg.initDataUnsafe.user?.id||0); }
+function renderChat(c, uid) {
+    c.innerHTML = `
+        <div style="text-align:center;padding:12px;background:var(--card);border-radius:12px;margin-bottom:12px;">
+            <p style="font-weight:600;">💬 Чат с поддержкой</p>
+            <p style="color:var(--text2);font-size:12px;">Отвечаем в течение 1 часа</p>
+        </div>
+        <div class="chat-container" id="chat-messages" style="height:350px;overflow-y:auto;margin-bottom:8px;background:var(--bg);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;"></div>
+        <div style="display:flex;gap:8px;align-items:flex-end;">
+            <textarea class="input" placeholder="Сообщение..." id="chat-input" style="flex:1;margin:0;min-height:44px;resize:none;" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"></textarea>
+            <button class="btn btn-small" onclick="sendChat()" style="height:44px;">➤</button>
+        </div>
+        <div id="quick-faq-chat" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px;">
+            <span class="tag" style="cursor:pointer;" onclick="document.getElementById('chat-input').value='Как оформить заказ?';sendChat();">🛒 Заказ</span>
+            <span class="tag" style="cursor:pointer;" onclick="document.getElementById('chat-input').value='Как вернуть товар?';sendChat();">🔄 Возврат</span>
+            <span class="tag" style="cursor:pointer;" onclick="document.getElementById('chat-input').value='Проблема с доставкой';sendChat();">🚚 Доставка</span>
+            <span class="tag" style="cursor:pointer;" onclick="document.getElementById('chat-input').value='Хочу стать продавцом';sendChat();">🏪 Продавец</span>
+        </div>
+    `;
+    loadChatMsgs(uid);
+}
+    
+async function loadChatMsgs(uid) { 
+    try { 
+        const r = await fetch(`${BASE_URL}/messages/${uid}`); 
+        const m = await r.json(); 
+        const cc = document.getElementById('chat-messages'); 
+        if (cc && m.length) {
+            cc.innerHTML = m.map(x => `
+                <div class="chat-message ${x.is_from_user ? 'user' : 'admin'}" style="animation: fadeIn 0.3s;">
+                    <div class="chat-bubble">
+                        ${escapeHtml(x.text)}
+                    </div>
+                    <div class="chat-time">${x.created_at ? formatChatTime(x.created_at) : ''}</div>
+                </div>
+            `).join('');
+            // Автоскролл вниз
+            setTimeout(() => {
+                cc.scrollTop = cc.scrollHeight;
+            }, 100);
+        } else if (cc) {
+            cc.innerHTML = `
+                <div style="text-align:center;color:var(--text2);padding:20px;">
+                    <div style="font-size:48px;">💬</div>
+                    <p>Напишите ваш вопрос</p>
+                    <p style="font-size:11px;">Поддержка отвечает в течение 1 часа</p>
+                </div>
+            `;
+        }
+    } catch(e) {
+        const cc = document.getElementById('chat-messages');
+        if (cc) cc.innerHTML = '<div style="text-align:center;color:var(--text2);">Ошибка загрузки</div>';
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.innerText = text;
+    return div.innerHTML;
+}
+
+function formatChatTime(isoString) {
+    if (!isoString) return '';
+    const date = new Date(isoString);
+    const now = new Date();
+    const diff = now - date;
+    
+    if (diff < 60000) return 'Только что';
+    if (diff < 3600000) return Math.floor(diff / 60000) + ' мин. назад';
+    if (diff < 86400000) return Math.floor(diff / 3600000) + ' ч. назад';
+    return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+    
+async function sendChat() {
+    const inp = document.getElementById('chat-input');
+    if (!inp) return;
+    const t = inp.value.trim();
+    if (!t) return;
+    await fetch(`${BASE_URL}/messages`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({user_id: tg.initDataUnsafe.user?.id||0, text: t, is_from_user: true})
+    });
+    inp.value = '';
+    await loadChatMsgs(tg.initDataUnsafe.user?.id||0);
+    const cc = document.getElementById('chat-messages');
+    if (cc) cc.scrollTop = cc.scrollHeight;
+}
 
     // ============ АДМИН-ПАНЕЛЬ ============
 function openAdminSection(s) {
@@ -2448,6 +2569,7 @@ function openAdminSection(s) {
     else if (s==='dashboard') renderAdminDashboard(c);
     else if (s==='withdrawals') loadWithdrawals(c);
     else if (s==='banners') loadAdminBanners(c);
+    else if (s==='sellers_list') loadSellersList(c);
 }
 
     function loadAdminBanners(c) {
@@ -2726,6 +2848,10 @@ function renderAddProduct(c) {
         <input class="input" placeholder="Цена (₽)" type="number" id="ap-price">
         <input class="input" placeholder="Скидочная цена (необязательно)" type="number" id="ap-discount">
         <textarea class="input" placeholder="Описание" id="ap-desc"></textarea>
+        <select class="input" id="ap-condition">
+            <option value="used">🔄 Б/У (Секонд-хенд)</option>
+            <option value="new">✨ Новое</option>
+        </select>
         <select class="input" id="ap-category">
             <option value="Premium">Premium</option>
             <option value="Одежда">Одежда</option>
@@ -2809,6 +2935,7 @@ async function submitProduct() {
         action: 'save_product',
         name: name,
         price: price,
+        condition: document.getElementById('ap-condition')?.value || 'used',
         discount_price: parseInt(document.getElementById('ap-discount')?.value || 0) || null,
         description: document.getElementById('ap-desc')?.value || '',
         category: document.getElementById('ap-category')?.value || 'Premium',
@@ -3582,9 +3709,17 @@ async function registerSeller() {
         } catch(e) { c.innerHTML = '<div class="empty-state">Ошибка загрузки</div>'; }
     }
     
-    function renderSellerAddProduct(c) {
-        state.adminFiles = [];
-        c.innerHTML = `<h3>➕ Добавить товар</h3><input class="input" placeholder="Название" id="ap-name"><input class="input" placeholder="Цена (₽)" type="number" id="ap-price"><textarea class="input" placeholder="Описание" id="ap-desc"></textarea><input class="input" placeholder="Количество" type="number" id="ap-qty" value="10"><input type="file" class="input" id="ap-files" multiple accept="image/*,video/*" onchange="previewFiles(this.files)"><div id="ap-preview" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"></div><button class="btn" onclick="submitSellerProduct()">💾 Сохранить</button>`;
+function renderSellerAddProduct(c) {
+    state.adminFiles = [];
+    c.innerHTML = `<h3>➕ Добавить товар</h3>
+        <input class="input" placeholder="Название" id="ap-name">
+        <input class="input" placeholder="Цена (₽)" type="number" id="ap-price">
+        <select class="input" id="ap-condition">
+            <option value="used">🔄 Б/У (Секонд-хенд)</option>
+            <option value="new">✨ Новое</option>
+        </select>
+        <textarea class="input" placeholder="Описание" id="ap-desc"></textarea>
+        <input class="input" placeholder="Количество" type="number" id="ap-qty" value="10"><input type="file" class="input" id="ap-files" multiple accept="image/*,video/*" onchange="previewFiles(this.files)"><div id="ap-preview" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"></div><button class="btn" onclick="submitSellerProduct()">💾 Сохранить</button>`;
     }
     
 async function submitSellerProduct() {
@@ -3610,6 +3745,7 @@ async function submitSellerProduct() {
     const data = {
         action: 'save_product',
         name, price,
+        condition: document.getElementById('ap-condition')?.value || 'used',
         description: document.getElementById('ap-desc')?.value || '',
         category: 'Premium',
         quantity: parseInt(document.getElementById('ap-qty')?.value || 10),
@@ -3775,6 +3911,132 @@ async function updateOrderStatus(oid, status, sellerId = null) {
     } catch(e) {
         c.innerHTML = '<h3>🏪 Заявки продавцов</h3><div class="empty-state">Ошибка загрузки</div>';
     }
+}
+
+async function loadSellersList(c) {
+    c.innerHTML = '<div>Загрузка...</div>';
+    try {
+        const res = await fetch(`${BASE_URL}/admin/sellers-list`);
+        const data = await res.json();
+        const sellers = data.sellers || [];
+        
+        if (!sellers.length) {
+            c.innerHTML = '<h3>🏪 Продавцы</h3><div class="empty-state">Нет продавцов</div>';
+            return;
+        }
+        
+        c.innerHTML = '<h3>🏪 Продавцы (' + sellers.length + ')</h3><input class="input" placeholder="🔍 Поиск..." oninput="filterSellers(this.value)"><div id="sellers-list"></div>';
+        
+        renderSellersList(sellers);
+    } catch(e) {
+        c.innerHTML = '<h3>🏪 Продавцы</h3><div class="empty-state">Ошибка загрузки</div>';
+    }
+}
+
+function renderSellersList(sellers) {
+    document.getElementById('sellers-list').innerHTML = sellers.map(s => `
+        <div class="card" style="cursor:pointer;" onclick="openSellerProfile(${s.id})">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <b>${s.shop_name}</b>
+                    <div style="color:var(--text2);font-size:12px;">ID: ${s.user_id} | Рейтинг: ⭐${(s.rating||0).toFixed(1)}</div>
+                    <div style="color:var(--text2);font-size:12px;">💰 Баланс: ${s.balance||0} ₽ | 🛍 Продаж: ${s.total_sales||0}</div>
+                </div>
+                <span class="tag tag-gold">Комиссия: ${s.commission_rate||10}%</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+function filterSellers(query) {
+    fetch(`${BASE_URL}/admin/sellers-list`).then(r => r.json()).then(data => {
+        const filtered = (data.sellers || []).filter(s => 
+            (s.shop_name || '').toLowerCase().includes(query.toLowerCase()) ||
+            String(s.user_id).includes(query)
+        );
+        renderSellersList(filtered);
+    });
+}
+
+function openSellerProfile(sellerId) {
+    fetch(`${BASE_URL}/admin/seller/${sellerId}`).then(r => r.json()).then(data => {
+        const s = data.seller;
+        if (!s) return;
+        const c = document.getElementById('admin-content');
+        
+        c.innerHTML = `
+            <div class="section-back" onclick="openAdminSection('sellers_list')">← Назад</div>
+            
+            <div class="card" style="text-align:center;">
+                <div style="font-size:64px;">🏪</div>
+                <h2>${s.shop_name}</h2>
+                <p style="color:var(--text2);">${s.shop_description || ''}</p>
+                <span class="tag tag-gold">Рейтинг: ${(s.rating||0).toFixed(1)} ⭐</span>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card"><div class="stat-value">${s.balance||0} ₽</div><div class="stat-label">💰 Баланс</div></div>
+                <div class="stat-card"><div class="stat-value">${s.total_sales||0}</div><div class="stat-label">🛍 Продаж</div></div>
+                <div class="stat-card"><div class="stat-value">${s.commission_rate||10}%</div><div class="stat-label">💸 Комиссия</div></div>
+                <div class="stat-card"><div class="stat-value">${s.is_active ? '✅' : '⏳'}</div><div class="stat-label">Статус</div></div>
+            </div>
+            
+            <div class="card">
+                <h4>💰 Изменить баланс</h4>
+                <div style="display:flex;gap:8px;">
+                    <input class="input" type="number" id="seller-balance" value="${s.balance||0}">
+                    <button class="btn btn-small" onclick="updateSellerBalance(${s.id})">💾 Сохранить</button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h4>💸 Изменить комиссию</h4>
+                <div style="display:flex;gap:8px;">
+                    <input class="input" type="number" id="seller-commission" value="${s.commission_rate||10}" min="0" max="100">
+                    <span style="font-size:20px;align-self:center;">%</span>
+                    <button class="btn btn-small" onclick="updateSellerCommission(${s.id})">💾 Сохранить</button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h4>🔧 Действия</h4>
+                <button class="btn btn-small" style="background:var(--danger);color:#fff;" onclick="toggleSellerStatus(${s.id}, ${s.is_active ? 0 : 1})">
+                    ${s.is_active ? '🚫 Заблокировать' : '✅ Активировать'}
+                </button>
+            </div>
+        `;
+    });
+}
+
+async function updateSellerBalance(sellerId) {
+    const balance = parseInt(document.getElementById('seller-balance')?.value || 0);
+    await fetch(`${BASE_URL}/admin/seller/update`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({seller_id: sellerId, balance: balance})
+    });
+    showToast('✅ Баланс обновлён');
+}
+
+async function updateSellerCommission(sellerId) {
+    const commission = parseInt(document.getElementById('seller-commission')?.value || 10);
+    await fetch(`${BASE_URL}/admin/seller/update`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({seller_id: sellerId, commission_rate: commission})
+    });
+    showToast('✅ Комиссия обновлена');
+}
+
+async function toggleSellerStatus(sellerId, newStatus) {
+    if (!confirm(newStatus ? 'Активировать продавца?' : 'Заблокировать продавца?')) return;
+    await fetch(`${BASE_URL}/admin/seller/update`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({seller_id: sellerId, is_active: newStatus})
+    });
+    showToast(newStatus ? '✅ Продавец активирован' : '🚫 Продавец заблокирован');
+    openAdminSection('sellers_list');
 }
 
 async function approveSeller(id) {
