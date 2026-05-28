@@ -3758,7 +3758,11 @@ function loadAnalytics(c) {
             
             <div class="card" style="margin-top:12px;">
                 <h4>📊 Показатели</h4>
-                <div style="display:flex;justify-content:space-between;...">
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:14px;">
+                    <span>Средний чек</span>
+                    <span style="color:var(--gold);">${clients.avg_check || 0} ₽</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:14px;">
                     <span>Конверсия</span>
                     <span style="color:var(--gold);">${vis > 0 ? Math.round((ord / vis) * 100) : 0}%</span>
                 </div>
