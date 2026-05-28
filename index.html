@@ -937,6 +937,8 @@ async function init() {
                     localStorage.setItem('pd_agreed', 'true');
                 } else {
                     showDoc('privacy-modal');
+                    // Всё равно сохраняем, чтобы окно не появлялось снова
+                    localStorage.setItem('pd_agreed', 'true');
                 }
             });
         }, 4000);
