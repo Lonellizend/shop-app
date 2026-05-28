@@ -55,95 +55,117 @@
         
 .nav {
     position: fixed;
-    bottom: 12px;
-    left: 12px;
-    right: 12px;
+    bottom: 8px;
+    left: 8px;
+    right: 8px;
     background: var(--card);
     backdrop-filter: blur(20px);
     display: flex;
     justify-content: space-around;
+    align-items: center;
     border-radius: 20px;
-    height: 64px;
+    height: 68px;
     z-index: 150;
     border: 1px solid var(--border);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    box-shadow: 0 -2px 20px rgba(0,0,0,0.2);
 }
-        .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text2); font-size: 10px; cursor: pointer; padding: 4px 8px; transition: 0.2s; position: relative; }
-        .nav-item.active { color: var(--gold); }
-        .nav-item .nav-icon { font-size: 22px; }
-        .nav-badge { position: absolute; top: 2px; right: 2px; background: var(--danger); color: #fff; font-size: 9px; min-width: 16px; height: 16px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; animation: bounce 0.5s; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text2); font-size: 10px; cursor: pointer; padding: 6px 10px; transition: all 0.2s ease; position: relative; border-radius: 12px; }
+        .nav-item:active { transform: scale(0.95); }
+        .nav-item.active { color: var(--gold); background: rgba(212,175,55,0.1); }
+        .nav-item.active::after { content: ''; position: absolute; bottom: 2px; width: 20px; height: 3px; background: var(--gold); border-radius: 2px; animation: slideUp 0.3s ease; }
+        .nav-item .nav-icon { font-size: 22px; transition: transform 0.2s; }
+        .nav-item.active .nav-icon { transform: translateY(-2px); }
+        .nav-badge { position: absolute; top: -2px; right: -4px; background: var(--danger); color: #fff; font-size: 9px; min-width: 16px; height: 16px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; animation: bounce 0.5s; box-shadow: 0 2px 6px rgba(255,68,68,0.4); }
         
-        .card { background: var(--card); border-radius: 16px; padding: 18px; border: 1px solid var(--border); margin-bottom: 12px; transition: 0.2s; }
-        .card:active { transform: scale(0.99); }
+        .card { background: var(--card); border-radius: 16px; padding: 18px; border: 1px solid var(--border); margin-bottom: 12px; transition: all 0.2s ease; }
+        .card:active { transform: scale(0.98); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         
-        .btn { background: var(--gold); color: #000; border: none; padding: 16px; border-radius: 14px; font-weight: 700; font-size: 16px; width: 100%; cursor: pointer; transition: 0.2s; }
+        .btn { background: var(--gold); color: #000; border: none; padding: 16px; border-radius: 14px; font-weight: 700; font-size: 16px; width: 100%; cursor: pointer; transition: all 0.2s ease; position: relative; overflow: hidden; }
         .btn:active { transform: scale(0.97); }
+        .btn::after { content: ''; position: absolute; top: 50%; left: 50%; width: 0; height: 0; background: rgba(255,255,255,0.3); border-radius: 50%; transform: translate(-50%, -50%); transition: width 0.5s, height 0.5s; }
+        .btn:active::after { width: 300px; height: 300px; }
         .btn-outline { background: transparent; color: var(--gold); border: 2px solid var(--gold); }
-        .btn-small { padding: 10px 16px; font-size: 13px; width: auto; }
+        .btn-outline:active { background: rgba(212,175,55,0.1); }
+        .btn-small { padding: 10px 16px; font-size: 13px; width: auto; border-radius: 12px; }
         .btn-danger { background: var(--danger); color: #fff; }
+        .btn-danger:active { background: #cc0000; }
         
-        .input { background: var(--card2); border: 1px solid var(--border); padding: 14px 16px; border-radius: 14px; color: var(--text); width: 100%; margin-bottom: 10px; font-size: 15px; transition: 0.2s; }
-        .input:focus { outline: none; border-color: var(--gold); }
+        .input { background: var(--card2); border: 1px solid var(--border); padding: 14px 16px; border-radius: 14px; color: var(--text); width: 100%; margin-bottom: 10px; font-size: 15px; transition: all 0.2s ease; }
+        .input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(212,175,55,0.15); }
         textarea.input { min-height: 80px; resize: vertical; }
-        select.input { appearance: none; cursor: pointer; }
+        select.input { appearance: none; cursor: pointer; background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23999' viewBox='0 0 16 16'><path d='M8 11L3 6h10z'/></svg>"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
         
         .search-container { position: relative; margin-bottom: 16px; }
-        .search-suggestions { position: absolute; top: 100%; left: 0; right: 0; background: var(--card); border: 1px solid var(--border); border-radius: 0 0 14px 14px; z-index: 50; display: none; max-height: 200px; overflow-y: auto; }
-        .search-suggestions.active { display: block; }
-        .search-item { padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border); }
+        .search-suggestions { position: absolute; top: 100%; left: 0; right: 0; background: var(--card); border: 1px solid var(--border); border-radius: 0 0 14px 14px; z-index: 50; display: none; max-height: 200px; overflow-y: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+        .search-suggestions.active { display: block; animation: fadeIn 0.2s ease; }
+        .search-item { padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border); transition: background 0.15s; }
+        .search-item:hover { background: var(--card2); }
+        .search-item:last-child { border-bottom: none; }
         
-        .products-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .product-card { background: var(--card); border-radius: 16px; overflow: hidden; cursor: pointer; border: 1px solid var(--border); transition: 0.2s; position: relative; }
-        .product-card:active { transform: scale(0.97); }
+        .products-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .product-card { background: var(--card); border-radius: 14px; overflow: hidden; cursor: pointer; border: 1px solid var(--border); transition: all 0.2s ease; position: relative; }
+        .product-card:active { transform: scale(0.97); box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+        .product-card:hover { border-color: var(--gold); }
 .product-card img, .product-card video { 
     width: 100%; 
     aspect-ratio: 1/1; 
     object-fit: cover; 
     loading: lazy;
 }
-        .product-badge { position: absolute; top: 8px; left: 8px; padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; z-index: 2; }
+        .product-badge { position: absolute; top: 8px; left: 8px; padding: 5px 12px; border-radius: 10px; font-size: 10px; font-weight: 700; z-index: 2; letter-spacing: 0.5px; backdrop-filter: blur(4px); }
         .badge-new { background: var(--blue); color: #fff; }
         .badge-hit { background: var(--danger); color: #fff; animation: pulse 2s infinite; }
         .badge-sale { background: var(--success); color: #fff; }
-        .badge-exclusive { background: var(--gold); color: #000; }
-        .product-info { padding: 10px; }
-        .product-price { font-size: 18px; font-weight: 800; color: var(--gold); }
-        .product-old-price { text-decoration: line-through; color: var(--text2); font-size: 12px; }
-        .product-name { font-size: 13px; color: var(--text2); margin-top: 4px; }
-        .product-rating { font-size: 12px; color: var(--gold); margin-top: 4px; }
+        .badge-exclusive { background: linear-gradient(135deg, var(--gold), #ffd700); color: #000; }
+        .product-info { padding: 12px; }
+        .product-price { font-size: 18px; font-weight: 800; color: var(--gold); line-height: 1.2; }
+        .product-old-price { text-decoration: line-through; color: var(--text2); font-size: 12px; margin-left: 4px; }
+        .product-name { font-size: 13px; color: var(--text2); margin-top: 4px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .product-rating { font-size: 12px; color: var(--gold); margin-top: 4px; display: flex; align-items: center; gap: 4px; }
         
-        .wishlist-btn { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.5); border: none; color: #fff; width: 32px; height: 32px; border-radius: 50%; font-size: 16px; cursor: pointer; z-index: 2; backdrop-filter: blur(4px); transition: 0.2s; }
-        .wishlist-btn.active { background: var(--danger); }
+        .wishlist-btn { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.4); border: none; color: #fff; width: 34px; height: 34px; border-radius: 50%; font-size: 16px; cursor: pointer; z-index: 2; backdrop-filter: blur(8px); transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; }
+        .wishlist-btn:hover { transform: scale(1.1); }
+        .wishlist-btn.active { background: var(--danger); transform: scale(1.1); animation: bounce 0.4s ease; }
         
-        .profile-header { text-align: center; padding: 30px 20px; background: linear-gradient(135deg, rgba(212,175,55,0.2) 0%, transparent 100%); border-radius: 20px; margin-bottom: 16px; }
-        .avatar { width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--gold); margin-bottom: 12px; object-fit: cover; box-shadow: 0 0 30px rgba(212,175,55,0.3); }
+        .profile-header { text-align: center; padding: 30px 20px; background: linear-gradient(135deg, rgba(212,175,55,0.2) 0%, transparent 100%); border-radius: 20px; margin-bottom: 16px; position: relative; overflow: hidden; }
+        .profile-header::before { content: ''; position: absolute; top: -50%; right: -50%; width: 200px; height: 200px; background: radial-gradient(circle, rgba(212,175,55,0.1) 0%, transparent 70%); }
+        .avatar { width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--gold); margin-bottom: 12px; object-fit: cover; box-shadow: 0 0 30px rgba(212,175,55,0.3); transition: transform 0.3s; }
+        .avatar:hover { transform: scale(1.05); }
         .username { font-size: 22px; font-weight: 700; }
-        .user-tag { color: var(--gold); font-size: 14px; }
+        .user-tag { color: var(--gold); font-size: 14px; opacity: 0.8; }
         
-        .level-bar { margin: 12px 0; background: var(--card2); border-radius: 10px; height: 12px; overflow: hidden; }
-        .level-fill { height: 100%; border-radius: 10px; background: linear-gradient(90deg, var(--gold), #ff6b6b); transition: width 0.5s; }
-        .level-text { display: flex; justify-content: space-between; font-size: 12px; margin-top: 4px; }
+        .level-bar { margin: 12px 0; background: var(--card2); border-radius: 10px; height: 10px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); }
+        .level-fill { height: 100%; border-radius: 10px; background: linear-gradient(90deg, var(--gold), #ff6b6b); transition: width 0.5s ease; position: relative; }
+        .level-fill::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 50%); border-radius: 10px; }
+        .level-text { display: flex; justify-content: space-between; font-size: 12px; margin-top: 4px; font-weight: 500; }
         
         .badges-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
-        .badge-item { font-size: 24px; padding: 8px; background: var(--card); border-radius: 12px; border: 1px solid var(--border); }
+        .badge-item { font-size: 28px; padding: 10px; background: var(--card); border-radius: 14px; border: 1px solid var(--border); transition: transform 0.2s; cursor: default; }
+        .badge-item:hover { transform: translateY(-2px); }
         
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
-        .stat-card { background: var(--card); padding: 16px; border-radius: 16px; border: 1px solid var(--border); text-align: center; }
-        .stat-value { color: var(--gold); font-size: 24px; font-weight: 800; }
-        .stat-label { font-size: 11px; color: var(--text2); }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+        .stat-card { background: var(--card); padding: 16px 12px; border-radius: 16px; border: 1px solid var(--border); text-align: center; transition: all 0.2s; cursor: default; }
+        .stat-card:hover { border-color: var(--gold); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .stat-card:active { transform: scale(0.98); }
+        .stat-value { color: var(--gold); font-size: 24px; font-weight: 800; line-height: 1.2; }
+        .stat-label { font-size: 11px; color: var(--text2); margin-top: 2px; font-weight: 500; }
         
-        .menu-list { display: flex; flex-direction: column; gap: 6px; }
-        .menu-item { display: flex; align-items: center; gap: 14px; padding: 16px; background: var(--card); border-radius: 16px; border: 1px solid var(--border); cursor: pointer; transition: 0.2s; }
-        .menu-item:active { transform: scale(0.98); }
-        .menu-icon { font-size: 24px; }
+        .menu-list { display: flex; flex-direction: column; gap: 4px; }
+        .menu-item { display: flex; align-items: center; gap: 14px; padding: 16px; background: var(--card); border-radius: 16px; border: 1px solid var(--border); cursor: pointer; transition: all 0.2s ease; }
+        .menu-item:hover { border-color: var(--gold); }
+        .menu-item:active { transform: scale(0.98); background: var(--card2); }
+        .menu-icon { font-size: 24px; transition: transform 0.2s; }
+        .menu-item:hover .menu-icon { transform: scale(1.1); }
         .menu-text { flex: 1; font-weight: 600; font-size: 16px; }
-        .menu-arrow { color: var(--text2); font-size: 18px; }
+        .menu-arrow { color: var(--text2); font-size: 18px; transition: transform 0.2s; }
+        .menu-item:hover .menu-arrow { transform: translateX(3px); color: var(--gold); }
         
-        .section-back { display: flex; align-items: center; gap: 8px; padding: 8px; cursor: pointer; color: var(--gold); font-weight: 600; margin-bottom: 12px; }
+        .section-back { display: flex; align-items: center; gap: 8px; padding: 8px 12px; cursor: pointer; color: var(--gold); font-weight: 600; margin-bottom: 12px; border-radius: 10px; transition: background 0.2s; width: fit-content; }
+        .section-back:hover { background: var(--card2); }
         
         .theme-toggle { display: flex; align-items: center; gap: 12px; padding: 16px; background: var(--card); border-radius: 16px; border: 1px solid var(--border); margin-bottom: 12px; }
-        .theme-switch { width: 52px; height: 28px; background: var(--border); border-radius: 14px; cursor: pointer; position: relative; transition: 0.3s; }
-        .theme-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 24px; height: 24px; background: #fff; border-radius: 50%; transition: 0.3s; }
+        .theme-switch { width: 52px; height: 28px; background: var(--border); border-radius: 14px; cursor: pointer; position: relative; transition: 0.3s ease; }
+        .theme-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 24px; height: 24px; background: #fff; border-radius: 50%; transition: 0.3s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
         .theme-switch.dark { background: var(--gold); }
         .theme-switch.dark::after { left: 26px; }
         
@@ -165,43 +187,50 @@
     align-items: flex-start;
     justify-content: center;
 }
-        .modal { background: var(--card); border-radius: 20px; padding: 24px; width: 100%; max-width: 500px; margin: 20px 0; border: 1px solid var(--border); animation: slideUp 0.3s; }
-        .modal-close { float: right; background: none; border: none; color: var(--text2); font-size: 24px; cursor: pointer; }
+        .modal { background: var(--card); border-radius: 20px; padding: 24px; width: 100%; max-width: 500px; margin: 20px 0; border: 1px solid var(--border); animation: slideUp 0.3s ease; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .modal-close { float: right; background: var(--card2); border: none; color: var(--text2); font-size: 20px; cursor: pointer; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .modal-close:hover { background: var(--danger); color: #fff; }
         
-        .media-slider { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 8px; margin-bottom: 12px; border-radius: 12px; }
+        .media-slider { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 0; margin-bottom: 12px; border-radius: 14px; -webkit-overflow-scrolling: touch; }
         .media-slider::-webkit-scrollbar { display: none; }
-        .media-slide { flex: 0 0 100%; scroll-snap-align: center; border-radius: 12px; overflow: hidden; }
-        .media-slide img, .media-slide video { width: 100%; aspect-ratio: 1/1; object-fit: cover; }
+        .media-slide { flex: 0 0 100%; scroll-snap-align: center; border-radius: 14px; overflow: hidden; position: relative; }
+        .media-slide::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 40px; background: linear-gradient(transparent, rgba(0,0,0,0.1)); pointer-events: none; }
+        .media-slide img, .media-slide video { width: 100%; aspect-ratio: 1/1; object-fit: cover; display: block; }
         
-        .chat-container { height: 300px; overflow-y: auto; margin-bottom: 12px; background: var(--bg); border-radius: 12px; padding: 12px; }
-        .chat-message { margin-bottom: 8px; display: flex; }
+        .chat-container { height: 300px; overflow-y: auto; margin-bottom: 12px; background: var(--bg); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 6px; scroll-behavior: smooth; }
+        .chat-message { display: flex; animation: fadeIn 0.3s ease; }
         .chat-message.user { justify-content: flex-end; }
         .chat-message.admin { justify-content: flex-start; }
-        .chat-bubble { max-width: 80%; padding: 10px 14px; border-radius: 14px; font-size: 14px; line-height: 1.4; }
-        .chat-message.user .chat-bubble { background: var(--gold); color: #000; }
-        .chat-message.admin .chat-bubble { background: var(--blue); color: #fff; }
-        .chat-time { font-size: 10px; opacity: 0.6; margin-top: 4px; }
+        .chat-bubble { max-width: 80%; padding: 10px 14px; border-radius: 16px; font-size: 14px; line-height: 1.4; position: relative; word-break: break-word; }
+        .chat-message.user .chat-bubble { background: var(--gold); color: #000; border-bottom-right-radius: 4px; }
+        .chat-message.admin .chat-bubble { background: var(--blue); color: #fff; border-bottom-left-radius: 4px; }
+        .chat-time { font-size: 10px; opacity: 0.5; margin-top: 4px; padding: 0 4px; }
         
-        .flash-sale { background: linear-gradient(135deg, #ff6b6b, #ff4444); color: #fff; padding: 16px; border-radius: 16px; margin-bottom: 16px; text-align: center; }
-        .countdown { display: flex; gap: 8px; justify-content: center; }
-        .countdown-item { background: rgba(0,0,0,0.3); padding: 8px 10px; border-radius: 8px; text-align: center; min-width: 45px; }
-        .countdown-value { font-size: 20px; font-weight: 800; }
-        .countdown-label { font-size: 9px; opacity: 0.7; }
+        .flash-sale { background: linear-gradient(135deg, #ff6b6b, #ff4444); color: #fff; padding: 16px; border-radius: 16px; margin-bottom: 16px; text-align: center; position: relative; overflow: hidden; }
+        .flash-sale::before { content: ''; position: absolute; top: -30px; right: -30px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%; }
+        .flash-sale::after { content: ''; position: absolute; bottom: -20px; left: -20px; width: 60px; height: 60px; background: rgba(255,255,255,0.08); border-radius: 50%; }
+        .countdown { display: flex; gap: 6px; justify-content: center; position: relative; z-index: 1; }
+        .countdown-item { background: rgba(0,0,0,0.3); padding: 8px 10px; border-radius: 10px; text-align: center; min-width: 45px; backdrop-filter: blur(4px); }
+        .countdown-value { font-size: 22px; font-weight: 800; line-height: 1; }
+        .countdown-label { font-size: 9px; opacity: 0.7; margin-top: 2px; }
         
-        .qty-control { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
-        .qty-btn { width: 36px; height: 36px; border-radius: 50%; background: var(--card2); border: 1px solid var(--border); color: var(--text); font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .qty-value { font-size: 18px; font-weight: 700; min-width: 30px; text-align: center; }
+        .qty-control { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
+        .qty-btn { width: 40px; height: 40px; border-radius: 50%; background: var(--card2); border: 2px solid var(--border); color: var(--text); font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; user-select: none; }
+        .qty-btn:hover { border-color: var(--gold); background: var(--card); }
+        .qty-btn:active { transform: scale(0.9); background: var(--gold); color: #000; }
+        .qty-value { font-size: 20px; font-weight: 700; min-width: 30px; text-align: center; }
         
-        .tag { display: inline-block; padding: 4px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+        .tag { display: inline-block; padding: 5px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; letter-spacing: 0.3px; transition: all 0.2s; }
         .tag-gold { background: var(--gold); color: #000; }
         .tag-green { background: var(--success); color: #fff; }
+        .tag:hover { opacity: 0.85; }
         
-        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--card); color: var(--text); padding: 14px 24px; border-radius: 14px; z-index: 300; font-weight: 600; border: 1px solid var(--border); animation: slideDown 0.3s; }
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--card); color: var(--text); padding: 14px 24px; border-radius: 14px; z-index: 300; font-weight: 600; border: 1px solid var(--border); animation: slideDown 0.3s ease; box-shadow: 0 8px 32px rgba(0,0,0,0.3); backdrop-filter: blur(10px); }
         @keyframes slideDown { from { transform: translateX(-50%) translateY(-100px); opacity: 0; } to { transform: translateX(-50%) translateY(0); opacity: 1; } }
         @keyframes spin { to { transform: rotate(360deg); } }
         
-        .empty-state { text-align: center; padding: 40px; color: var(--text2); }
-        .empty-icon { font-size: 48px; margin-bottom: 12px; }
+        .empty-state { text-align: center; padding: 40px; color: var(--text2); animation: fadeIn 0.5s ease; }
+        .empty-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.6; }
         .chat-input-row {
     position: sticky;
     bottom: 0;
@@ -226,6 +255,12 @@
             <input class="input" placeholder="🔍 Поиск товаров..." id="search-input" oninput="handleSearch(this.value)" autocomplete="off">
             <div class="search-suggestions" id="search-suggestions"></div>
         </div>
+        <select class="input" id="sort-select" onchange="sortProducts(this.value)" style="margin-bottom:8px;padding:10px 14px;">
+            <option value="newest">🆕 Новые</option>
+            <option value="cheapest">⬆️ Сначала дешёвые</option>
+            <option value="expensive">⬇️ Сначала дорогие</option>
+            <option value="popular">⭐ Популярные</option>
+        </select>
         <div style="display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;" id="categories-list"></div>
         <div class="products-grid" id="products-list">
             <div class="skeleton skeleton-img"></div>
@@ -478,13 +513,32 @@
 </div>
 
     <!-- НАВИГАЦИЯ -->
-    <div class="nav">
-        <div class="nav-item active" onclick="nav('shop', this)"><span class="nav-icon">🏠</span> Шоп</div>
-        <div class="nav-item" onclick="nav('cart', this)"><span class="nav-icon">🛒</span> Корзина</div>
-        <div class="nav-item" onclick="nav('profile', this)"><span class="nav-icon">👤</span> Профиль</div>
-        <div class="nav-item admin-only" id="adm-nav" style="display:none;" onclick="nav('admin', this)"><span class="nav-icon">⚙️</span> Админ</div>
+    <div class="nav" style="height:70px;padding:4px 8px;gap:0;">
+        <div class="nav-item active" onclick="nav('shop', this)" style="gap:2px;">
+            <span class="nav-icon">🏠</span>
+            <span style="font-size:10px;font-weight:500;">Главная</span>
+        </div>
+        <div class="nav-item" onclick="nav('cart', this)" style="gap:2px;">
+            <span class="nav-icon" style="position:relative;">
+                🛒
+                <span id="cart-badge" style="display:none;position:absolute;top:-6px;right:-8px;background:var(--danger);color:#fff;font-size:10px;min-width:18px;height:18px;border-radius:9px;text-align:center;line-height:18px;font-weight:700;box-shadow:0 2px 4px rgba(0,0,0,0.3);">0</span>
+            </span>
+            <span style="font-size:10px;font-weight:500;">Корзина</span>
+        </div>
+        <div class="nav-item" onclick="nav('profile', this)" style="gap:2px;">
+            <span class="nav-icon" style="position:relative;">
+                👤
+                <span id="notif-badge" class="nav-badge" style="display:none;"></span>
+            </span>
+            <span style="font-size:10px;font-weight:500;">Профиль</span>
+        </div>
+        <div class="nav-item admin-only" id="adm-nav" style="display:none;" onclick="nav('admin', this)">
+            <span class="nav-icon">⚙️</span>
+            <span style="font-size:10px;font-weight:500;">Админ</span>
+        </div>
         <div class="nav-item seller-only" id="seller-nav" style="display:none;" onclick="nav('seller', this)">
-            <span class="nav-icon">🏪</span> Магазин
+            <span class="nav-icon">🏪</span>
+            <span style="font-size:10px;font-weight:500;">Магазин</span>
         </div>
     </div>
 <!-- ========== ЮРИДИЧЕСКИЕ ДОКУМЕНТЫ ========== -->
@@ -816,6 +870,7 @@
         paymentMethod: 'card', theme: localStorage.getItem('theme') || 'dark',
         adminFiles: [], allUsers: [], editingProductId: null,
         flashSale: { active: false, discount: 30, endTime: null },
+        flashSaleTimer: null,
         activeOrders: [], ordersHistory: [],
         onboardingShown: localStorage.getItem('onboarding') === 'true',
         notifications: [],
@@ -891,6 +946,17 @@ function closeModal(id) {
     // ============ ИНИЦИАЛИЗАЦИЯ ============
 async function init() {
     tg.ready(); tg.expand();
+
+    // Pull-to-refresh
+let touchStartY = 0;
+document.addEventListener('touchstart', e => touchStartY = e.touches[0].clientY);
+document.addEventListener('touchend', async e => {
+    if (window.scrollY === 0 && e.changedTouches[0].clientY - touchStartY > 80) {
+        showToast('🔄 Обновление...');
+        await loadData();
+        showToast('✅ Обновлено!');
+    }
+});
     
     // Проверка соединения
     try {
@@ -1113,18 +1179,21 @@ async function loadProductImages(start, count) {
     const toLoad = state.products.slice(start, start + count);
     for (const p of toLoad) {
         if (!p._imagesLoaded) {
+            p._loading = true;
             try {
                 const res = await fetch(`${BASE_URL}/product/${p.id}/images`);
                 const data = await res.json();
                 p._images = data.images || [];
                 p._imagesLoaded = true;
+                p._loading = false;
             } catch(e) {
                 p._images = [];
                 p._imagesLoaded = true;
+                p._loading = false;
             }
         }
     }
-    renderProducts(); // Перерисовываем с фото
+    renderProducts();
 }
 
     function updateProfileUI() {
@@ -1193,6 +1262,24 @@ function showXPInfo() {
     }
 }
 
+function sortProducts(type) {
+    currentPage = 1;
+    switch(type) {
+        case 'cheapest':
+            state.products.sort((a, b) => (a.discount_price || a.price) - (b.discount_price || b.price));
+            break;
+        case 'expensive':
+            state.products.sort((a, b) => (b.discount_price || b.price) - (a.discount_price || a.price));
+            break;
+        case 'popular':
+            state.products.sort((a, b) => (b.sales || 0) - (a.sales || 0));
+            break;
+        default:
+            state.products.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }
+    renderProducts();
+}
+
     // ============ АКТИВНЫЕ ЗАКАЗЫ ============
     async function loadActiveOrders() {
         const uid = tg.initDataUnsafe.user?.id || 0;
@@ -1224,27 +1311,25 @@ function showXPInfo() {
     // ============ ТОВАРЫ ============
 function renderCategories() {
     const cats = [
-        {name: 'Все', emoji: '🏠', sub: []},
-        {name: 'Секонд', emoji: '🔄', sub: ['Одежда', 'Обувь', 'Аксессуары', 'Premium']},
-        {name: 'Новое', emoji: '✨', sub: ['Одежда', 'Обувь', 'Аксессуары', 'Premium', 'Электроника']}
+        {name: 'Все', emoji: '🏠', color: 'var(--gold)'},
+        {name: 'Секонд', emoji: '🔄', color: '#ff6b6b'},
+        {name: 'Новое', emoji: '✨', color: '#4CAF50'},
+        {name: 'Premium', emoji: '💎', color: '#9b59b6'},
+        {name: 'Одежда', emoji: '👕', color: '#3498db'},
+        {name: 'Обувь', emoji: '👟', color: '#e67e22'},
+        {name: 'Аксессуары', emoji: '💍', color: '#1abc9c'}
     ];
     
-    let html = '';
+    let html = '<div style="display:flex;gap:8px;overflow-x:auto;padding:4px 0;margin-bottom:12px;-webkit-overflow-scrolling:touch;scrollbar-width:none;">';
     cats.forEach(cat => {
-        html += `<div style="margin-bottom:8px;">
-            <span class="tag ${cat.name === 'Все' ? 'tag-gold' : ''}" style="cursor:pointer;font-weight:700;" onclick="filterByCategory('${cat.name === 'Все' ? '' : cat.name}')">
-                ${cat.emoji} ${cat.name}
-            </span>`;
-        if (cat.sub.length) {
-            html += '<div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;">';
-            cat.sub.forEach(sub => {
-                const value = `${cat.name}/${sub}`;
-                html += `<span class="tag" style="cursor:pointer;font-size:10px;padding:3px 8px;" onclick="filterByCategory('${value}')">${sub}</span>`;
-            });
-            html += '</div>';
-        }
-        html += '</div>';
+        html += `
+        <div onclick="filterByCategory('${cat.name === 'Все' ? '' : cat.name}')" 
+             style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;min-width:65px;padding:8px 4px;border-radius:12px;background:var(--card);border:1px solid var(--border);transition:0.2s;flex-shrink:0;">
+            <span style="font-size:24px;">${cat.emoji}</span>
+            <span style="font-size:10px;color:var(--text2);white-space:nowrap;">${cat.name}</span>
+        </div>`;
     });
+    html += '</div>';
     document.getElementById('categories-list').innerHTML = html;
 }
 
@@ -1339,14 +1424,23 @@ function renderProducts() {
         }
         
         return `
-        <div class="product-card" onclick="openProduct(${p.id})">
-            <img src="${thumb}" alt="${p.name}" loading="lazy" style="width:100%;aspect-ratio:1/1;object-fit:cover;" onerror="this.src='https://via.placeholder.com/300'">
-            <button class="wishlist-btn ${state.favorites.includes(p.id) ? 'active' : ''}" onclick="event.stopPropagation();quickToggleFav(${p.id})">${state.favorites.includes(p.id) ? '❤️' : '🤍'}</button>
-            ${p.badge ? `<div class="product-badge badge-${p.badge}">${p.badge === 'new' ? '🆕' : p.badge === 'hit' ? '🔥' : p.badge === 'sale' ? '🎉' : '💎'}</div>` : ''}
-            <div class="product-info">
-                <div class="product-price">${p.discount_price || p.price} ₽</div>
-                ${p.discount_price ? `<div class="product-old-price">${p.price} ₽</div>` : ''}
-                <div class="product-name">${p.name}</div>
+        <div class="product-card" onclick="openProduct(${p.id})" style="border-radius:12px;position:relative;">
+            <div style="position:relative;">
+                <img src="${thumb}" alt="${p.name}" loading="lazy" style="width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:12px 12px 0 0;" onerror="this.src='https://via.placeholder.com/300x400'">
+                <button class="wishlist-btn ${state.favorites.includes(p.id) ? 'active' : ''}" data-id="${p.id}" onclick="event.stopPropagation();quickToggleFav(${p.id})" style="position:absolute;top:6px;right:6px;width:28px;height:28px;font-size:14px;">${state.favorites.includes(p.id) ? '❤️' : '🤍'}</button>
+                ${p.discount_price ? `<div style="position:absolute;top:6px;left:6px;background:var(--danger);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;">−${Math.round((1 - p.discount_price / p.price) * 100)}%</div>` : ''}
+                ${p.badge ? `<div style="position:absolute;bottom:6px;left:6px;background:var(--gold);color:#000;font-size:9px;font-weight:700;padding:3px 8px;border-radius:8px;">${p.badge === 'new' ? '🆕 Новинка' : p.badge === 'hit' ? '🔥 Хит' : p.badge === 'sale' ? '🎉 Скидка' : '💎 Exclusive'}</div>` : ''}
+            </div>
+            <div style="padding:10px;">
+                <div style="display:flex;align-items:baseline;gap:6px;">
+                    <span style="font-size:16px;font-weight:800;color:var(--gold);">${p.discount_price || p.price} ₽</span>
+                    ${p.discount_price ? `<span style="text-decoration:line-through;color:var(--text2);font-size:11px;">${p.price} ₽</span>` : ''}
+                </div>
+                <div style="font-size:11px;color:var(--text2);margin-top:4px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${p.name}</div>
+                <div style="display:flex;align-items:center;gap:4px;margin-top:6px;">
+                    <span style="font-size:10px;color:var(--gold);">⭐ ${(p.rating || 0).toFixed(1)}</span>
+                    <span style="font-size:10px;color:var(--text2);">${p.sales || 0} заказов</span>
+                </div>
             </div>
         </div>`;
     }).join('') + `
@@ -1369,6 +1463,7 @@ function openProduct(id) {
     if (!p) return;
     
     state.currentProduct = p;
+    trackProductView(id);
     state.modalQty = 1;
     
     // Загружаем фото с сервера если ещё не загружены
@@ -1520,53 +1615,117 @@ async function shareProduct(id) {
     
     const productName = p.name || 'Товар';
     const productPrice = p.discount_price || p.price || 0;
-    const shareText = `🛍 ${productName}\n💰 ${productPrice} ₽\n\nЗаказать в Kodama Shop: https://t.me/KodamaShopBot?start=product_${id}`;
+    const url = `https://t.me/share/url?url=https://t.me/KodamaShopBot?start=product_${id}&text=${encodeURIComponent('🛍 ' + productName + ' за ' + productPrice + '₽ в Kodama Shop')}`;
+    tg.openTelegramLink(url);
+}
+
+function changeQty(delta) {
+    const max = state.currentProduct?.quantity || 1;
+    const newQty = state.modalQty + delta;
     
-    // Пробуем открыть список контактов Telegram
-    try {
-        tg.switchInlineQuery(shareText, ['users', 'groups']);
-    } catch(e) {
-        // Если не работает — копируем в буфер
-        try {
-            await navigator.clipboard.writeText(shareText);
-            tg.showAlert('✅ Ссылка скопирована!\n\nОтправьте её другу.');
-        } catch(e2) {
-            tg.showAlert('📤 Поделиться:\n\n' + shareText);
-        }
+    if (newQty < 1) {
+        showToast('⚠️ Минимум 1 шт.');
+        return;
+    }
+    if (newQty > max) {
+        showToast(`⚠️ В наличии только ${max} шт.`);
+        // Визуально показываем что максимум
+        document.getElementById('modal-qty').style.transform = 'scale(1.1)';
+        setTimeout(() => document.getElementById('modal-qty').style.transform = 'scale(1)', 200);
+        return;
+    }
+    
+    state.modalQty = newQty;
+    document.getElementById('modal-qty').innerText = state.modalQty;
+    // Лёгкая анимация
+    document.getElementById('modal-qty').style.transform = 'scale(1.05)';
+    setTimeout(() => document.getElementById('modal-qty').style.transform = 'scale(1)', 150);
+}
+
+function modalAddToCart() {
+    if (!state.currentProduct) return;
+    const max = state.currentProduct.quantity || 1;
+    if (state.modalQty > max) { 
+        showToast(`❌ Максимум ${max} шт.`); 
+        return; 
+    }
+    
+    addToCart({...state.currentProduct, qty: state.modalQty, maxQty: max});
+    
+    // Анимация кнопки
+    const btn = document.querySelector('#product-modal .btn');
+    if (btn) {
+        btn.innerText = '✅ Добавлено!';
+        btn.style.background = 'var(--success)';
+        btn.style.color = '#fff';
+        setTimeout(() => {
+            btn.innerText = '🛒 В корзину';
+            btn.style.background = 'var(--gold)';
+            btn.style.color = '#000';
+        }, 1000);
+    }
+    
+    // Закрываем с задержкой для анимации
+    setTimeout(() => {
+        closeModal('product-modal');
+        showToast('🛒 Товар добавлен в корзину');
+    }, 600);
+}
+
+function modalToggleFav() {
+    if (!state.currentProduct) return;
+    const wasFav = state.favorites.includes(state.currentProduct.id);
+    quickToggleFav(state.currentProduct.id);
+    
+    const btn = document.getElementById('fav-btn-text');
+    const isFav = state.favorites.includes(state.currentProduct.id);
+    
+    btn.innerText = isFav ? '❤️ В избранном' : '🤍 В избранное';
+    
+    // Анимация сердечка
+    btn.style.transform = 'scale(1.2)';
+    setTimeout(() => btn.style.transform = 'scale(1)', 200);
+    
+    // Уведомление
+    if (!wasFav && isFav) {
+        showToast('❤️ Добавлено в избранное');
+    } else if (wasFav && !isFav) {
+        showToast('Убрано из избранного');
     }
 }
 
-    function changeQty(delta) {
-        const max = state.currentProduct?.quantity || 1;
-        state.modalQty = Math.max(1, Math.min(max, state.modalQty + delta));
-        document.getElementById('modal-qty').innerText = state.modalQty;
+function quickToggleFav(id) {
+    const idx = state.favorites.indexOf(id);
+    if (idx > -1) {
+        state.favorites.splice(idx, 1);
+    } else {
+        state.favorites.push(id);
     }
+    saveFavoritesToStorage();
+    // Не перерисовываем всё — только обновляем иконки на карточках
+    updateFavIcons();
+}
 
-    function modalAddToCart() {
-        if (!state.currentProduct) return;
-        const max = state.currentProduct.quantity || 1;
-        if (state.modalQty > max) { showToast(`❌ Максимум ${max} шт.`); return; }
-        addToCart({...state.currentProduct, qty: state.modalQty, maxQty: max});
-        closeModal('product-modal');
-        showToast('🛒 Добавлено');
-    }
+function updateFavIcons() {
+    document.querySelectorAll('.wishlist-btn').forEach(btn => {
+        const productId = parseInt(btn.getAttribute('data-id'));
+        if (productId && state.favorites.includes(productId)) {
+            btn.classList.add('active');
+            btn.innerHTML = '❤️';
+        } else if (productId) {
+            btn.classList.remove('active');
+            btn.innerHTML = '🤍';
+        }
+    });
+}
 
-    function modalToggleFav() {
-        if (!state.currentProduct) return;
-        quickToggleFav(state.currentProduct.id);
-        document.getElementById('fav-btn-text').innerText = 
-            state.favorites.includes(state.currentProduct.id) ? '❤️ В избранном' : '🤍 В избранное';
-    }
+function loadFavoritesFromStorage() { 
+    state.favorites = JSON.parse(localStorage.getItem('fav') || '[]'); 
+}
 
-    function quickToggleFav(id) {
-        const idx = state.favorites.indexOf(id);
-        idx > -1 ? state.favorites.splice(idx, 1) : state.favorites.push(id);
-        saveFavoritesToStorage();
-        renderProducts();
-    }
-
-    function loadFavoritesFromStorage() { state.favorites = JSON.parse(localStorage.getItem('fav') || '[]'); }
-    function saveFavoritesToStorage() { localStorage.setItem('fav', JSON.stringify(state.favorites)); }
+function saveFavoritesToStorage() { 
+    localStorage.setItem('fav', JSON.stringify(state.favorites)); 
+}
 
     // ============ КОРЗИНА ============
     function addToCart(product) {
@@ -1617,28 +1776,68 @@ function changeCartQty(idx, delta) {
 function updateCartUI() {
     const c = document.getElementById('cart-items');
     let total = 0;
+    
     if (!state.cart.length) { 
-        c.innerHTML = '<div class="empty-state"><div style="font-size:48px;">🛒</div><p>Корзина пуста</p></div>'; 
+        c.innerHTML = `
+            <div class="empty-state">
+                <div style="font-size:64px;">🛒</div>
+                <p style="font-weight:600;margin-top:8px;">Корзина пуста</p>
+                <p style="color:var(--text2);font-size:13px;">Добавляйте товары из каталога</p>
+                <button class="btn btn-small" onclick="nav('shop', document.querySelector('.nav-item[onclick*=\"shop\"]'))" style="margin-top:12px;">🛍 Перейти в каталог</button>
+            </div>`; 
     } else {
-        c.innerHTML = state.cart.map((item, idx) => {
+        c.innerHTML = '<h3 style="margin-bottom:12px;">🛒 Корзина (' + state.cart.length + ')</h3>' + 
+        state.cart.map((item, idx) => {
             total += (item.price||0)*(item.qty||1);
+            let thumb = 'https://via.placeholder.com/100?text=📷';
+            if (item._images && item._images.length > 0) thumb = item._images[0];
+            else if (item.image_url) {
+                try {
+                    const parsed = typeof item.image_url === 'string' ? JSON.parse(item.image_url) : item.image_url;
+                    if (Array.isArray(parsed) && parsed.length > 0) thumb = parsed[0];
+                } catch(e) {}
+            }
             return `
-            <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--card);border-radius:12px;margin-bottom:8px;border:1px solid var(--border);">
-                <div style="flex:1;">
-                    <div style="font-weight:600;">${item.name}</div>
-                    <div style="color:var(--text2);font-size:12px;">${item.price} ₽ × ${item.qty}</div>
+            <div class="card" style="padding:12px;display:flex;gap:12px;align-items:center;">
+                <img src="${thumb}" style="width:60px;height:60px;border-radius:10px;object-fit:cover;" onerror="this.src='https://via.placeholder.com/100'">
+                <div style="flex:1;min-width:0;">
+                    <div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.name}</div>
+                    <div style="color:var(--gold);font-weight:700;">${item.price} ₽</div>
+                    <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+                        <button class="qty-btn" onclick="changeCartQty(${idx},-1)">−</button>
+                        <span style="font-weight:700;min-width:20px;text-align:center;">${item.qty}</span>
+                        <button class="qty-btn" onclick="changeCartQty(${idx},1)">+</button>
+                        <span style="color:var(--text2);font-size:12px;margin-left:8px;">= ${(item.price||0)*(item.qty||1)} ₽</span>
+                    </div>
                 </div>
-                <div style="display:flex;align-items:center;gap:8px;">
-                    <button style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:16px;cursor:pointer;" onclick="changeCartQty(${idx},-1)">−</button>
-                    <span style="font-weight:700;min-width:20px;text-align:center;">${item.qty}</span>
-                    <button style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:16px;cursor:pointer;" onclick="changeCartQty(${idx},1)">+</button>
-                </div>
-                <div style="font-weight:700;color:var(--gold);min-width:60px;text-align:right;">${(item.price||0)*(item.qty||1)} ₽</div>
-                <div onclick="removeFromCart(${idx})" style="color:var(--danger);cursor:pointer;font-size:18px;padding:4px;">✕</div>
+                <div onclick="removeFromCart(${idx})" style="color:var(--danger);cursor:pointer;font-size:20px;padding:8px;">✕</div>
             </div>`;
         }).join('');
+        
+        // Итого
+        c.innerHTML += `
+            <div class="card" style="background:var(--bg);border:2px solid var(--border);margin-top:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <span style="font-size:16px;font-weight:600;">💰 Итого</span>
+                    <span style="font-size:24px;font-weight:800;color:var(--gold);">${Math.round(total*(1-state.promoDiscount/100))} ₽</span>
+                </div>
+                ${state.promoDiscount > 0 ? `<div style="color:var(--success);font-size:12px;">Скидка по промокоду: ${state.promoDiscount}%</div>` : ''}
+            </div>
+        `;
     }
     document.getElementById('total').innerText = Math.round(total*(1-state.promoDiscount/100)) + ' ₽';
+    
+    // Обновляем бейдж на иконке корзины
+    const badge = document.getElementById('cart-badge');
+    if (badge) {
+        const count = state.cart.reduce((s, i) => s + i.qty, 0);
+        if (count > 0) {
+            badge.style.display = 'block';
+            badge.innerText = count > 99 ? '99+' : count;
+        } else {
+            badge.style.display = 'none';
+        }
+    }
 }
 
     function saveCartToStorage() { localStorage.setItem('cart', JSON.stringify(state.cart)); }
@@ -1994,22 +2193,31 @@ function showOrdersHistory(c) {
     c.innerHTML = '<h3>📋 Все заказы</h3>' + allOrders.map(o => {
         const items = typeof o.items === 'string' ? JSON.parse(o.items||'[]') : (o.items||[]);
         return `<div class="card" style="border-left:4px solid ${o.status === 'cancelled' ? 'var(--danger)' : o.status === 'delivered' ? 'var(--success)' : 'var(--gold)'};">
-            <div style="display:flex;justify-content:space-between;">
-                <b>#${o.id}</b>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <b>Заказ #${o.id}</b>
                 <span class="tag ${o.status === 'delivered' ? 'tag-green' : o.status === 'cancelled' ? '' : 'tag-gold'}">${statusNames[o.status] || o.status}</span>
             </div>
-            <div style="color:var(--text2);font-size:13px;">
+            <div style="color:var(--text2);font-size:13px;margin-top:6px;">
                 📦 ${items.map(i=>`${i.name} x${i.qty}`).join(', ')}
-                <br>💰 ${o.total_amount} ₽ | 📅 ${o.created_at?.split('T')[0] || ''}
-                ${o.delivery_method ? `<br>🚚 ${o.delivery_method === 'courier' ? 'Курьер' : o.delivery_method === 'pickup' ? 'Самовывоз' : o.delivery_method}` : ''}
-                ${o.delivery_address ? `<br>📍 ${o.delivery_address}` : ''}
-                ${o.tracking_number ? `<br>📮 Трек: ${o.tracking_number}` : ''}
             </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+                <span style="font-size:18px;font-weight:700;color:var(--gold);">${o.total_amount} ₽</span>
+                <span style="font-size:11px;color:var(--text2);">${o.created_at?.split('T')[0] || ''}</span>
+            </div>
+            ${o.delivery_method ? `<div style="font-size:11px;color:var(--text2);margin-top:4px;">🚚 ${o.delivery_method === 'courier' ? 'Курьер' : o.delivery_method === 'pickup' ? 'Самовывоз' : o.delivery_method}</div>` : ''}
+            ${o.tracking_number ? `
+            <div style="margin-top:8px;padding:8px;background:var(--bg);border-radius:8px;display:flex;align-items:center;gap:8px;">
+                <span style="font-size:20px;">📮</span>
+                <div style="flex:1;">
+                    <div style="font-size:11px;color:var(--text2);">Трек-номер</div>
+                    <div style="font-weight:600;font-size:13px;">${o.tracking_number}</div>
+                </div>
+                <button class="btn btn-small" onclick="trackOrder('${o.tracking_number}', '${o.delivery_method}')">📍</button>
+            </div>` : ''}
             <div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap;">
-                <button class="btn btn-small" onclick="downloadReceipt(${o.id})">🧾 Чек</button>
-                ${o.status === 'shipped' ? `<button class="btn btn-small" style="background:var(--success);color:#fff;" onclick="confirmDelivery(${o.id})">✅ Подтвердить получение</button>` : ''}
+                <button class="btn btn-small" onclick="downloadReceipt(${o.id})">🧾</button>
+                ${o.status === 'shipped' ? `<button class="btn btn-small" style="background:var(--success);color:#fff;" onclick="confirmDelivery(${o.id})">✅ Получил</button>` : ''}
                 ${o.status === 'delivered' ? `<button class="btn btn-small btn-outline" style="color:var(--danger);border-color:var(--danger);" onclick="requestRefund(${o.id})">🔄 Возврат</button>` : ''}
-                ${o.tracking_number ? `<button class="btn btn-small" onclick="trackOrder('${o.tracking_number}', '${o.delivery_method}')">📍 Отследить</button>` : ''}
             </div>
         </div>`;
     }).join('');
@@ -2541,15 +2749,69 @@ async function sendChat() {
     if (!inp) return;
     const t = inp.value.trim();
     if (!t) return;
-    await fetch(`${BASE_URL}/messages`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({user_id: tg.initDataUnsafe.user?.id||0, text: t, is_from_user: true})
-    });
-    inp.value = '';
-    await loadChatMsgs(tg.initDataUnsafe.user?.id||0);
+    
+    // Показываем сообщение сразу (оптимистично)
     const cc = document.getElementById('chat-messages');
-    if (cc) cc.scrollTop = cc.scrollHeight;
+    const tempMsg = document.createElement('div');
+    tempMsg.className = 'chat-message user';
+    tempMsg.style.animation = 'fadeIn 0.3s';
+    tempMsg.innerHTML = `<div class="chat-bubble">${escapeHtml(t)}</div><div class="chat-time">Отправка...</div>`;
+    cc.appendChild(tempMsg);
+    cc.scrollTop = cc.scrollHeight;
+    inp.value = '';
+    
+    try {
+        await fetch(`${BASE_URL}/messages`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({user_id: tg.initDataUnsafe.user?.id||0, text: t, is_from_user: true})
+        });
+        // Перезагружаем сообщения
+        await loadChatMsgs(tg.initDataUnsafe.user?.id||0);
+    } catch(e) {
+        tempMsg.querySelector('.chat-time').innerText = 'Ошибка';
+    }
+}
+
+async function loadChatMsgs(uid) { 
+    try { 
+        const r = await fetch(`${BASE_URL}/messages/${uid}`); 
+        const m = await r.json(); 
+        const cc = document.getElementById('chat-messages'); 
+        if (cc && m && m.length) {
+            cc.innerHTML = m.map(x => `
+                <div class="chat-message ${x.is_from_user ? 'user' : 'admin'}" style="animation: fadeIn 0.3s;">
+                    <div class="chat-bubble">${escapeHtml(x.text)}</div>
+                    <div class="chat-time">${x.created_at ? formatChatTime(x.created_at) : ''}</div>
+                </div>
+            `).join('');
+            setTimeout(() => { cc.scrollTop = cc.scrollHeight; }, 100);
+        } else if (cc) {
+            cc.innerHTML = `<div style="text-align:center;color:var(--text2);padding:20px;"><div style="font-size:48px;">💬</div><p>Напишите ваш вопрос</p><p style="font-size:11px;">Поддержка отвечает в течение 1 часа</p></div>`;
+        }
+    } catch(e) {
+        const cc = document.getElementById('chat-messages');
+        if (cc && !cc.innerHTML.includes('Напишите ваш вопрос')) {
+            cc.innerHTML = '<div style="text-align:center;color:var(--text2);">Ошибка загрузки</div>';
+        }
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.innerText = text;
+    return div.innerHTML;
+}
+
+function formatChatTime(isoString) {
+    if (!isoString) return '';
+    const date = new Date(isoString);
+    const now = new Date();
+    const diff = now - date;
+    if (diff < 60000) return 'Только что';
+    if (diff < 3600000) return Math.floor(diff / 60000) + ' мин. назад';
+    if (diff < 86400000) return Math.floor(diff / 3600000) + ' ч. назад';
+    return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
     // ============ АДМИН-ПАНЕЛЬ ============
@@ -2983,25 +3245,227 @@ async function submitProduct() {
         });
     }
 
-    function showDoc(modalId) {
-    document.getElementById(modalId).classList.add('active');
-    document.getElementById(modalId).style.display = 'flex';
+function showDoc(modalId) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    modal.classList.add('active');
+    modal.style.display = 'flex';
+    // Анимация появления
+    modal.style.opacity = '0';
+    setTimeout(() => modal.style.opacity = '1', 10);
 }
 
-    function editProduct(id) { const p=state.products.find(x=>x.id===id); if(!p) return; const c=document.getElementById('admin-content'); c.innerHTML=`<h3>✏️ Редактировать</h3><input class="input" id="ep-name" value="${p.name}"><input class="input" type="number" id="ep-price" value="${p.price}"><input class="input" type="number" id="ep-qty" value="${p.quantity||10}"><button class="btn" onclick="saveEdit(${id})">💾 Сохранить</button>`; }
-    async function saveEdit(id) { const p=state.products.find(x=>x.id===id); if(!p) return; p.name=document.getElementById('ep-name')?.value||p.name; p.price=parseInt(document.getElementById('ep-price')?.value||p.price); p.quantity=parseInt(document.getElementById('ep-qty')?.value||10); renderProducts(); showToast('✅ Обновлено!'); openAdminSection('products'); }
-    function deleteProduct(id) { if(!confirm('Удалить?')) return; state.products=state.products.filter(p=>p.id!==id); renderProducts(); fetch(`${BASE_URL}/admin_action`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete_product',product_id:id})}); showToast('🗑 Удалено'); openAdminSection('products'); }
+function editProduct(id) { 
+    const p = state.products.find(x => x.id === id); 
+    if (!p) return; 
+    const c = document.getElementById('admin-content'); 
+    c.innerHTML = `
+        <div class="section-back" onclick="openAdminSection('products')">← Назад к товарам</div>
+        <h3>✏️ Редактировать товар</h3>
+        <div class="card">
+            <label style="font-size:13px;color:var(--text2);">Название</label>
+            <input class="input" id="ep-name" value="${p.name}">
+            <label style="font-size:13px;color:var(--text2);">Цена (₽)</label>
+            <input class="input" type="number" id="ep-price" value="${p.price}">
+            <label style="font-size:13px;color:var(--text2);">Скидочная цена</label>
+            <input class="input" type="number" id="ep-discount" value="${p.discount_price || ''}" placeholder="Необязательно">
+            <label style="font-size:13px;color:var(--text2);">Количество на складе</label>
+            <input class="input" type="number" id="ep-qty" value="${p.quantity || 10}">
+            <label style="font-size:13px;color:var(--text2);">Категория</label>
+            <select class="input" id="ep-category">
+                <option value="Premium" ${p.category === 'Premium' ? 'selected' : ''}>Premium</option>
+                <option value="Одежда" ${p.category === 'Одежда' ? 'selected' : ''}>Одежда</option>
+                <option value="Обувь" ${p.category === 'Обувь' ? 'selected' : ''}>Обувь</option>
+                <option value="Аксессуары" ${p.category === 'Аксессуары' ? 'selected' : ''}>Аксессуары</option>
+            </select>
+            <label style="font-size:13px;color:var(--text2);">Описание</label>
+            <textarea class="input" id="ep-desc">${p.description || ''}</textarea>
+        </div>
+        <button class="btn" onclick="saveEdit(${id})">💾 Сохранить изменения</button>
+        <button class="btn btn-small" onclick="openAdminSection('products')" style="margin-top:4px;">Отмена</button>
+    `; 
+}
 
-    function loadAdminPromos(c) {
-        c.innerHTML=`<h3>🎫 Промокоды</h3><div style="display:flex;gap:8px;margin-bottom:12px;"><input class="input" placeholder="Код" id="pr-code" style="flex:1;"><input class="input" placeholder="Скидка %" type="number" id="pr-discount" style="width:100px;"></div><button class="btn btn-small" onclick="createPromo()">➕ Создать</button><div id="promos-list"></div>`;
-        fetch(`${BASE_URL}/admin_data`).then(r=>r.json()).then(d=>{ if(d.promos?.length) document.getElementById('promos-list').innerHTML=d.promos.map(p=>`<div class="card" style="display:flex;justify-content:space-between;"><b>${p.code}</b> — ${p.discount}%<button class="btn btn-small btn-danger" onclick="deletePromo('${p.code}')">🗑</button></div>`).join(''); });
+async function saveEdit(id) { 
+    const p = state.products.find(x => x.id === id); 
+    if (!p) return; 
+    
+    const name = document.getElementById('ep-name')?.value?.trim();
+    const price = parseInt(document.getElementById('ep-price')?.value || 0);
+    
+    if (!name || !price) {
+        showToast('❌ Название и цена обязательны');
+        return;
     }
-    function createPromo() { const code=document.getElementById('pr-code')?.value?.trim()?.toUpperCase(), discount=parseInt(document.getElementById('pr-discount')?.value||0); if(!code||!discount) return; fetch(`${BASE_URL}/admin_action`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save_promo',code,discount})}); showToast('✅ Создан!'); loadAdminPromos(document.getElementById('admin-content')); }
-    function deletePromo(code) { fetch(`${BASE_URL}/admin_action`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete_promo',code})}); showToast('🗑 Удалено'); loadAdminPromos(document.getElementById('admin-content')); }
+    
+    const updatedData = {
+        action: 'edit_product',
+        product_id: id,
+        name: name,
+        price: price,
+        discount_price: parseInt(document.getElementById('ep-discount')?.value || 0) || null,
+        quantity: parseInt(document.getElementById('ep-qty')?.value || 10),
+        category: document.getElementById('ep-category')?.value || 'Premium',
+        description: document.getElementById('ep-desc')?.value || '',
+        images: p.image_url ? JSON.parse(p.image_url) : []
+    };
+    
+    try {
+        const res = await fetch(`${BASE_URL}/admin_action`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(updatedData)
+        });
+        const result = await res.json();
+        if (result.status === 'ok') {
+            // Обновляем локально
+            p.name = name;
+            p.price = price;
+            p.discount_price = updatedData.discount_price;
+            p.quantity = updatedData.quantity;
+            p.category = updatedData.category;
+            p.description = updatedData.description;
+            renderProducts(); 
+            showToast('✅ Товар обновлён!'); 
+            openAdminSection('products');
+        } else {
+            showToast('❌ ' + (result.message || 'Ошибка'));
+        }
+    } catch(e) {
+        showToast('❌ Ошибка соединения');
+    }
+}
 
-    function renderFlashSale(c) { c.innerHTML=`<h3>🔥 Flash Sale</h3><label style="font-size:13px;">💸 Скидка (%)</label><input class="input" type="number" id="fs-discount" value="30"><label style="font-size:13px;">⏱ Длительность (часы)</label><input class="input" type="number" id="fs-hours" value="2"><button class="btn" onclick="startFlashSale()">🚀 Запустить</button><button class="btn btn-danger" onclick="stopFlashSale()" style="margin-top:8px;">⏹ Остановить</button>`; }
+function deleteProduct(id) { 
+    tg.showPopup({
+        title: 'Удалить товар?',
+        message: 'Это действие нельзя отменить. Товар будет скрыт из каталога.',
+        buttons: [
+            {type: 'default', text: '🗑 Удалить'},
+            {type: 'cancel', text: 'Отмена'}
+        ]
+    }, async (btn) => {
+        if (btn === 'default') {
+            state.products = state.products.filter(p => p.id !== id); 
+            renderProducts(); 
+            await fetch(`${BASE_URL}/admin_action`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({action: 'delete_product', product_id: id})
+            }); 
+            showToast('🗑 Товар удалён'); 
+            openAdminSection('products');
+        }
+    });
+}
+
+function loadAdminPromos(c) {
+    c.innerHTML = '<div>Загрузка...</div>';
+    fetch(`${BASE_URL}/admin_data`).then(r => r.json()).then(d => { 
+        const promos = d.promos || [];
+        c.innerHTML = `
+            <h3>🎫 Промокоды</h3>
+            <div class="card">
+                <h4>➕ Создать промокод</h4>
+                <div style="display:flex;gap:8px;margin-bottom:8px;">
+                    <input class="input" placeholder="Код (например: SALE20)" id="pr-code" style="flex:1;">
+                    <input class="input" placeholder="Скидка %" type="number" id="pr-discount" style="width:100px;">
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <input class="input" placeholder="Мин. сумма заказа" type="number" id="pr-min-order" style="flex:1;" value="0">
+                    <input class="input" placeholder="Кол-во использований" type="number" id="pr-uses" style="flex:1;" value="100">
+                </div>
+                <button class="btn btn-small" onclick="createPromo()" style="margin-top:8px;">➕ Создать</button>
+            </div>
+            <div id="promos-list">
+                ${promos.length ? promos.map(p => `
+                    <div class="card" style="display:flex;justify-content:space-between;align-items:center;">
+                        <div>
+                            <b style="font-size:18px;">${p.code}</b>
+                            <span class="tag tag-gold">−${p.discount}%</span>
+                            <div style="color:var(--text2);font-size:11px;">
+                                Мин. заказ: ${p.min_order || 0} ₽ | Осталось: ${p.uses_left || 0}/${p.max_uses || 100}
+                            </div>
+                        </div>
+                        <button class="btn btn-small btn-danger" onclick="deletePromo('${p.code}')">🗑</button>
+                    </div>
+                `).join('') : '<div class="empty-state">Нет промокодов</div>'}
+            </div>
+        `; 
+    });
+}
+
+function createPromo() { 
+    const code = document.getElementById('pr-code')?.value?.trim()?.toUpperCase();
+    const discount = parseInt(document.getElementById('pr-discount')?.value || 0);
+    const minOrder = parseInt(document.getElementById('pr-min-order')?.value || 0);
+    const uses = parseInt(document.getElementById('pr-uses')?.value || 100);
+    
+    if (!code || !discount) {
+        showToast('❌ Укажите код и скидку');
+        return;
+    }
+    if (discount < 1 || discount > 99) {
+        showToast('❌ Скидка от 1% до 99%');
+        return;
+    }
+    
+    fetch(`${BASE_URL}/admin_action`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({action: 'save_promo', code, discount, min_order: minOrder, uses: uses})
+    }).then(() => {
+        showToast('✅ Промокод создан!'); 
+        loadAdminPromos(document.getElementById('admin-content'));
+    });
+}
+
+function deletePromo(code) { 
+    tg.showPopup({
+        title: 'Удалить промокод?',
+        message: `Промокод ${code} будет деактивирован.`,
+        buttons: [
+            {type: 'default', text: '🗑 Удалить'},
+            {type: 'cancel', text: 'Отмена'}
+        ]
+    }, async (btn) => {
+        if (btn === 'default') {
+            await fetch(`${BASE_URL}/admin_action`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({action: 'delete_promo', code})
+            }); 
+            showToast('🗑 Промокод удалён'); 
+            loadAdminPromos(document.getElementById('admin-content'));
+        }
+    });
+}
+
+function renderFlashSale(c) { 
+    c.innerHTML = `
+        <h3>🔥 Flash Sale</h3>
+        <div class="card" style="text-align:center;">
+            <div style="font-size:48px;">⚡</div>
+            <p style="color:var(--text2);">Мгновенная скидка на все товары</p>
+            ${state.flashSale.active ? 
+                `<div class="flash-sale" style="margin-top:12px;">
+                    <div>🔥 <b>FLASH SALE АКТИВНА!</b> Скидка ${state.flashSale.discount}%</div>
+                </div>` : ''
+            }
+        </div>
+        <div class="card">
+            <label style="font-size:13px;">💸 Скидка (%)</label>
+            <input class="input" type="number" id="fs-discount" value="${state.flashSale.discount || 30}">
+            <button class="btn" onclick="startFlashSale()">🚀 Запустить Flash Sale</button>
+            ${state.flashSale.active ? `<button class="btn btn-danger" onclick="stopFlashSale()" style="margin-top:8px;">⏹ Остановить Flash Sale</button>` : ''}
+        </div>
+    `; 
+}
+
 async function startFlashSale() {
     const discount = parseInt(document.getElementById('fs-discount')?.value || 30);
+    const hours = parseInt(document.getElementById('fs-hours')?.value || 2);
+    
     state.flashSale = { active: true, discount: discount };
     
     state.products.forEach(p => {
@@ -3011,10 +3475,31 @@ async function startFlashSale() {
     
     showToast(`🔥 Flash Sale запущена! Скидка ${discount}%`);
     renderProducts();
+    
+    // Запускаем таймер
+    const endTime = Date.now() + hours * 3600000;
+    state.flashSale.endTime = endTime;
+    
+    if (state.flashSaleTimer) clearInterval(state.flashSaleTimer);
+    state.flashSaleTimer = setInterval(() => {
+        const remaining = endTime - Date.now();
+        if (remaining <= 0) {
+            clearInterval(state.flashSaleTimer);
+            stopFlashSale();
+            showToast('⚡ Flash Sale завершена!');
+            return;
+        }
+        const h = Math.floor(remaining / 3600000);
+        const m = Math.floor((remaining % 3600000) / 60000);
+        const s = Math.floor((remaining % 60000) / 1000);
+        const el = document.getElementById('flash-countdown');
+        if (el) el.innerHTML = `${h}ч ${m}м ${s}с`;
+    }, 1000);
 }
 
 function stopFlashSale() {
     state.flashSale = { active: false };
+    if (state.flashSaleTimer) clearInterval(state.flashSaleTimer);
     
     state.products.forEach(p => {
         if (p._originalPrice) {
@@ -3023,16 +3508,50 @@ function stopFlashSale() {
             delete p._originalPrice;
         }
     });
-    
-    showToast('Flash Sale остановлена');
+    showToast('⏹ Flash Sale остановлена');
     renderProducts();
+    renderFlashSale(document.getElementById('admin-content'));
 }
 
-    function loadAdminUsers(c) {
-        c.innerHTML='<h3>👥 Пользователи</h3><input class="input" placeholder="🔍 Поиск..." oninput="filterUsers(this.value)"><div id="users-list"></div>';
-        fetch(`${BASE_URL}/admin_data`).then(r=>r.json()).then(d=>{ state.allUsers=d.users||[]; renderUsersList(state.allUsers); });
-    }
-    function renderUsersList(users) { document.getElementById('users-list').innerHTML=users.length?users.slice(0,30).map(u=>`<div class="card" style="cursor:pointer;" onclick="openUserProfile(${u.user_id})"><b>@${u.username||'нет'}</b> (ID:${u.user_id}) | 💰 ${u.balance||0} ₽ | 🛍 ${u.total_spent||0} ₽</div>`).join(''):'<div style="color:var(--text2);">Не найдены</div>'; }
+function loadAdminUsers(c) {
+    showLoading('admin-content');
+    fetch(`${BASE_URL}/admin_data`).then(r => r.json()).then(d => {
+        state.allUsers = d.users || [];
+        if (!state.allUsers.length) {
+            c.innerHTML = '<h3>👥 Пользователи</h3><div class="empty-state">Нет пользователей</div>';
+            return;
+        }
+        c.innerHTML = '<h3>👥 Пользователи (' + state.allUsers.length + ')</h3><input class="input" placeholder="🔍 Поиск по имени или ID..." oninput="filterUsers(this.value)"><div id="users-list"></div>';
+        renderUsersList(state.allUsers);
+    }).catch(() => {
+        c.innerHTML = '<h3>👥 Пользователи</h3><div class="empty-state">Ошибка загрузки</div>';
+    });
+}
+
+function trackProductView(productId) {
+    let history = JSON.parse(localStorage.getItem('view_history') || '[]');
+    history = history.filter(id => id !== productId);
+    history.unshift(productId);
+    localStorage.setItem('view_history', JSON.stringify(history.slice(0, 10)));
+}
+
+function renderUsersList(users) {
+    const list = document.getElementById('users-list');
+    if (!list) return;
+    list.innerHTML = users.slice(0, 30).map(u => `
+        <div class="card" style="cursor:pointer;transition:0.2s;" onclick="openUserProfile(${u.user_id})">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <div style="font-weight:600;">@${u.username || 'нет'} <span style="color:var(--text2);font-size:11px;">ID: ${u.user_id}</span></div>
+                    <div style="color:var(--text2);font-size:12px;">
+                        💰 ${u.balance || 0} ₽ | 🛍 ${u.total_spent || 0} ₽ | ⭐ ${u.level || 'Новичок'}
+                    </div>
+                </div>
+                <span class="menu-arrow">→</span>
+            </div>
+        </div>
+    `).join('');
+}
     function filterUsers(q) { renderUsersList(state.allUsers.filter(u=>String(u.user_id).includes(q)||(u.username||'').toLowerCase().includes(q))); }
 function openUserProfile(uid) {
     const u = state.allUsers.find(x => x.user_id === uid);
@@ -3230,18 +3749,26 @@ function loadAnalytics(c) {
             
             <div class="card" style="margin-top:12px;">
                 <h4>📊 Показатели</h4>
-                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:14px;">
-                    <span>Средний чек</span>
-                    <span style="color:var(--gold);">${clients.avg_check || 0} ₽</span>
-                </div>
-                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:14px;">
-                    <span>Активных пользователей</span>
-                    <span style="color:var(--gold);">${clients.active_users || 0}</span>
-                </div>
-                <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:14px;">
+                <div style="display:flex;justify-content:space-between;...">
                     <span>Конверсия</span>
                     <span style="color:var(--gold);">${vis > 0 ? Math.round((ord / vis) * 100) : 0}%</span>
                 </div>
+            </div>
+            
+            <div class="card" style="margin-top:12px;">
+                <h4>📈 Выручка по дням</h4>
+                ${a.slice(0, 14).reverse().map(day => {
+                    const maxRev = Math.max(...a.map(x => x.revenue || 0), 1);
+                    const pct = Math.round((day.revenue || 0) / maxRev * 100);
+                    return `
+                    <div style="display:flex;align-items:center;gap:8px;margin:6px 0;">
+                        <span style="font-size:10px;width:45px;">${day.date?.slice(5)}</span>
+                        <div style="flex:1;height:14px;background:var(--bg);border-radius:4px;overflow:hidden;">
+                            <div style="width:${pct}%;height:100%;background:linear-gradient(90deg, var(--gold), var(--success));border-radius:4px;transition:width 0.5s;"></div>
+                        </div>
+                        <span style="font-size:10px;color:var(--gold);min-width:50px;text-align:right;">${day.revenue || 0} ₽</span>
+                    </div>`;
+                }).join('')}
             </div>
         `;
     }).catch(() => {
@@ -3250,32 +3777,52 @@ function loadAnalytics(c) {
 }
 
 function exportCSV() {
-    window.open(`${BASE_URL}/admin/export/orders`, '_blank');
+    showToast('📥 Скачивание отчёта...');
+    const link = document.createElement('a');
+    link.href = `${BASE_URL}/admin/export/orders`;
+    link.download = `orders_${new Date().toISOString().split('T')[0]}.csv`;
+    link.target = '_blank';
+    link.click();
+    setTimeout(() => showToast('✅ Отчёт скачан!'), 1500);
 }
 
 function loadChatsList(c) {
-    c.innerHTML = '<h3>💬 Чаты поддержки</h3><div id="chats-content">Загрузка...</div>';
+    c.innerHTML = '<h3>💬 Чаты поддержки</h3><div id="chats-content"><div style="text-align:center;padding:20px;"><div style="width:30px;height:30px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto;"></div></div></div>';
+    
     fetch(`${BASE_URL}/admin_data`).then(r => r.json()).then(async d => {
         const users = d.users || [];
         let html = '';
         let has = false;
-        for (const u of users.slice(0, 20)) {
+        let count = 0;
+        
+        for (const u of users.slice(0, 30)) {
             try {
                 const ms = await fetch(`${BASE_URL}/messages/${u.user_id}`).then(r => r.json());
                 if (ms && ms.length) {
                     has = true;
+                    count++;
                     const last = ms[ms.length - 1];
-                    html += `<div class="card" style="margin-bottom:6px;">
-                        <div style="cursor:pointer;" onclick="openAdminChat(${u.user_id},'${u.username||'user'}')">
-                            <b>@${u.username || 'user' + u.user_id}</b>
-                            <div style="color:var(--text2);">${last.text?.slice(0, 50)}</div>
+                    const unread = ms.filter(m => m.is_from_user && !m.is_read).length;
+                    html += `
+                    <div class="card" style="margin-bottom:6px;cursor:pointer;transition:0.2s;" onclick="openAdminChat(${u.user_id},'${u.username||'user'}')">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <div style="flex:1;">
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <b>@${u.username || 'user' + u.user_id}</b>
+                                    ${unread > 0 ? `<span class="tag" style="background:var(--danger);color:#fff;">${unread}</span>` : ''}
+                                </div>
+                                <div style="color:var(--text2);font-size:12px;margin-top:4px;">${escapeHtml(last.text?.slice(0, 60) || '')}${last.text?.length > 60 ? '...' : ''}</div>
+                                <div style="font-size:10px;color:var(--text2);margin-top:2px;">${formatChatTime(last.created_at)}</div>
+                            </div>
+                            <span class="menu-arrow" style="font-size:18px;">→</span>
                         </div>
-                        <button class="btn btn-small btn-danger" onclick="event.stopPropagation();deleteChat(${u.user_id})" style="margin-top:8px;">🗑 Удалить</button>
                     </div>`;
                 }
             } catch(e) {}
         }
-        document.getElementById('chats-content').innerHTML = has ? html : '<div class="empty-state">Нет чатов</div>';
+        document.getElementById('chats-content').innerHTML = has 
+            ? `<div style="color:var(--text2);font-size:12px;margin-bottom:8px;">Найдено чатов: ${count}</div>${html}`
+            : '<div class="empty-state"><div class="empty-icon">💬</div><p>Нет активных чатов</p></div>';
     }).catch(() => {
         document.getElementById('chats-content').innerHTML = '<div class="empty-state">Сервер недоступен</div>';
     });
@@ -3284,15 +3831,20 @@ function loadChatsList(c) {
 function openAdminChat(uid, uname) {
     const c = document.getElementById('admin-content');
     c.innerHTML = `
-        <div class="section-back" onclick="openAdminSection('chats')">← Назад</div>
-        <h4>💬 @${uname || 'user'}</h4>
-        <div class="chat-container" id="admin-chat-msgs">Загрузка...</div>
-        <div style="display:flex;gap:8px;margin-top:8px;">
-            <input class="input" placeholder="Ответ..." id="admin-chat-input" style="flex:1;margin:0;" data-uid="${uid}">
-            <button class="btn btn-small" onclick="sendAdminReply(${uid})">➤</button>
+        <div class="section-back" onclick="openAdminSection('chats')">← Назад к чатам</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <h4 style="margin:0;">💬 @${uname || 'user'}</h4>
+            <span style="font-size:11px;color:var(--text2);">ID: ${uid}</span>
+        </div>
+        <div class="chat-container" id="admin-chat-msgs" style="height:350px;">
+            <div style="text-align:center;padding:20px;">Загрузка...</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;align-items:flex-end;">
+            <textarea class="input" placeholder="Ответ..." id="admin-chat-input" style="flex:1;margin:0;min-height:44px;resize:none;" rows="1" data-uid="${uid}" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAdminReply(${uid});}"></textarea>
+            <button class="btn btn-small" onclick="sendAdminReply(${uid})" style="height:44px;">➤</button>
         </div>
         <div id="quick-replies" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px;"></div>
-        <div style="display:flex;gap:8px;margin-top:8px;">
+        <div style="display:flex;gap:8px;margin-top:12px;">
             <button class="btn btn-small" onclick="endDialog(${uid})" style="background:var(--danger);color:#fff;flex:1;">🔚 Завершить</button>
             <button class="btn btn-small btn-danger" onclick="deleteChat(${uid})" style="flex:1;">🗑 Удалить</button>
         </div>
@@ -3306,12 +3858,17 @@ async function loadAdminChatMsgs(uid) {
         const r = await fetch(`${BASE_URL}/messages/${uid}`);
         const m = await r.json();
         const cc = document.getElementById('admin-chat-msgs');
-        if (cc && m.length) {
-            cc.innerHTML = m.map(x => `<div class="chat-message ${x.is_from_user ? 'user' : 'admin'}"><div class="chat-bubble">${x.text}</div></div>`).join('');
+        if (cc && m && m.length) {
+            cc.innerHTML = m.map(x => `
+                <div class="chat-message ${x.is_from_user ? 'user' : 'admin'}" style="animation:fadeIn 0.3s;">
+                    <div class="chat-bubble">${escapeHtml(x.text)}</div>
+                    <div class="chat-time">${formatChatTime(x.created_at)}</div>
+                </div>
+            `).join('');
         } else if (cc) {
-            cc.innerHTML = '<div style="text-align:center;color:var(--text2);">Нет сообщений</div>';
+            cc.innerHTML = '<div style="text-align:center;color:var(--text2);padding:20px;">Нет сообщений</div>';
         }
-        if (cc) cc.scrollTop = cc.scrollHeight;
+        if (cc) setTimeout(() => cc.scrollTop = cc.scrollHeight, 100);
     } catch(e) {}
 }
 
@@ -3320,43 +3877,69 @@ async function sendAdminReply(uid) {
     if (!inp) return;
     const t = inp.value.trim();
     if (!t) return;
+    
+    inp.disabled = true;
+    inp.style.opacity = '0.5';
+    
     await fetch(`${BASE_URL}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: uid, text: t, is_from_user: false })
     });
     inp.value = '';
-    loadAdminChatMsgs(uid);
+    inp.disabled = false;
+    inp.style.opacity = '1';
+    inp.focus();
+    await loadAdminChatMsgs(uid);
 }
 
 async function endDialog(uid) {
-    if (!confirm('Завершить диалог?')) return;
-    await fetch(`${BASE_URL}/messages`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: uid, text: '🔚 Диалог завершён. Если нужна помощь — напишите снова.', is_from_user: false })
+    tg.showPopup({
+        title: 'Завершить диалог?',
+        message: 'Пользователю будет отправлено сообщение о завершении.',
+        buttons: [
+            {type: 'default', text: '🔚 Завершить'},
+            {type: 'cancel', text: 'Отмена'}
+        ]
+    }, async (btn) => {
+        if (btn === 'default') {
+            await fetch(`${BASE_URL}/messages`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: uid, text: '🔚 Диалог завершён. Если нужна помощь — напишите снова.', is_from_user: false })
+            });
+            await fetch(`${BASE_URL}/end_dialog`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: uid })
+            });
+            showToast('✅ Диалог завершён');
+            openAdminSection('chats');
+        }
     });
-    await fetch(`${BASE_URL}/end_dialog`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: uid })
-    });
-    showToast('✅ Диалог завершён');
-    loadAdminChatMsgs(uid);
 }
 
 async function deleteChat(uid) {
-    if (!confirm('Удалить чат?')) return;
-    await fetch(`${BASE_URL}/admin_action`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'delete_chat', user_id: uid })
+    tg.showPopup({
+        title: 'Удалить чат?',
+        message: 'Вся переписка будет удалена безвозвратно.',
+        buttons: [
+            {type: 'default', text: '🗑 Удалить'},
+            {type: 'cancel', text: 'Отмена'}
+        ]
+    }, async (btn) => {
+        if (btn === 'default') {
+            await fetch(`${BASE_URL}/admin_action`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'delete_chat', user_id: uid })
+            });
+            showToast('🗑 Чат удалён');
+            loadChatsList(document.getElementById('admin-content'));
+        }
     });
-    showToast('🗑 Чат удалён');
-    loadChatsList(document.getElementById('admin-content'));
 }
 
-// Быстрые ответы
 async function loadQuickReplies() {
     try {
         const res = await fetch(`${BASE_URL}/quick-reply`, {
@@ -3368,8 +3951,9 @@ async function loadQuickReplies() {
         const replies = data.replies || {};
         const container = document.getElementById('quick-replies');
         if (container) {
-            container.innerHTML = Object.entries(replies).map(([key, text]) =>
-                `<button class="btn btn-small" onclick="sendQuickReply('${key}')" style="margin:2px;">${text.slice(0, 25)}</button>`
+            container.innerHTML = '<span style="font-size:11px;color:var(--text2);display:block;width:100%;margin-bottom:4px;">⚡ Быстрые ответы:</span>' + 
+            Object.entries(replies).map(([key, text]) =>
+                `<span class="tag" style="cursor:pointer;" onclick="sendQuickReply('${key}')">${text.slice(0, 30)}</span>`
             ).join('');
         }
     } catch(e) {}
@@ -3383,7 +3967,7 @@ async function sendQuickReply(key) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'send', reply: key, user_id: parseInt(uid) })
     });
-    loadAdminChatMsgs(uid);
+    await loadAdminChatMsgs(uid);
 }
 
     // ============ ПРОДАВЕЦ ============
@@ -4060,6 +4644,18 @@ async function rejectSeller(id) {
     
     function nav(p,el) { document.querySelectorAll('.page').forEach(x=>x.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active')); document.getElementById(p).classList.add('active'); if(el) el.classList.add('active'); }
     document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',function(e){if(e.target===this)this.classList.remove('active');}));
+    let isLoadingMore = false;
+window.addEventListener('scroll', () => {
+    if (isLoadingMore) return;
+    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500) {
+        if (currentPage < totalPages) {
+            isLoadingMore = true;
+            currentPage++;
+            renderProducts();
+            setTimeout(() => isLoadingMore = false, 500);
+        }
+    }
+});
     window.onload = init;
 </script>
 </body>
