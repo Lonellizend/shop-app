@@ -1032,20 +1032,9 @@ document.addEventListener('touchend', async e => {
     loadNotifications();
 }
 
-    async function syncCartWithServer() {
-    const uid = tg.initDataUnsafe.user?.id || 0;
-    if (!uid || !state.cart.length) return;
-    try {
-        // Сохраняем корзину на сервере
-        await fetch(`${BASE_URL}/cart/sync`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                user_id: uid,
-                cart: state.cart.map(i => ({id: i.id, qty: i.qty, name: i.name, price: i.price}))
-            })
-        });
-    } catch(e) {}
+async function syncCartWithServer() {
+    // Не критично — корзина хранится в localStorage
+    return;
 }
 
     async function loadNotifications() {
@@ -1500,7 +1489,9 @@ function openProduct(id) {
     document.getElementById('modal-qty').innerText = '1';
     document.getElementById('modal-stock').innerText = `В наличии: ${p.quantity || 0} шт.`;
     // Загрузка отзывов
+if (p.sales > 0 || p.rating > 0) {
     loadProductReviews(p.id);
+}
     document.getElementById('review-form').style.display = 'block';
     document.getElementById('fav-btn-text').innerText = state.favorites.includes(p.id) ? '❤️ В избранном' : '🤍 В избранное';
     
@@ -1728,12 +1719,16 @@ function saveFavoritesToStorage() {
 }
 
     // ============ КОРЗИНА ============
-    function addToCart(product) {
-        const ex = state.cart.find(i => i.id === product.id);
-        if (ex) ex.qty = Math.min(ex.qty + product.qty, product.maxQty);
-        else state.cart.push({...product});
-        saveCartToStorage(); updateCartUI();
+function addToCart(product) {
+    const ex = state.cart.find(i => i.id === product.id);
+    if (ex) {
+        ex.qty = Math.min(ex.qty + product.qty, product.maxQty || ex.maxQty || 99);
+    } else {
+        state.cart.push({...product, maxQty: product.quantity || 99});
     }
+    saveCartToStorage(); 
+    updateCartUI();
+}
 
 function removeFromCart(idx) {
     const item = state.cart[idx];
@@ -3632,11 +3627,25 @@ function openUserProfile(uid) {
                 📅 Регистрация: ${u.join_date || 'неизвестно'}<br>
                 💎 Кэшбэк: ${u.cashback || 0} ₽<br>
                 ⭐ Premium: ${u.is_premium ? 'Да (до ' + (u.premium_until || '?') + ')' : 'Нет'}<br>
-                🏪 Продавец: ${u.is_seller ? 'Да' : 'Нет'}<br>
+                🏪 Продавец: <span id="seller-status-${uid}">Проверка...</span>
                 📱 ID: ${u.user_id}
             </p>
         </div>
     `;
+    
+    // Проверяем, является ли пользователь продавцом
+    fetch(`${BASE_URL}/seller/${uid}`).then(r => r.json()).then(data => {
+        const el = document.getElementById('seller-status-' + uid);
+        if (el) {
+            if (data.seller && data.seller.is_active) {
+                el.innerHTML = '<span style="color:var(--success);">✅ Да (' + (data.seller.shop_name || 'Магазин') + ')</span>';
+            } else if (data.message && data.message.includes('рассмотрении')) {
+                el.innerHTML = '<span style="color:var(--gold);">⏳ На рассмотрении</span>';
+            } else {
+                el.innerHTML = '<span style="color:var(--text2);">❌ Нет</span>';
+            }
+        }
+    });
 }
     
     async function updateBalance(uid) { const b=parseInt(document.getElementById('ub-balance')?.value||0); await fetch(`${BASE_URL}/admin_action`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'update_balance',user_id:uid,balance:b})}); showToast('✅ Обновлено!'); }
@@ -3983,28 +3992,24 @@ async function loadSellerData() {
         const sellerNav = document.getElementById('seller-nav');
         const becomeBtn = document.getElementById('become-seller-btn');
         
-        if (data.seller) {
+        if (data && data.seller && data.seller.id) {
             sellerData = data.seller;
             userRole = 'seller';
             updateSellerUI();
-            const uid = tg.initDataUnsafe.user?.id || 0;
             const admins = [1733464126, 8012481749];
             if (sellerNav && !admins.includes(uid)) {
                 sellerNav.style.display = 'flex';
             }
-            if (becomeBtn) becomeBtn.style.display = 'none'; // Скрываем "Стать продавцом"
-        } else if (data.message && data.message.includes('рассмотрении')) {
-            // Заявка на рассмотрении — не показываем магазин
+            if (becomeBtn) becomeBtn.style.display = 'none';
+        } else if (data && data.message && data.message.includes('рассмотрении')) {
             sellerData = null;
             userRole = 'buyer';
             if (sellerNav) sellerNav.style.display = 'none';
-            // Меняем кнопку "Стать продавцом" на статус
             if (becomeBtn) {
                 becomeBtn.innerHTML = '<span class="menu-icon">⏳</span><span class="menu-text" style="color:var(--text2);">Заявка на рассмотрении</span>';
                 becomeBtn.onclick = () => tg.showAlert('⏳ Ваша заявка на рассмотрении. Ожидайте подтверждения администратора.');
             }
         } else {
-            // Нет заявки — показываем "Стать продавцом"
             sellerData = null;
             userRole = 'buyer';
             if (sellerNav) sellerNav.style.display = 'none';
@@ -4014,7 +4019,7 @@ async function loadSellerData() {
             }
         }
     } catch(e) {
-        if (sellerNav) sellerNav.style.display = 'none';
+        if (document.getElementById('seller-nav')) document.getElementById('seller-nav').style.display = 'none';
     }
 }
     
@@ -4354,11 +4359,22 @@ async function submitSellerProduct() {
     } catch(e) { showToast('Ошибка'); }
 }
     
-    async function deleteSellerProduct(id) {
-        if (!confirm('Удалить товар?')) return;
-        await fetch(`${BASE_URL}/admin_action`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete_product',product_id:id})});
-        showToast('🗑 Удалено'); openSellerSection('products');
-    }
+async function deleteSellerProduct(id) {
+    tg.showPopup({
+        title: 'Удалить товар?',
+        message: 'Это действие нельзя отменить.',
+        buttons: [
+            {type: 'default', text: '🗑 Удалить'},
+            {type: 'cancel', text: 'Отмена'}
+        ]
+    }, async (btn) => {
+        if (btn === 'default') {
+            await fetch(`${BASE_URL}/admin_action`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete_product',product_id:id})});
+            showToast('🗑 Удалено'); 
+            openSellerSection('products');
+        }
+    });
+}
     
 let sellerOrderFilter = 'all';
 
@@ -4642,17 +4658,14 @@ async function rejectSeller(id) {
     openAdminSection('sellers_moderation');
 }
     
-    function nav(p,el) { document.querySelectorAll('.page').forEach(x=>x.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active')); document.getElementById(p).classList.add('active'); if(el) el.classList.add('active'); }
-    document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',function(e){if(e.target===this)this.classList.remove('active');}));
-    let isLoadingMore = false;
-window.addEventListener('scroll', () => {
-    if (isLoadingMore) return;
-    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500) {
-        if (currentPage < totalPages) {
-            isLoadingMore = true;
-            currentPage++;
-            renderProducts();
-            setTimeout(() => isLoadingMore = false, 500);
+    function nav(p,el) { 
+        document.querySelectorAll('.page').forEach(x=>x.classList.remove('active')); 
+        document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active')); 
+        document.getElementById(p).classList.add('active'); 
+        if(el) el.classList.add('active');
+        if (p === 'shop') {
+            currentPage = 1;
+            sellerOrderFilter = 'all';
         }
     }
 });
