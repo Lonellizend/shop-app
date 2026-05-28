@@ -1078,26 +1078,24 @@ function handleBannerClick(bannerId, linkType, linkValue) {
 }
 
 async function loadData() {
-        if (state.offlineMode) {
-        // Грузим из localStorage
+    const uid = tg.initDataUnsafe.user?.id || 0;
+    
+    if (state.offlineMode) {
         state.products = JSON.parse(localStorage.getItem('cached_products') || '[]');
         renderProducts();
         return;
     }
-    // ... обычная загрузка
-    // После успешной загрузки кэшируем:
-    localStorage.setItem('cached_products', JSON.stringify(data.products));
-}
-    const uid = tg.initDataUnsafe.user?.id || 0;
+    
     try {
         const res = await fetch(`${BASE_URL}/init?user_id=${uid}`);
         const data = await res.json();
         state.products = data.products || [];
         state.user = data.user || {};
         
-        // Загружаем фото только для первых 4 товаров (остальные по мере скролла)
-        loadProductImages(0, 4);
+        // Кэшируем товары
+        localStorage.setItem('cached_products', JSON.stringify(data.products));
         
+        loadProductImages(0, 4);
         updateProfileUI();
         renderProducts();
         loadActiveOrders();
