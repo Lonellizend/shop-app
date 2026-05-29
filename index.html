@@ -312,6 +312,11 @@
                 💰 Пополнить баланс
             </button>
             
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--card);border-radius:12px;margin-bottom:8px;font-size:12px;color:var(--text2);">
+                <input type="checkbox" id="pd-consent" checked onchange="togglePdConsent()">
+                <span>Я согласен на <a href="#" onclick="event.preventDefault();showDoc('privacy-modal')" style="color:var(--gold);">обработку персональных данных</a></span>
+            </div>
+            
             <div class="theme-toggle"><span>🌙 Тёмная</span><div class="theme-switch dark" id="theme-switch" onclick="toggleTheme()"></div><span>☀️ Светлая</span></div>
             
             <div class="menu-list">
@@ -839,6 +844,11 @@
         <button class="btn btn-small" onclick="localStorage.setItem('cookies_accepted','true');closeModal('cookie-modal')" style="margin-top:12px;">✅ Принять</button>
     </div>
 
+    <div style="text-align:center;padding:8px 16px 80px;color:var(--text2);font-size:11px;opacity:0.6;">
+        Продолжая использовать сервис, вы принимаете <a href="#" onclick="showDoc('terms-modal')" style="color:var(--gold);">условия использования</a> и <a href="#" onclick="showDoc('privacy-modal')" style="color:var(--gold);">политику конфиденциальности</a>.<br>
+        © Kodama Shop, 2025-2026
+    </div>
+
 <script>
     const tg = window.Telegram.WebApp;
     const BASE_URL = 'https://soccer-markets-goal-fever.trycloudflare.com';
@@ -884,6 +894,20 @@
         document.body.appendChild(t); setTimeout(() => t.remove(), 2500);
     }
 
+function safePopup(title, message, buttons, callback) {
+    if (tg.showPopup) {
+        try {
+            tg.showPopup({title, message, buttons}, callback);
+        } catch(e) {
+            tg.showAlert(message);
+            if (callback) callback(buttons[0]?.type || 'default');
+        }
+    } else {
+        tg.showAlert(message);
+        if (callback) callback('default');
+    }
+}
+
 function showLoading(containerId) {
     const container = document.getElementById(containerId);
     if (container) {
@@ -916,6 +940,14 @@ function closeModal(id) {
         state.theme = mode;
         localStorage.setItem('theme', mode);
     }
+
+    function togglePdConsent() {
+    const checked = document.getElementById('pd-consent')?.checked;
+    localStorage.setItem('pd_agreed', checked ? 'true' : 'false');
+    if (!checked) {
+        showToast('⚠️ Без согласия некоторые функции недоступны');
+    }
+}
 
     function toggleTheme() { applyTheme(state.theme === 'dark' ? 'light' : 'dark'); }
 
@@ -991,24 +1023,7 @@ document.addEventListener('touchend', async e => {
     
     // Согласие на ПД
     if (!localStorage.getItem('pd_agreed')) {
-        setTimeout(() => {
-            tg.showPopup({
-                title: '🔒 Обработка данных',
-                message: 'Мы обрабатываем ваши персональные данные (имя, username, ID Telegram, историю заказов) в соответствии с ФЗ-152 «О персональных данных». Продолжая использовать сервис, вы даёте согласие на обработку.',
-                buttons: [
-                    {type: 'default', text: '✅ Принимаю'},
-                    {type: 'cancel', text: '📄 Политика'}
-                ]
-            }, (btn) => {
-                if (btn === 'default') {
-                    localStorage.setItem('pd_agreed', 'true');
-                } else {
-                    showDoc('privacy-modal');
-                    // Всё равно сохраняем, чтобы окно не появлялось снова
-                    localStorage.setItem('pd_agreed', 'true');
-                }
-            });
-        }, 4000);
+        localStorage.setItem('pd_agreed', 'true');  // Авто-согласие для старых версий
     }
 
     const user = tg.initDataUnsafe.user;
@@ -1020,6 +1035,10 @@ document.addEventListener('touchend', async e => {
 
     const admins = [1733464126, 8012481749];
     if (admins.includes(user?.id)) document.getElementById('adm-nav').style.display = 'flex';
+
+    // Обновляем чекбокс ПД в профиле
+    const pdCheckbox = document.getElementById('pd-consent');
+    if (pdCheckbox) pdCheckbox.checked = localStorage.getItem('pd_agreed') !== 'false';
 
     await loadData();
     await loadSellerData();
