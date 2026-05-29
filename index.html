@@ -354,6 +354,7 @@
                 <div class="menu-item" onclick="openAdminSection('orders')"><span class="menu-icon">📋</span><span class="menu-text">Заказы</span><span class="menu-arrow">→</span></div>
                 <div class="menu-item" onclick="openAdminSection('analytics')"><span class="menu-icon">📊</span><span class="menu-text">Аналитика</span><span class="menu-arrow">→</span></div>
                 <div class="menu-item" onclick="openAdminSection('chats')"><span class="menu-icon">💬</span><span class="menu-text">Чаты поддержки</span><span class="menu-arrow">→</span></div>
+                <div class="menu-item" onclick="openAdminSection('reviews_moderation')"><span class="menu-icon">⭐</span><span class="menu-text">Отзывы на модерации</span><span class="menu-arrow">→</span></div>
                 <div class="menu-item" onclick="openAdminSection('banners')"><span class="menu-icon">🎯</span><span class="menu-text">Рекламные баннеры</span><span class="menu-arrow">→</span></div>
                 <div class="menu-item" onclick="openAdminSection('withdrawals')"><span class="menu-icon">💸</span><span class="menu-text">Выводы средств</span><span class="menu-arrow">→</span></div>
                 <div class="menu-item" onclick="openAdminSection('sellers_moderation')"><span class="menu-icon">🏪</span><span class="menu-text">Заявки продавцов</span><span class="menu-arrow">→</span></div>
@@ -384,6 +385,7 @@
             </div>
             <div class="menu-list">
                 <div class="menu-item" onclick="openSellerSection('dashboard')"><span class="menu-icon">📊</span><span class="menu-text">Дашборд</span><span class="menu-arrow">→</span></div>
+                <div class="menu-item" onclick="openSellerSection('analytics')"><span class="menu-icon">📊</span><span class="menu-text">Аналитика</span><span class="menu-arrow">→</span></div>
                 <div class="menu-item" onclick="openSellerSection('products')"><span class="menu-icon">📦</span><span class="menu-text">Мои товары</span><span class="menu-arrow">→</span></div>
                 <div class="menu-item" onclick="openSellerSection('add_product')"><span class="menu-icon">➕</span><span class="menu-text">Добавить товар</span><span class="menu-arrow">→</span></div>
                 <div class="menu-item" onclick="openSellerSection('orders')"><span class="menu-icon">📋</span><span class="menu-text">Заказы</span><span class="menu-arrow">→</span></div>
@@ -1511,7 +1513,12 @@ function openProduct(id) {
 if (p.sales > 0 || p.rating > 0) {
     loadProductReviews(p.id);
 }
-    document.getElementById('review-form').style.display = 'block';
+    // Показываем форму отзыва только если пользователь купил товар
+    const hasOrdered = state.ordersHistory.some(o => {
+        const items = typeof o.items === 'string' ? JSON.parse(o.items||'[]') : (o.items||[]);
+        return items.some(i => i.id === p.id);
+    });
+    document.getElementById('review-form').style.display = hasOrdered ? 'block' : 'none';
     document.getElementById('fav-btn-text').innerText = state.favorites.includes(p.id) ? '❤️ В избранном' : '🤍 В избранное';
     
     // Кнопка "Поделиться"
@@ -2443,15 +2450,38 @@ function subscribePlan(plan) {
 function renderReferral(c, uid) {
     const refLink = `https://t.me/KodamaShopBot?start=${uid}`;
     c.innerHTML = `
-        <h3>👥 Реферальная система</h3>
+        <h3>👥 Партнёрская программа</h3>
         
         <div class="card" style="text-align:center;border:2px solid var(--gold);">
             <div style="font-size:48px;margin-bottom:8px;">💰</div>
-            <h4 style="color:var(--gold);">Зарабатывайте 10% с покупок друзей</h4>
+            <h4 style="color:var(--gold);">Три уровня дохода</h4>
             <p style="color:var(--text2);font-size:13px;line-height:1.6;">
-                Приглашайте друзей по вашей уникальной ссылке. 
-                Когда друг совершит покупку — вы получите <b style="color:var(--gold);">10%</b> от суммы заказа на свой баланс.
+                Приглашайте друзей и получайте % с каждой их покупки, а также с покупок их друзей!
             </p>
+        </div>
+        
+        <div class="card">
+            <h4>📊 Уровни и проценты</h4>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;margin-top:8px;">
+                <div style="padding:12px;background:var(--bg);border-radius:10px;border:1px solid var(--gold);">
+                    <div style="font-size:24px;">🥇</div>
+                    <div style="font-weight:700;">Уровень 1</div>
+                    <div style="font-size:11px;color:var(--text2);">Ваши друзья</div>
+                    <div style="color:var(--gold);font-weight:700;margin-top:4px;">10%</div>
+                </div>
+                <div style="padding:12px;background:var(--bg);border-radius:10px;border:1px solid var(--gold);">
+                    <div style="font-size:24px;">🥈</div>
+                    <div style="font-weight:700;">Уровень 2</div>
+                    <div style="font-size:11px;color:var(--text2);">Друзья друзей</div>
+                    <div style="color:var(--gold);font-weight:700;margin-top:4px;">5%</div>
+                </div>
+                <div style="padding:12px;background:var(--bg);border-radius:10px;border:1px solid var(--gold);">
+                    <div style="font-size:24px;">🥉</div>
+                    <div style="font-weight:700;">Уровень 3</div>
+                    <div style="font-size:11px;color:var(--text2);">Дальше</div>
+                    <div style="color:var(--gold);font-weight:700;margin-top:4px;">2%</div>
+                </div>
+            </div>
         </div>
         
         <div class="card">
@@ -2461,43 +2491,33 @@ function renderReferral(c, uid) {
             <button class="btn btn-small btn-outline" onclick="shareReferralLink('${refLink}')" style="margin-top:4px;">📤 Поделиться</button>
         </div>
         
-        <div class="card">
-            <h4>📊 Пример заработка</h4>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;margin-top:8px;">
-                <div style="padding:12px;background:var(--bg);border-radius:10px;">
-                    <div style="font-size:20px;">👤</div>
-                    <div style="font-size:11px;color:var(--text2);">1 друг</div>
-                    <div style="font-size:11px;color:var(--text2);">купил на 3 000 ₽</div>
-                    <div style="color:var(--gold);font-weight:700;margin-top:4px;">+300 ₽</div>
-                </div>
-                <div style="padding:12px;background:var(--bg);border-radius:10px;">
-                    <div style="font-size:20px;">👥</div>
-                    <div style="font-size:11px;color:var(--text2);">5 друзей</div>
-                    <div style="font-size:11px;color:var(--text2);">по 3 000 ₽</div>
-                    <div style="color:var(--gold);font-weight:700;margin-top:4px;">+1 500 ₽</div>
-                </div>
-                <div style="padding:12px;background:var(--bg);border-radius:10px;">
-                    <div style="font-size:20px;">👥👥</div>
-                    <div style="font-size:11px;color:var(--text2);">10 друзей</div>
-                    <div style="font-size:11px;color:var(--text2);">по 5 000 ₽</div>
-                    <div style="color:var(--gold);font-weight:700;margin-top:4px;">+5 000 ₽</div>
-                </div>
-            </div>
-        </div>
-        
         <div class="card" style="background:var(--bg);border-left:4px solid var(--blue);">
             <p style="font-size:12px;color:var(--text2);line-height:1.5;">
-                💡 <b>Совет:</b> Отправьте ссылку друзьям в Telegram — бот сам покажет им магазин. Деньги зачисляются автоматически после каждой покупки.
+                💡 <b>Пример:</b> Вы пригласили Анну (10% с её покупок). Анна пригласила Петю (вы получаете 5% с покупок Пети). Петя пригласил Машу (вы получаете 2% с покупок Маши).
             </p>
         </div>
     `;
 }
 
 function shareReferralLink(link) {
-    tg.showAlert('📤 Отправьте другу:\n\n' + link);
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(link)}`;
+    
+    safePopup('📱 QR-код', `Ссылка: ${link}`, [
+        {type: 'default', text: '📋 Копировать ссылку'},
+        {type: 'cancel', text: 'Закрыть'}
+    ], (btn) => {
+        if (btn === 'default') {
+            navigator.clipboard.writeText(link).then(() => showToast('✅ Ссылка скопирована!'));
+        }
+    });
+    
+    // Показываем QR в модальном окне
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.9);z-index:999;display:flex;align-items:center;justify-content:center;';
+    modal.innerHTML = `<div style="text-align:center;"><img src="${qrUrl}" style="width:200px;height:200px;border-radius:16px;"><p style="color:#fff;margin-top:12px;">${link}</p><button class="btn btn-small" onclick="this.parentElement.parentElement.remove()" style="margin-top:8px;">Закрыть</button></div>`;
+    modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
+    document.body.appendChild(modal);
 }
-
-    function copyText(t) { navigator.clipboard.writeText(t).then(()=>showToast('✅ Скопировано!')); }
 
 function renderAchievements(c) {
     fetch(`${BASE_URL}/achievements/${tg.initDataUnsafe.user?.id||0}`).then(r=>r.json()).then(data => {
@@ -2537,7 +2557,7 @@ function renderAchievements(c) {
     function showAchievementInfo(id) {
         const a = ACHIEVEMENTS_INFO[id];
         if (!a) return;
-        tg.showPopup({title: a.icon + ' ' + a.name, message: `📝 ${a.desc}\n⭐ Награда: +${a.xp} XP`, buttons: [{type:'ok', text:'Понятно'}]});
+        safePopup({title: a.icon + ' ' + a.name, message: `📝 ${a.desc}\n⭐ Награда: +${a.xp} XP`, buttons: [{type:'ok', text:'Понятно'}]});
     }
 
 function renderFAQ(c) {
@@ -2707,57 +2727,6 @@ function renderChat(c, uid) {
     loadChatMsgs(uid);
 }
     
-async function loadChatMsgs(uid) { 
-    try { 
-        const r = await fetch(`${BASE_URL}/messages/${uid}`); 
-        const m = await r.json(); 
-        const cc = document.getElementById('chat-messages'); 
-        if (cc && m.length) {
-            cc.innerHTML = m.map(x => `
-                <div class="chat-message ${x.is_from_user ? 'user' : 'admin'}" style="animation: fadeIn 0.3s;">
-                    <div class="chat-bubble">
-                        ${escapeHtml(x.text)}
-                    </div>
-                    <div class="chat-time">${x.created_at ? formatChatTime(x.created_at) : ''}</div>
-                </div>
-            `).join('');
-            // Автоскролл вниз
-            setTimeout(() => {
-                cc.scrollTop = cc.scrollHeight;
-            }, 100);
-        } else if (cc) {
-            cc.innerHTML = `
-                <div style="text-align:center;color:var(--text2);padding:20px;">
-                    <div style="font-size:48px;">💬</div>
-                    <p>Напишите ваш вопрос</p>
-                    <p style="font-size:11px;">Поддержка отвечает в течение 1 часа</p>
-                </div>
-            `;
-        }
-    } catch(e) {
-        const cc = document.getElementById('chat-messages');
-        if (cc) cc.innerHTML = '<div style="text-align:center;color:var(--text2);">Ошибка загрузки</div>';
-    }
-}
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.innerText = text;
-    return div.innerHTML;
-}
-
-function formatChatTime(isoString) {
-    if (!isoString) return '';
-    const date = new Date(isoString);
-    const now = new Date();
-    const diff = now - date;
-    
-    if (diff < 60000) return 'Только что';
-    if (diff < 3600000) return Math.floor(diff / 60000) + ' мин. назад';
-    if (diff < 86400000) return Math.floor(diff / 3600000) + ' ч. назад';
-    return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-}
-    
 async function sendChat() {
     const inp = document.getElementById('chat-input');
     if (!inp) return;
@@ -2846,6 +2815,7 @@ function openAdminSection(s) {
     else if (s==='withdrawals') loadWithdrawals(c);
     else if (s==='banners') loadAdminBanners(c);
     else if (s==='sellers_list') loadSellersList(c);
+    else if (s==='reviews_moderation') loadPendingReviews(c);
 }
 
     function loadAdminBanners(c) {
@@ -3351,26 +3321,17 @@ async function saveEdit(id) {
 }
 
 function deleteProduct(id) { 
-    tg.showPopup({
-        title: 'Удалить товар?',
-        message: 'Это действие нельзя отменить. Товар будет скрыт из каталога.',
-        buttons: [
-            {type: 'default', text: '🗑 Удалить'},
-            {type: 'cancel', text: 'Отмена'}
-        ]
-    }, async (btn) => {
-        if (btn === 'default') {
-            state.products = state.products.filter(p => p.id !== id); 
-            renderProducts(); 
-            await fetch(`${BASE_URL}/admin_action`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({action: 'delete_product', product_id: id})
-            }); 
-            showToast('🗑 Товар удалён'); 
-            openAdminSection('products');
-        }
-    });
+    if (confirm('Удалить товар? Это действие нельзя отменить.')) {
+        state.products = state.products.filter(p => p.id !== id); 
+        renderProducts(); 
+        fetch(`${BASE_URL}/admin_action`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({action: 'delete_product', product_id: id})
+        }); 
+        showToast('🗑 Товар удалён'); 
+        openAdminSection('products');
+    }
 }
 
 function loadAdminPromos(c) {
@@ -3435,7 +3396,7 @@ function createPromo() {
 }
 
 function deletePromo(code) { 
-    tg.showPopup({
+    safePopup({
         title: 'Удалить промокод?',
         message: `Промокод ${code} будет деактивирован.`,
         buttons: [
@@ -3685,6 +3646,7 @@ function openUserProfile(uid) {
                     <div style="color:var(--text2);">📦 ${items.map(i=>`${i.name} x${i.qty}`).join(', ')}<br>💰 ${o.total_amount} ₽ | 👤 ${o.user_id}<br>${delivery} | 💳 ${o.payment_method}</div>
                     <div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap;">
                         <button class="btn btn-small" onclick="updateOrderStatus(${o.id},'paid')">✅ Оплачен</button>
+                        <button class="btn btn-small" onclick="generateInvoice(${o.id})">📋 Накладная</button>
                         <button class="btn btn-small" onclick="addTrackingNumber(${o.id})" style="margin-top:4px;">📮 Трек-номер</button>
                         <button class="btn btn-small" onclick="updateOrderStatus(${o.id},'processing')">📦 Собирается</button>
                         <button class="btn btn-small" onclick="updateOrderStatus(${o.id},'shipped')">🚚 Отправлен</button>
@@ -3698,8 +3660,21 @@ function openUserProfile(uid) {
     }
     async function updateOrderStatus(oid,status) { await fetch(`${BASE_URL}/admin_action`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'update_order_status',order_id:oid,status})}); showToast('✅ Обновлено!'); loadAdminOrders(document.getElementById('admin-content')); }
 
+    function generateInvoice(orderId) {
+        const allOrders = [...(state.ordersHistory || []), ...(state.activeOrders || [])];
+        const order = allOrders.find(o => o.id === orderId);
+        if (!order) return;
+        
+        const items = typeof order.items === 'string' ? JSON.parse(order.items || '[]') : (order.items || []);
+        const itemsText = items.map(i => `${i.name} x${i.qty} — ${i.price} ₽`).join('\n');
+        
+        const invoice = `📋 НАКЛАДНАЯ №${orderId}\nОт: ${new Date().toLocaleDateString('ru-RU')}\n\n📦 Товары:\n${itemsText}\n\n💰 Итого: ${order.total_amount} ₽\n🚚 Доставка: ${order.delivery_method}\n📍 Адрес: ${order.delivery_address || 'Не указан'}\n📮 Трек: ${order.tracking_number || 'Не присвоен'}\n\nПолучатель: _________________\nПодпись: ____________________`;
+        
+        tg.showAlert(invoice);
+    }
+    
     function addTrackingNumber(orderId) {
-        tg.showPopup({
+        safePopup({
             title: '📮 Трек-номер',
             message: 'Введите трек-номер для отслеживания:',
             buttons: [
@@ -3926,7 +3901,7 @@ async function sendAdminReply(uid) {
 }
 
 async function endDialog(uid) {
-    tg.showPopup({
+    safePopup({
         title: 'Завершить диалог?',
         message: 'Пользователю будет отправлено сообщение о завершении.',
         buttons: [
@@ -3952,7 +3927,7 @@ async function endDialog(uid) {
 }
 
 async function deleteChat(uid) {
-    tg.showPopup({
+    safePopup({
         title: 'Удалить чат?',
         message: 'Вся переписка будет удалена безвозвратно.',
         buttons: [
@@ -4073,6 +4048,7 @@ function openSellerSection(s) {
     else if (s === 'withdraw') renderWithdraw(c);
     else if (s === 'history') loadWithdrawHistory(c);
     else if (s === 'dashboard') renderSellerDashboard(c);
+    else if (s === 'analytics') renderSellerAnalytics(c);
 }
 
     async function renderSellerDashboard(c) {
@@ -4171,6 +4147,45 @@ function openSellerSection(s) {
         c.innerHTML = '<div class="empty-state">Ошибка загрузки</div>';
     }
 }
+
+    async function renderSellerAnalytics(c) {
+        c.innerHTML = '<div>Загрузка...</div>';
+        const uid = tg.initDataUnsafe.user?.id || 0;
+        try {
+            const sellerRes = await fetch(`${BASE_URL}/seller/${uid}`);
+            const sellerData = await sellerRes.json();
+            const sellerId = sellerData.seller?.id;
+            if (!sellerId) { c.innerHTML = '<div class="empty-state">Продавец не найден</div>'; return; }
+            
+            const res = await fetch(`${BASE_URL}/seller/${sellerId}/analytics`);
+            const data = await res.json();
+            
+            const maxRev = Math.max(...data.revenue.map(d => d.revenue), 1);
+            
+            c.innerHTML = `
+                <h3>📊 Аналитика продаж</h3>
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-value">${data.total_orders || 0}</div><div class="stat-label">📦 Заказов</div></div>
+                    <div class="stat-card"><div class="stat-value">${data.total || 0} ₽</div><div class="stat-label">💰 Выручка</div></div>
+                    <div class="stat-card"><div class="stat-value">${data.avg_check || 0} ₽</div><div class="stat-label">📊 Средний чек</div></div>
+                </div>
+                <div class="card">
+                    <h4>📈 Выручка по дням</h4>
+                    ${data.revenue.slice(-14).reverse().map(d => {
+                        const pct = Math.round((d.revenue / maxRev) * 100);
+                        return `
+                        <div style="display:flex;align-items:center;gap:8px;margin:4px 0;">
+                            <span style="font-size:10px;width:45px;">${d.date?.slice(5)}</span>
+                            <div style="flex:1;height:12px;background:var(--bg);border-radius:4px;">
+                                <div style="width:${pct}%;height:100%;background:var(--gold);border-radius:4px;"></div>
+                            </div>
+                            <span style="font-size:10px;color:var(--gold);">${d.revenue} ₽</span>
+                        </div>`;
+                    }).join('')}
+                </div>
+            `;
+        } catch(e) { c.innerHTML = '<div class="empty-state">Ошибка загрузки</div>'; }
+    }
     
     function closeSellerSection() {
         document.getElementById('seller-main').style.display = 'block';
@@ -4383,7 +4398,7 @@ async function submitSellerProduct() {
 }
     
 async function deleteSellerProduct(id) {
-    tg.showPopup({
+    safePopup({
         title: 'Удалить товар?',
         message: 'Это действие нельзя отменить.',
         buttons: [
@@ -4534,6 +4549,59 @@ async function updateOrderStatus(oid, status, sellerId = null) {
     } catch(e) {
         c.innerHTML = '<h3>🏪 Заявки продавцов</h3><div class="empty-state">Ошибка загрузки</div>';
     }
+}
+
+async function loadPendingReviews(c) {
+    c.innerHTML = '<div>Загрузка...</div>';
+    try {
+        const res = await fetch(`${BASE_URL}/admin/pending-reviews`);
+        const data = await res.json();
+        const reviews = data.reviews || [];
+        
+        if (!reviews.length) {
+            c.innerHTML = '<h3>⭐ Отзывы на модерации</h3><div class="empty-state">Нет отзывов</div>';
+            return;
+        }
+        
+        c.innerHTML = '<h3>⭐ Отзывы на модерации (' + reviews.length + ')</h3>' + reviews.map(r => `
+            <div class="card">
+                <div style="display:flex;justify-content:space-between;">
+                    <div>
+                        <b>⭐ ${r.rating}/5</b> | Товар #${r.product_id} | Пользователь #${r.user_id}
+                        <div style="color:var(--text2);font-size:13px;margin-top:4px;">${r.text || 'Без текста'}</div>
+                        <div style="font-size:10px;color:var(--text2);margin-top:2px;">${r.created_at?.split('T')[0] || ''}</div>
+                    </div>
+                    <div style="display:flex;gap:4px;">
+                        <button class="btn btn-small" style="background:var(--success);color:#fff;" onclick="approveReview(${r.id})">✅</button>
+                        <button class="btn btn-small btn-danger" onclick="rejectReview(${r.id})">❌</button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    } catch(e) {
+        c.innerHTML = '<h3>⭐ Отзывы на модерации</h3><div class="empty-state">Ошибка загрузки</div>';
+    }
+}
+
+async function approveReview(id) {
+    await fetch(`${BASE_URL}/admin/approve-review`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({review_id: id})
+    });
+    showToast('✅ Отзыв одобрен');
+    loadPendingReviews(document.getElementById('admin-content'));
+}
+
+async function rejectReview(id) {
+    if (!confirm('Отклонить отзыв?')) return;
+    await fetch(`${BASE_URL}/admin/reject-review`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({review_id: id})
+    });
+    showToast('❌ Отзыв отклонён');
+    loadPendingReviews(document.getElementById('admin-content'));
 }
 
 async function loadSellersList(c) {
