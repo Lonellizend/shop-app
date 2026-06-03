@@ -272,10 +272,6 @@
             <div class="countdown" id="flash-countdown"></div>
         </div>
         <div id="promo-banner-container"></div>
-        <div class="search-container">
-            <input class="input" placeholder="🔍 Поиск товаров..." id="search-input" oninput="handleSearch(this.value)" autocomplete="off">
-            <div class="search-suggestions" id="search-suggestions"></div>
-        </div>
         <select class="input" id="sort-select" onchange="sortProducts(this.value)" style="margin-bottom:8px;padding:10px 14px;">
             <option value="newest">🆕 Новые</option>
             <option value="cheapest">⬆️ Сначала дешёвые</option>
@@ -1343,6 +1339,7 @@ async function loadData() {
             showToast('⚠️ Ошибка загрузки данных. Проверьте соединение.');
         }
     }
+}
 
 async function loadProductImages(start, count) {
     const toLoad = state.products.slice(start, start + count);
@@ -2803,7 +2800,7 @@ function renderAchievements(c) {
     function showAchievementInfo(id) {
         const a = ACHIEVEMENTS_INFO[id];
         if (!a) return;
-        safePopup({title: a.icon + ' ' + a.name, message: `📝 ${a.desc}\n⭐ Награда: +${a.xp} XP`, buttons: [{type:'ok', text:'Понятно'}]});
+        safePopup(a.icon + ' ' + a.name, `📝 ${a.desc}\n⭐ Награда: +${a.xp} XP`, [{type:'ok', text:'Понятно'}]);
     }
 
 function renderFAQ(c) {
