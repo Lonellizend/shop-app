@@ -259,7 +259,7 @@
     <div id="shop" class="page active">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
             <h1 style="margin:0;font-size:20px;">Kodama <span class="gold-gradient">Shop</span></h1>
-            <span style="font-size:10px;color:var(--text2);margin-left:auto;">📍 Набережные Челны</span>
+            <span style="font-size:10px;color:var(--text2);margin-left:auto;cursor:pointer;" onclick="showCitySelector()">📍 Набережные Челны</span>
         </div>
         <div class="search-container" style="display:flex;gap:8px;align-items:center;">
             <input class="input" placeholder="🔍 Поиск товаров..." id="search-input" oninput="handleSearch(this.value)" autocomplete="off" style="border-radius:14px;padding:12px 16px;background:var(--card2);flex:1;margin:0;">
@@ -377,6 +377,7 @@
                 <div class="menu-item" onclick="openAdminSection('withdrawals')"><span class="menu-icon">💸</span><span class="menu-text">Выводы средств</span><span class="menu-arrow">→</span></div>
                 <div class="menu-item" onclick="openAdminSection('sellers_moderation')"><span class="menu-icon">🏪</span><span class="menu-text">Заявки продавцов</span><span class="menu-arrow">→</span></div>
                 <div class="menu-item" onclick="openAdminSection('sellers_list')"><span class="menu-icon">🏪</span><span class="menu-text">Продавцы</span><span class="menu-arrow">→</span></div>
+                <div class="menu-item" onclick="openAdminSection('cities')"><span class="menu-icon">📍</span><span class="menu-text">Города и регионы</span><span class="menu-arrow">→</span></div>
                 <button class="btn btn-small" onclick="notifyTermsUpdate()" style="margin-top:8px;">📢 Уведомить об изменении условий</button>
                 <button class="btn btn-small" onclick="exportCSV()" style="margin-top:8px;width:100%;">📥 Экспорт заказов CSV</button>
             </div>
@@ -2955,6 +2956,7 @@ function renderChat(c, uid) {
             <p style="font-weight:600;">💬 Чат с поддержкой</p>
             <p style="color:var(--text2);font-size:12px;">Отвечаем в течение 1 часа</p>
         </div>
+        <div id="chat-status" style="text-align:center;font-size:11px;color:var(--text2);padding:4px;">⚫ Ожидайте ответа</div>
         <div class="chat-container" id="chat-messages" style="height:350px;overflow-y:auto;margin-bottom:8px;background:var(--bg);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;"></div>
         <div style="display:flex;gap:8px;align-items:flex-end;">
             <textarea class="input" placeholder="Сообщение..." id="chat-input" style="flex:1;margin:0;min-height:44px;resize:none;" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"></textarea>
@@ -3005,12 +3007,38 @@ async function loadChatMsgs(uid) {
         const m = await r.json(); 
         const cc = document.getElementById('chat-messages'); 
         if (cc && m && m.length) {
+            // Проверяем, завершён ли диалог
+            const isEnded = m.some(x => x.text && x.text.includes('Администратор завершил диалог'));
+            
+            // Индикатор онлайна
+            const hasAdminReply = m.some(x => !x.is_from_user);
+            const statusEl = document.getElementById('chat-status');
+            if (statusEl) statusEl.innerText = hasAdminReply ? '🟢 Поддержка онлайн' : '⚫ Ожидайте ответа';
+            
             cc.innerHTML = m.map(x => `
                 <div class="chat-message ${x.is_from_user ? 'user' : 'admin'}" style="animation: fadeIn 0.3s;">
                     <div class="chat-bubble">${escapeHtml(x.text)}</div>
                     <div class="chat-time">${x.created_at ? formatChatTime(x.created_at) : ''}</div>
                 </div>
             `).join('');
+            
+            // Если диалог завершён — показываем кнопки оценки
+            if (isEnded) {
+                cc.innerHTML += `
+                    <div style="text-align:center;padding:12px;margin-top:8px;">
+                        <p style="color:var(--text2);font-size:13px;margin-bottom:8px;">Оцените работу поддержки:</p>
+                        <div style="display:flex;gap:8px;justify-content:center;" id="rating-buttons">
+                            ${[1,2,3,4,5].map(r => `
+                                <button class="btn btn-small" onclick="rateSupport(${r})" style="width:40px;height:40px;padding:0;font-size:20px;">
+                                    ${r <= 3 ? '😐' : r === 4 ? '😊' : '🤩'}
+                                </button>
+                            `).join('')}
+                        </div>
+                        <button class="btn btn-small btn-outline" onclick="continueDialog()" style="margin-top:8px;">💬 Продолжить диалог</button>
+                    </div>
+                `;
+            }
+            
             setTimeout(() => { cc.scrollTop = cc.scrollHeight; }, 100);
         } else if (cc) {
             cc.innerHTML = `<div style="text-align:center;color:var(--text2);padding:20px;"><div style="font-size:48px;">💬</div><p>Напишите ваш вопрос</p><p style="font-size:11px;">Поддержка отвечает в течение 1 часа</p></div>`;
@@ -3021,6 +3049,58 @@ async function loadChatMsgs(uid) {
             cc.innerHTML = '<div style="text-align:center;color:var(--text2);">Ошибка загрузки</div>';
         }
     }
+}
+
+async function rateSupport(rating) {
+    const uid = tg.initDataUnsafe.user?.id || 0;
+    
+    // Отправляем оценку
+    await fetch(`${BASE_URL}/messages`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            user_id: uid,
+            text: `⭐ Оценка поддержки: ${rating}/5`,
+            is_from_user: true
+        })
+    });
+    
+    // Сохраняем оценку
+    await fetch(`${BASE_URL}/rate-support`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({user_id: uid, rating: rating})
+    });
+    
+    // Скрываем кнопки
+    document.getElementById('rating-buttons')?.remove();
+    
+    showToast('✅ Спасибо за оценку!');
+    await loadChatMsgs(uid);
+}
+
+async function continueDialog() {
+    const uid = tg.initDataUnsafe.user?.id || 0;
+    
+    await fetch(`${BASE_URL}/messages`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            user_id: uid,
+            text: '💬 Пользователь хочет продолжить диалог.',
+            is_from_user: true
+        })
+    });
+    
+    // Уведомляем админов
+    await fetch(`${BASE_URL}/continue-dialog`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({user_id: uid})
+    });
+    
+    showToast('✅ Диалог продолжен');
+    await loadChatMsgs(uid);
 }
 
 function escapeHtml(text) {
@@ -3058,6 +3138,7 @@ function openAdminSection(s) {
     else if (s==='withdrawals') loadWithdrawals(c);
     else if (s==='banners') loadAdminBanners(c);
     else if (s==='sellers_list') loadSellersList(c);
+    else if (s==='cities') loadAdminCities(c);
     else if (s==='reviews_moderation') loadPendingReviews(c);
 }
 
@@ -3353,6 +3434,13 @@ function renderAddProduct(c) {
             <option value="Обувь">Обувь</option>
             <option value="Аксессуары">Аксессуары</option>
         </select>
+        <select class="input" id="ap-age-rating">
+            <option value="0+">0+ (Без ограничений)</option>
+            <option value="6+">6+</option>
+            <option value="12+">12+</option>
+            <option value="16+">16+</option>
+            <option value="18+">18+</option>
+        </select>
         <select class="input" id="ap-badge">
             <option value="">Без бейджа</option>
             <option value="new">🆕 Новинка</option>
@@ -3434,7 +3522,7 @@ async function submitProduct() {
         discount_price: parseInt(document.getElementById('ap-discount')?.value || 0) || null,
         description: document.getElementById('ap-desc')?.value || '',
         category: document.getElementById('ap-category')?.value || 'Premium',
-        badge: document.getElementById('ap-badge')?.value || null,
+        age_rating: document.getElementById('ap-age-rating')?.value || '0+',
         quantity: parseInt(document.getElementById('ap-qty')?.value || 10),
         images: images,  // Массив base64 строк (фото и видео)
         seller_id: null
@@ -4058,7 +4146,10 @@ function loadChatsList(c) {
                                     <b>@${u.username || 'user' + u.user_id}</b>
                                     ${unread > 0 ? `<span class="tag" style="background:var(--danger);color:#fff;">${unread}</span>` : ''}
                                 </div>
-                                <div style="color:var(--text2);font-size:12px;margin-top:4px;">${escapeHtml(last.text?.slice(0, 60) || '')}${last.text?.length > 60 ? '...' : ''}</div>
+                                <div style="color:var(--text2);font-size:12px;margin-top:4px;">
+                                    ${last.text?.toLowerCase().includes('срочно') ? '<span style="color:var(--danger);font-size:10px;">🚨 Срочно</span> ' : ''}
+                                    ${escapeHtml(last.text?.slice(0, 60) || '')}${last.text?.length > 60 ? '...' : ''}
+                                </div>
                                 <div style="font-size:10px;color:var(--text2);margin-top:2px;">${formatChatTime(last.created_at)}</div>
                             </div>
                             <span class="menu-arrow" style="font-size:18px;">→</span>
@@ -4141,16 +4232,25 @@ async function sendAdminReply(uid) {
 }
 
 async function endDialog(uid) {
-    if (!confirm('Завершить диалог?')) return;
+    if (!confirm('Завершить диалог? Пользователю будет предложено оценить поддержку.')) return;
+    
+    // Отправляем сообщение с кнопками оценки
     await fetch(`${BASE_URL}/messages`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({user_id: uid, text: '🔚 Диалог завершён.', is_from_user: false})
+        body: JSON.stringify({
+            user_id: uid, 
+            text: '🔚 Администратор завершил диалог.\n\nПожалуйста, оцените качество поддержки:',
+            is_from_user: false
+        })
     });
+    
+    // Сохраняем статус диалога
     await fetch(`${BASE_URL}/end_dialog`, {
         method: 'POST', headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({user_id: uid})
     });
+    
     showToast('✅ Диалог завершён');
     openAdminSection('chats');
 }
@@ -4444,6 +4544,11 @@ function showRegisterModal() {
                 
                 <label style="font-size:13px;color:var(--text2);margin-bottom:4px;display:block;">📝 Описание магазина</label>
                 <textarea class="input" placeholder="Расскажите, что продаёте: одежда, обувь, аксессуары..." id="reg-shop-desc"></textarea>
+               
+                <label style="font-size:13px;color:var(--text2);margin-bottom:4px;display:block;">📍 Ваш город <span style="color:var(--danger);">*</span></label>
+                <select class="input" id="reg-city">
+                    <option value="">Загрузка городов...</option>
+                </select>
                 
                 <div class="card" style="border:1px solid var(--danger);background:rgba(255,68,68,0.05);margin:16px 0;">
                     <h4 style="color:var(--danger);margin-bottom:8px;">⚠️ Запрещено продавать:</h4>
@@ -4500,6 +4605,15 @@ function showRegisterModal() {
                 </p>
             </div>
         `;
+        // Загружаем список городов
+        fetch(`${BASE_URL}/cities`).then(r => r.json()).then(data => {
+            const select = document.getElementById('reg-city');
+            if (select && data.cities) {
+                select.innerHTML = '<option value="">Выберите город</option>' + 
+                    data.cities.map(c => `<option value="${c.id}">${c.name}</option>`).join('') +
+                    '<option value="new">➕ Моего города нет в списке</option>';
+            }
+        });
         document.getElementById('register-seller-modal').classList.add('active');
         document.getElementById('register-seller-modal').style.display = 'flex';
     });
@@ -4519,6 +4633,21 @@ async function registerSeller() {
     
     const name = document.getElementById('reg-shop-name')?.value?.trim();
     if (!name) { tg.showAlert('❌ Введите название магазина'); return; }
+
+    const cityId = document.getElementById('reg-city')?.value;
+    if (!cityId) { tg.showAlert('❌ Выберите город'); return; }
+    
+    if (cityId === 'new') {
+        const newCity = prompt('Введите название вашего города:');
+        if (newCity) {
+            await fetch(`${BASE_URL}/admin/request-city`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({city_name: newCity, user_id: tg.initDataUnsafe.user?.id || 0})
+            });
+            tg.showAlert('✅ Заявка на город отправлена! Мы добавим его в ближайшее время.');
+        }
+        return;
+    }
     
     const forbidden = ['алкоголь', 'табак', 'оружие', 'наркотик', 'лекарств', 'интим'];
     if (forbidden.some(w => name.toLowerCase().includes(w))) {
@@ -4533,6 +4662,7 @@ async function registerSeller() {
                 user_id: tg.initDataUnsafe.user?.id || 0,
                 shop_name: name,
                 shop_description: document.getElementById('reg-shop-desc')?.value || '',
+                city_id: parseInt(cityId),
                 agreed_terms: true,
                 agreed_tax: true,
                 agreed_quality: true
@@ -4773,6 +4903,138 @@ async function updateOrderStatus(oid, status, sellerId = null) {
     } catch(e) {
         c.innerHTML = '<h3>🏪 Заявки продавцов</h3><div class="empty-state">Ошибка загрузки</div>';
     }
+}
+
+async function loadAdminCities(c) {
+    c.innerHTML = '<div>Загрузка...</div>';
+    
+    const [regionsRes, citiesRes] = await Promise.all([
+        fetch(`${BASE_URL}/regions`),
+        fetch(`${BASE_URL}/cities`)
+    ]);
+    const regionsData = await regionsRes.json();
+    const citiesData = await citiesRes.json();
+    
+    const regions = regionsData.regions || [];
+    const cities = citiesData.cities || [];
+    
+    c.innerHTML = `
+        <h3>📍 Управление географией</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+                <div class="card">
+                    <h4>➕ Добавить регион</h4>
+                    <input class="input" placeholder="Название региона" id="new-region-name">
+                    <select class="input" id="new-region-type">
+                        <option value="region">Область</option>
+                        <option value="republic">Республика</option>
+                        <option value="krai">Край</option>
+                    </select>
+                    <button class="btn btn-small" onclick="addRegion()">➕ Добавить</button>
+                </div>
+                <h4>🌍 Регионы</h4>
+                ${regions.map(r => `
+                    <div class="card" style="padding:12px;margin-bottom:6px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <div><b>${r.name}</b> <span class="tag">${r.type==='republic'?'Республика':r.type==='krai'?'Край':'Область'}</span></div>
+                            <button class="btn btn-small btn-danger" onclick="deleteRegion(${r.id})">🗑</button>
+                        </div>
+                    </div>
+                `).join('') || '<div class="empty-state">Нет регионов</div>'}
+            </div>
+            <div>
+                <div class="card">
+                    <h4>➕ Добавить город</h4>
+                    <input class="input" placeholder="Название города" id="new-city-name">
+                    <select class="input" id="new-city-region">
+                        <option value="">Выберите регион</option>
+                        ${regions.map(r => `<option value="${r.id}">${r.name}</option>`).join('')}
+                    </select>
+                    <button class="btn btn-small" onclick="addCity()">➕ Добавить</button>
+                </div>
+                <h4>🏙 Города</h4>
+                ${cities.map(c => {
+                    const region = regions.find(r => r.id === c.region_id);
+                    return `<div class="card" style="padding:12px;margin-bottom:6px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <div><b>${c.name}</b><div style="font-size:10px;color:var(--text2);">${region?region.name:'—'}</div></div>
+                            <button class="btn btn-small btn-danger" onclick="deleteCity(${c.id})">🗑</button>
+                        </div>
+                    </div>`;
+                }).join('') || '<div class="empty-state">Нет городов</div>'}
+            </div>
+        </div>
+    `;
+}
+
+async function addRegion() {
+    const name = document.getElementById('new-region-name')?.value?.trim();
+    const type = document.getElementById('new-region-type')?.value;
+    if (!name) { showToast('❌ Введите название'); return; }
+    await fetch(`${BASE_URL}/admin/add-region`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({name, type})
+    });
+    showToast('✅ Регион добавлен');
+    loadAdminCities(document.getElementById('admin-content'));
+}
+
+async function addCity() {
+    const name = document.getElementById('new-city-name')?.value?.trim();
+    const regionId = document.getElementById('new-city-region')?.value;
+    if (!name || !regionId) { showToast('❌ Заполните все поля'); return; }
+    await fetch(`${BASE_URL}/admin/add-city`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({name, region_id: parseInt(regionId)})
+    });
+    showToast('✅ Город добавлен');
+    loadAdminCities(document.getElementById('admin-content'));
+}
+
+async function deleteCity(id) {
+    if (!confirm('Удалить город?')) return;
+    await fetch(`${BASE_URL}/admin/delete-city`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({city_id: id})
+    });
+    showToast('🗑 Город удалён');
+    loadAdminCities(document.getElementById('admin-content'));
+}
+
+async function deleteRegion(id) {
+    if (!confirm('Удалить регион?')) return;
+    await fetch(`${BASE_URL}/admin/delete-region`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({region_id: id})
+    });
+    showToast('🗑 Регион удалён');
+    loadAdminCities(document.getElementById('admin-content'));
+}
+
+function showCitySelector() {
+    fetch(`${BASE_URL}/cities`).then(r => r.json()).then(data => {
+        const cities = data.cities || [];
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.9);z-index:300;padding:20px;overflow-y:auto;';
+        overlay.innerHTML = `
+            <div style="max-width:500px;margin:0 auto;">
+                <h2 style="color:var(--gold);margin-bottom:16px;">📍 Выберите город</h2>
+                ${cities.map(c => `
+                    <div class="card" style="cursor:pointer;padding:14px;" onclick="selectCity('${c.name}');this.parentElement.parentElement.parentElement.remove();">
+                        <b>${c.name}</b>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+        document.body.appendChild(overlay);
+    });
+}
+
+function selectCity(name) {
+    localStorage.setItem('selected_city', name);
+    document.querySelector('#shop .nav-item span:last-child') || showToast(`📍 Город: ${name}`);
+    showToast(`📍 Город: ${name}`);
 }
 
 async function loadPendingReviews(c) {
